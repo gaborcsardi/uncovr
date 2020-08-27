@@ -9,6 +9,10 @@ LazyData: true
 URL: https://github.com/gaborcsardi/testthatlabs
 BugReports: https://github.com/gaborcsardi/testthatlabs/issues
 RoxygenNote: 7.1.1
-Suggests: 
-    testthat
+Imports:
+    cli,
+    covr,
+    pkgload,
+    testthat (>= 2.99),
+    withr
 Encoding: UTF-8
