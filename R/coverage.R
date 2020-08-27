@@ -50,6 +50,7 @@ interactive_reporter <- R6::R6Class("interactive_reporter",
   inherit = testthat::ProgressReporter,
   public = list(
     package = "<unknown>",
+    spin_state = 1L,
     initialize = function(package, ...) {
       self$package <- package
       super$initialize(...)
@@ -102,8 +103,10 @@ interactive_reporter <- R6::R6Class("interactive_reporter",
         return()
       }
 
+      self$spin_state <- self$spin_state + 1L
+      spin <- spinner(self$frames, self$spin_state)
       sm <- summary_line(self$n_ok, self$n_fail, self$n_warn, self$n_skip)
-      self$cat_tight("\r", sm)
+      self$cat_tight("\r", spin, " ", sm)
     },
 
     end_reporter = function() {
@@ -117,7 +120,7 @@ interactive_reporter <- R6::R6Class("interactive_reporter",
         cli::col_grey("[", sprintf("%.1f s", time[[3]]), "]")
       )
 
-      self$cat_line("\r", msg)
+      self$cat_line("\r", strpad(msg))
     }
   )
 )
@@ -225,11 +228,15 @@ context_name <- function(filename) {
   filename
 }
 
-# We need to import something from covr, otherwise the
-# check freaks out
-fix_check <- function() covr::package_coverage
-
 strpad <- function(x, width = cli::console_width()) {
   n <- pmax(0, width - crayon::col_nchar(x))
   paste0(x, strrep(" ", n))
 }
+
+spinner <- function(frames, i) {
+  frames[((i - 1) %% length(frames)) + 1]
+}
+
+# We need to import something from covr, otherwise the
+# check freaks out
+fix_check <- function() covr::package_coverage
