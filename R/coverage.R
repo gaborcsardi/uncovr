@@ -21,7 +21,7 @@ test <- function(filter = NULL, ...) {
   tryCatch(
     results <- testthat::test_dir(
       "tests/testthat",
-      reporter = covr_reporter$new(pkg),
+      reporter = interactive_reporter$new(pkg),
       filter = filter,
       load_helpers = FALSE,
       stop_on_failure = FALSE,
@@ -46,7 +46,7 @@ test <- function(filter = NULL, ...) {
   ))
 }
 
-covr_reporter <- R6::R6Class("covr_reporter",
+interactive_reporter <- R6::R6Class("interactive_reporter",
   inherit = testthat::ProgressReporter,
   public = list(
     package = "<unknown>",
