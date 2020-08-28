@@ -4,6 +4,7 @@
 test <- function(filter = NULL, ...) {
   pkg <- read.dcf("DESCRIPTION")[, "Package"][[1]]
 
+  asNamespace("covr")$clear_counters()
   on.exit(setHook(packageEvent(pkg, "onLoad"), NULL, "replace"), add = TRUE)
   setHook(packageEvent(pkg, "onLoad"), function(...) {
     ns <- .getNamespace(as.name(pkg))
@@ -11,7 +12,6 @@ test <- function(filter = NULL, ...) {
   })
   pkgload::load_all()
 
-  asNamespace("covr")$clear_counters()
   withr::local_envvar(c(R_COVR = "true"))
   withr::local_envvar(c(NOT_CRAN = "true"))
 
