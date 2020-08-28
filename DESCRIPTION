@@ -9,6 +9,7 @@ LazyData: true
 URL: https://github.com/gaborcsardi/testthatlabs
 BugReports: https://github.com/gaborcsardi/testthatlabs/issues
 RoxygenNote: 7.1.1
+Depends: R (>= 3.3)
 Imports:
     cli,
     covr,
