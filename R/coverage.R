@@ -57,7 +57,7 @@ interactive_reporter <- R6::R6Class("interactive_reporter",
     },
 
     show_header = function() {
-      self$cat_line(paste("❯", self$package, "test suite"))
+      self$cat_line(strpad(paste("❯", self$package, "test suite "), chr = "─"))
       self$cat_line()
     },
 
@@ -228,9 +228,9 @@ context_name <- function(filename) {
   filename
 }
 
-strpad <- function(x, width = cli::console_width()) {
+strpad <- function(x, width = cli::console_width(), chr = " ") {
   n <- pmax(0, width - crayon::col_nchar(x))
-  paste0(x, strrep(" ", n))
+  paste0(x, strrep(chr, n))
 }
 
 spinner <- function(frames, i) {
