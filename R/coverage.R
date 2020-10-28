@@ -63,7 +63,10 @@ interactive_reporter <- R6::R6Class("interactive_reporter",
     },
 
     show_header = function() {
-      self$cat_line(strpad(paste("❯", self$package, "test suite "), chr = "─"))
+      self$cat_line(strpad(
+        paste(cli::symbol$pointer, self$package, "test suite "),
+        chr = "─"
+      ))
       self$cat_line()
     },
 
@@ -168,7 +171,7 @@ issue_summary <- function(x) {
     frm <- character()
   }
 
-  if (type == "error" || type == "warning") {
+  if (type == "error" || type == "failure" || type == "warning") {
     frm <- format_stack(frm)
   }
 
@@ -217,6 +220,7 @@ format_type <- function(type) {
     pass = style_bg_green(cli::col_white("PASS")),
     skip = style_bg_blue(cli::col_white("SKIP")),
     error = cli::bg_red(cli::col_white("FAIL")),
+    failure = cli::bg_red(cli::col_white("FAIL")),
     warning = style_bg_orange(cli::col_white("WARN"))
   )
 }
@@ -237,15 +241,8 @@ format_stack <- function(lines) {
     }
   }
 
+  lines <- lines[lines != ""]
   paste0("       ", lines)
-}
-
-context_name <- function(filename) {
-  # Remove test- prefix
-  filename <- sub("^test[-_]", "", filename)
-  # Remove terminal extension
-  filename <- sub("[.][Rr]$", "", filename)
-  filename
 }
 
 strpad <- function(x, width = cli::console_width(), chr = " ") {
@@ -322,8 +319,8 @@ print.coverage_table <- function(x, ...) {
 cov_col <- function(txt, val) {
   ifelse(
     val < 75,
-    cli::col_red(txt),
-  ifelse(val < 95, style_orange(txt), txt)
+    style_orange(txt),
+  ifelse(val < 95, cli::col_blue(txt), txt)
   )
 }
 
