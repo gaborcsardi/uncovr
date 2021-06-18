@@ -2,16 +2,21 @@
 context("testthatlabs")
 
 test_that("testthatlabs works", {
-
-  expect_true(TRUE)
-  expect_true(FALSE)
+  for (i in 1:10) expect_true(TRUE)
 })
 
-test_that("this is a skip", {
+test_that("lorem ipsum", {
+  for (i in 1:10) expect_true(TRUE)
+  expect_true(FALSE)
+  for (i in 1:5) expect_true(TRUE)
+})
+
+test_that("voluptate adipisicing", {
+  for (i in 1:10) expect_true(TRUE)
   skip("not this time")
 })
 
-test_that("this is a warning", {
+test_that("eiusmod mollit ad id", {
   warning("beware!")
   expect_true(TRUE)
 })

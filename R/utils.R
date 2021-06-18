@@ -1,4 +1,8 @@
 
+map_chr <- function(X, FUN, ...) {
+  vapply(X, FUN, character(1), ...)
+}
+
 mkdirp <- function(path) {
   dir.create(path, recursive = TRUE, showWarnings = FALSE)
 }
@@ -31,4 +35,28 @@ is_interactive <- function() {
   } else {
     base::interactive()
   }
+}
+
+get_test_file_call <- function(test_file) {
+  calls <- sys.calls()
+  fns <- map_chr(calls, function(x) c(getSrcFilename(x), NA_character_)[1])
+  wch <- rev(which(!is.na(fns) & basename(fns) == basename(test_file)))[1]
+  if (is.na(wch)) NULL else calls[[wch]]
+}
+
+get_test_file_position <- function(test_file) {
+  cll <- get_test_file_call(test_file)
+  getSrcLocation(cll) %||% NA_integer_
+}
+
+strpad <- function(x, width = cli::console_width(), chr = " ",
+                   align = c("left", "right")) {
+  align <- match.arg(align)
+  n <- pmax(0, width - crayon::col_nchar(x))
+  spc <- strrep(chr, n)
+  paste0(
+    if (align == "right") spc,
+    x,
+    if (align == "left") spc
+  )
 }

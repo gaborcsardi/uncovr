@@ -1,7 +1,15 @@
 
 #' @export
 
-test <- function(filter = NULL, ...) {
+test <- function(...) {
+  if (is_interactive()) {
+    test_interactive(...)
+  } else {
+    test_non_interactive(...)
+  }
+}
+
+test_interactive <- function(filter = NULL, ...) {
   pkg <- read.dcf("DESCRIPTION")[, "Package"][[1]]
 
   asNamespace("covr")$clear_counters()
@@ -40,7 +48,7 @@ test <- function(filter = NULL, ...) {
   rcv <- rcv[vapply(rcv, function(x) length(x$value) != 0, logical(1))]
   class(rcv) <- "coverage"
 
-  coverage <- create_coverage_table(rcv)
+  coverage <- create_coverage_table(rcv, filter = filter)
   cat("\n")
   print(coverage)
 
@@ -218,6 +226,7 @@ style_bg_grey <- function(...) {
 format_type <- function(type) {
   switch(type,
     pass = style_bg_green(cli::col_white("PASS")),
+    success = style_bg_green(cli::col_white("PASS")),
     skip = style_bg_blue(cli::col_white("SKIP")),
     error = cli::bg_red(cli::col_white("FAIL")),
     failure = cli::bg_red(cli::col_white("FAIL")),
@@ -245,18 +254,13 @@ format_stack <- function(lines) {
   paste0("       ", lines)
 }
 
-strpad <- function(x, width = cli::console_width(), chr = " ") {
-  n <- pmax(0, width - crayon::col_nchar(x))
-  paste0(x, strrep(chr, n))
-}
-
 spinner <- function(frames, i) {
   frames[((i - 1) %% length(frames)) + 1]
 }
 
 # ------------------------------------------------------------------------
 
-create_coverage_table <- function(rcv) {
+create_coverage_table <- function(rcv, filter = NULL) {
   byline <- covr::tally_coverage(rcv, by = "line")
   byexpr <- covr::tally_coverage(rcv, by = "expression")
 
@@ -282,6 +286,12 @@ create_coverage_table <- function(rcv) {
     pct_exprs = c(pkgexpr, pctexpr[key]),
     uncovered = I(c(list(NULL), uncov))
   )
+
+  if (!is.null(filter)) {
+    keep <- tab$pct_lines > 0 | tab$pct_exprs > 0
+    keep[1] <- TRUE
+    tab <- tab[keep, ]
+  }
 
   class(tab) <- c("coverage_table", class(tab))
   tab
@@ -364,7 +374,7 @@ format.coverage_table <- function(x, ...) {
       style_bg_orange(cli::col_white(lines[length(lines)]))
   } else {
     lines[length(lines)] <-
-      style_bg_greem(cli::col_white(lines[length(lines)]))
+      style_bg_green(cli::col_white(lines[length(lines)]))
   }
   lines[length(lines)] <- cli::style_bold(lines[length(lines)])
 
