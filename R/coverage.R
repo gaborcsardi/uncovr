@@ -13,6 +13,7 @@ test_interactive <- function(filter = NULL, ...) {
 
   desc <- read.dcf("DESCRIPTION")
   pkg <- desc[, "Package"][[1]]
+
   asNamespace("covr")$clear_counters()
 
   reload(covr = TRUE)
@@ -51,6 +52,10 @@ test_interactive <- function(filter = NULL, ...) {
   )
   if (length(trace_files)) rcv <- merge_coverage(rcv, trace_files)
   rcv <- rcv[vapply(rcv, function(x) length(x$value) != 0, logical(1))]
+
+  ccv <- covr:::run_gcov(normalizePath("."))
+  rcv <- c(rcv, ccv)
+  class(rcv) <- "coverage"
 
   coverage <- create_coverage_table(rcv, filter = filter)
   cat("\n")
@@ -284,6 +289,10 @@ create_coverage_table <- function(rcv, filter = NULL) {
   byline <- covr::tally_coverage(rcv, by = "line")
   byexpr <- covr::tally_coverage(rcv, by = "expression")
 
+  numline <- tapply(byline$value, byline$filename, length)
+  numexpr <- tapply(byexpr$value, byexpr$filename, length)
+  covline <- tapply(byline$value, byline$filename, function(x) sum(x > 0))
+  covexpr <- tapply(byexpr$value, byexpr$filename, function(x) sum(x > 0))
   pctfun <- function(x) (sum(x > 0) / length(x)) * 100
   pctline <- tapply(byline$value, byline$filename, pctfun)
   pctexpr <- tapply(byexpr$value, byexpr$filename, pctfun)
@@ -299,13 +308,39 @@ create_coverage_table <- function(rcv, filter = NULL) {
     find_zero_ranges(sel$line, sel$value)
   })
 
+  sm_nm <- "All files"
+  sm_tot_lines <- length(byline$value)
+  sm_tot_exprs <- length(byexpr$value)
+  sm_cov_lines <- sum(byline$value > 0)
+  sm_cov_exprs <- sum(byexpr$value > 0)
+  sm_pct_lines <- sm_cov_lines / sm_tot_lines * 100
+  sm_pct_exprs <- sm_cov_exprs / sm_tot_exprs * 100
+
+  d_lines <- basename(dirname(byline$filename))
+  d_exprs <- basename(dirname(byexpr$filename))
+  udirs <- unique(c(d_lines, d_exprs))
+  bd_tot_lines <- tapply(byline$value, d_lines, length)
+  bd_tot_exprs <- tapply(byexpr$value, d_exprs, length)
+  bd_cov_lines <- tapply(byline$value, d_lines, function(x) sum(x > 0))
+  bd_cov_exprs <- tapply(byexpr$value, d_exprs, function(x) sum(x > 0))
+  bd_pct_lines <- tapply(byline$value, d_lines, pctfun)
+  bd_pct_exprs <- tapply(byexpr$value, d_exprs, pctfun)
+
+  fn <- paste0(basename(dirname(key)), "/", basename(key))
   tab <- data.frame(
     stringsAsFactors = FALSE,
-    file = c("R files", key),
-    pct_lines = c(pkgline, pctline[key]),
-    pct_exprs = c(pkgexpr, pctexpr[key]),
-    uncovered = I(c(list(NULL), uncov))
+    file = c(sm_nm, paste0(udirs, "/"), fn),
+    tot_lines = c(sm_tot_lines, bd_tot_lines, numline[key]),
+    tot_exprs = c(sm_tot_exprs, bd_tot_exprs, numexpr[key]),
+    cov_lines = c(sm_cov_lines, bd_cov_lines, covline[key]),
+    cov_exprs = c(sm_cov_exprs, bd_cov_exprs, covexpr[key]),
+    pct_lines = c(sm_pct_lines, bd_pct_lines, pctline[key]),
+    pct_exprs = c(sm_pct_exprs, bd_pct_exprs, pctexpr[key]),
+    uncovered = I(c(vector(length(udirs) + 1, mode = "list"), uncov))
   )
+
+  # Order again, so the directory summaries are at the right place
+  tab <- tab[c(1, order(tab$file[-1]) + 1L), , drop = FALSE]
 
   if (!is.null(filter)) {
     keep <- tab$pct_lines > 0 | tab$pct_exprs > 0
@@ -357,8 +392,16 @@ cov_col <- function(txt, val) {
 #' @export
 
 format.coverage_table <- function(x, ...) {
-  fn <- paste0("R/", basename(x$file))
-  fn[-1] <- paste0(" ", fn[-1])
+  dr <- basename(dirname(x$file))
+  fn <- paste0(dr, "/", basename(x$file))
+  fn[dr == "."] <- x$file[dr == "."]
+  px <- ifelse(
+    fn == "All files",
+    "",
+    ifelse(last_char(fn) == "/", " ", "  ")
+  )
+  fn <- paste0(px, fn)
+
   bl <- format_pct(x$pct_lines)
   be <- format_pct(x$pct_exprs)
 

@@ -79,3 +79,8 @@ vlapply <- function(X, FUN, ...) {
 viapply <- function(X, FUN, ...) {
   vapply(X, FUN, FUN.VALUE = integer(1), ...)
 }
+
+last_char <- function(x) {
+  l <- nchar(x)
+  substr(x, l, l)
+}
