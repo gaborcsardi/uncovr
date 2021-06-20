@@ -8,7 +8,7 @@ License: MIT + file LICENSE
 LazyData: true
 URL: https://github.com/gaborcsardi/testthatlabs
 BugReports: https://github.com/gaborcsardi/testthatlabs/issues
-RoxygenNote: 7.1.1
+RoxygenNote: 7.1.1.9001
 Depends: R (>= 3.3)
 Imports:
     cli,

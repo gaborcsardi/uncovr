@@ -2,4 +2,5 @@
 
 S3method(format,coverage_table)
 S3method(print,coverage_table)
+export(reload)
 export(test)
