@@ -2,6 +2,7 @@
 #' @export
 
 test <- function(...) {
+  withr::local_envvar(TESTTHAT_PARALLEL = "false")
   if (is_interactive()) {
     test_interactive(...)
   } else {
