@@ -60,3 +60,22 @@ strpad <- function(x, width = cli::console_width(), chr = " ",
     if (align == "left") spc
   )
 }
+
+base_packages <- function() {
+  c("base", "compiler", "datasets", "graphics", "grDevices", "grid",
+    "methods", "parallel", "splines", "stats", "stats4", "tcltk",
+    "tools", "utils"
+  )
+}
+
+lapply_with_names <- function(X, FUN, ...) {
+  structure(lapply(X, FUN, ...), names = X)
+}
+
+vlapply <- function(X, FUN, ...) {
+  vapply(X, FUN, FUN.VALUE = logical(1), ...)
+}
+
+viapply <- function(X, FUN, ...) {
+  vapply(X, FUN, FUN.VALUE = integer(1), ...)
+}

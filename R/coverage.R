@@ -10,31 +10,75 @@ test <- function(...) {
 }
 
 test_interactive <- function(filter = NULL, ...) {
-  pkg <- read.dcf("DESCRIPTION")[, "Package"][[1]]
+
+  desc <- read.dcf("DESCRIPTION")
+  pkg <- desc[, "Package"][[1]]
+
+  # -----------------------------------------------------------------------
 
   asNamespace("covr")$clear_counters()
-  on.exit(setHook(packageEvent(pkg, "onLoad"), NULL, "replace"), add = TRUE)
-  setHook(packageEvent(pkg, "onLoad"), function(...) {
-    ns <- .getNamespace(as.name(pkg))
-    asNamespace("covr")$trace_environment(ns)
-  })
-  pkgload::load_all()
+  if (pkg %in% loadedNamespaces()) unload(pkg)
+
+  # -----------------------------------------------------------------------
+
+  inst_args <- c(
+    ".",
+    "--no-staged-install",
+    "--no-byte-compile",
+    "--no-help",
+    "--no-R",
+    "--no-docs",
+    "--no-html",
+    "--no-demo",
+    "--no-multiarch",
+    "--no-test-load",
+    "--use-vanilla"
+  )
+  dev_lib <- "dev-lib"
+  mkdirp(dev_lib)
+  withr::local_libpaths(dev_lib, action = "prefix")
+  suppressMessages(tools:::.install_packages(args = c(".", inst_args)))
+
+  # -----------------------------------------------------------------------
+
+  collate_r_files(".", file.path(dev_lib, pkg, "R", pkg))
+  ns <- loadNamespace(
+    pkg,
+    keep.source = TRUE,
+    keep.parse.data = TRUE,
+    partial = TRUE
+  )
+
+  # -----------------------------------------------------------------------
+
+  asNamespace("covr")$trace_environment(ns)
+  make_ns_info(pkg, dev_lib)
+  make_lazy_load_db(dev_lib, pkg, ns)
+  install_sysdata(
+    file.path("R", "sysdata.rda"),
+    file.path(dev_lib, pkg, "R", "sysdata")
+  )
+  trace_dir <- file.path(normalizePath(dev_lib), "_traces")
+
+  # -----------------------------------------------------------------------
+
+  library(pkg, character.only = TRUE)
+  add_covr_save(trace_dir, file.path(dev_lib, pkg, "R", pkg))
+
+  # -----------------------------------------------------------------------
 
   withr::local_envvar(c(R_COVR = "true"))
   withr::local_envvar(c(NOT_CRAN = "true"))
-
-  cli::ansi_hide_cursor()
-  on.exit(cli::ansi_show_cursor(), add = TRUE)
 
   tryCatch(
     results <- testthat::test_dir(
       "tests/testthat",
       reporter = interactive_reporter$new(pkg),
       filter = filter,
-      load_helpers = FALSE,
+      package = pkg,
       stop_on_failure = FALSE,
       ...
-      ),
+    ),
     interrupt = function(err) {
       msg <- crayon::red(
         "\n\nInterruped test suite, jumping to top level"
@@ -45,8 +89,14 @@ test_interactive <- function(filter = NULL, ...) {
   )
 
   rcv <- as.list(asNamespace("covr")$.counters)
-  rcv <- rcv[vapply(rcv, function(x) length(x$value) != 0, logical(1))]
   class(rcv) <- "coverage"
+  trace_files <- list.files(
+    path = trace_dir,
+    pattern = "^covr_trace_[^/]+$",
+    full.names = TRUE
+  )
+  if (length(trace_files)) rcv <- merge_coverage(rcv, trace_files)
+  rcv <- rcv[vapply(rcv, function(x) length(x$value) != 0, logical(1))]
 
   coverage <- create_coverage_table(rcv, filter = filter)
   cat("\n")
@@ -56,6 +106,22 @@ test_interactive <- function(filter = NULL, ...) {
     list(tests = results, coverage = coverage, raw_coverage = rcv),
     class = "testthat_coverage"
   ))
+}
+
+merge_coverage <- function(x, files) {
+  names <- names(x)
+  for (cf in files) {
+    y <- suppressWarnings(readRDS(cf))
+    for (name in intersect(names, names(y))) {
+      x[[name]]$value <- x[[name]]$value + y[[name]]$value
+    }
+    for (name in setdiff(names(y), names)) {
+      x[[name]] <- y[[name]]
+    }
+    names <- union(names, names(y))
+    y <- NULL
+  }
+  x
 }
 
 # ------------------------------------------------------------------------
