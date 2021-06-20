@@ -5,6 +5,8 @@ reload <- function(covr = FALSE) {
   desc <- read.dcf("DESCRIPTION")
   pkg <- desc[, "Package"][[1]]
 
+  withr::local_envvar(R_OSTYPE = .Platform$OS.type)
+
   # -----------------------------------------------------------------------
 
   recompile_if_needed(covr)
