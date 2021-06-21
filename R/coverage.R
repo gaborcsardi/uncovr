@@ -16,6 +16,7 @@ test_interactive <- function(filter = NULL, ...) {
   pkg <- desc[, "Package"][[1]]
 
   asNamespace("covr")$clear_counters()
+  gcov_cleanup()
 
   reload(covr = TRUE)
 
@@ -82,6 +83,11 @@ merge_coverage <- function(x, files) {
     y <- NULL
   }
   x
+}
+
+gcov_cleanup <- function() {
+  files <- list.files(pattern = "[.]gcda$", full.names = TRUE)
+  unlink(files)
 }
 
 # ------------------------------------------------------------------------
