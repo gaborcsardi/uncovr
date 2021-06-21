@@ -18,7 +18,7 @@ test_interactive <- function(filter = NULL, ...) {
   asNamespace("covr")$clear_counters()
   gcov_cleanup()
 
-  reload(covr = TRUE)
+  reload(covr = TRUE, internals = TRUE, helpers = TRUE)
 
   dev_lib <- dirname(getNamespaceInfo(pkg, "path"))
   withr::local_libpaths(dev_lib, action = "prefix")
