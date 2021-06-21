@@ -1,7 +1,7 @@
 
 #' @export
 
-reload <- function(covr = FALSE) {
+reload <- function(covr = FALSE, internals = FALSE, helpers = FALSE) {
   desc <- read.dcf("DESCRIPTION")
   pkg <- desc[, "Package"][[1]]
 
@@ -13,6 +13,8 @@ reload <- function(covr = FALSE) {
 
   # -----------------------------------------------------------------------
 
+  hlpname <- paste0("helpers:", pkg)
+  if (hlpname %in% search()) detach(hlpname, character.only = TRUE)
   if (pkg %in% loadedNamespaces()) unload(pkg)
 
   inst_args <- c(
@@ -55,10 +57,33 @@ reload <- function(covr = FALSE) {
 
   # -----------------------------------------------------------------------
 
-  library(pkg, character.only = TRUE)
+  if (internals) {
+    loadNamespace(pkg)
+    attach(
+      asNamespace(pkg),
+      name = paste0("package:", pkg),
+      warn.conflicts = FALSE
+    )
+  } else {
+    library(pkg, character.only = TRUE)
+  }
+
+  if (helpers) {
+    hlp_env <- new.env(parent = asNamespace(pkg))
+    helpers <- list.files(
+      "tests/testthat",
+      pattern = "^helper.*[.][rR]",
+      full.names = TRUE
+    )
+    for (hlp in helpers) {
+      sys.source(hlp, envir = hlp_env)
+    }
+    attach(hlp_env, name = paste0("helpers:", pkg))
+  }
+
   if (covr) add_covr_save(trace_dir, file.path(dev_lib, pkg, "R", pkg))
 
-  invisible(ns)
+  invisible()
 }
 
 recompile_if_needed <- function(covr = TRUE) {
