@@ -109,13 +109,13 @@ recompile_if_needed <- function(covr = TRUE) {
 }
 
 covr_flags <- function() {
-  c(CFLAGS = "-O0 --coverage",
-    CXXFLAGS = "-O0 --coverage",
-    CXX1XFLAGS = "-O0 --coverage",
-    CXX11FLAGS = "-O0 --coverage",
-    CXX14FLAGS = "-O0 --coverage",
-    CXX17FLAGS = "-O0 --coverage",
-    CXX20FLAGS = "-O0 --coverage",
+  c(CFLAGS = "-O0 --coverage -DGCOV_COMPILE",
+    CXXFLAGS = "-O0 --coverage -DGCOV_COMPILE",
+    CXX1XFLAGS = "-O0 --coverage -DGCOV_COMPILE",
+    CXX11FLAGS = "-O0 --coverage -DGCOV_COMPILE",
+    CXX14FLAGS = "-O0 --coverage -DGCOV_COMPILE",
+    CXX17FLAGS = "-O0 --coverage -DGCOV_COMPILE",
+    CXX20FLAGS = "-O0 --coverage -DGCOV_COMPILE",
 
     FFLAGS = "-O0 --coverage",
     FCFLAGS = "-O0 --coverage",
