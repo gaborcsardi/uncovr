@@ -59,6 +59,8 @@ test_interactive <- function(filter = NULL, ...) {
   rcv <- c(rcv, ccv)
   class(rcv) <- "coverage"
 
+  rcv <- apply_exclusions(rcv)
+
   coverage <- create_coverage_table(rcv, filter = filter)
   cat("\n")
   print(coverage)
@@ -67,6 +69,15 @@ test_interactive <- function(filter = NULL, ...) {
     list(tests = results, coverage = coverage, raw_coverage = rcv),
     class = "testthat_coverage"
   ))
+}
+
+apply_exclusions <- function(cov) {
+  src <- vcapply(cov, function(x) {
+    if (inherits(x, "line_coverage")) as.character(x$srcref) else ""
+  })
+  drop <- grepl("__NO_COVERAGE__$", src)
+  if (any(drop)) cov <- cov[!drop]
+  cov
 }
 
 merge_coverage <- function(x, files) {
