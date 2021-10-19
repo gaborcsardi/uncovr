@@ -75,8 +75,27 @@ apply_exclusions <- function(cov) {
   src <- vcapply(cov, function(x) {
     if (inherits(x, "line_coverage")) as.character(x$srcref) else ""
   })
-  drop <- grepl("__NO_COVERAGE__$", src)
+
+  # Drop single excluded lines
+  drop <- grepl("__NO_COVERAGE__$", src) |
+    grepl("# nocov$", src) |
+    grepl("// nocov$", src) |
+    grepl("/* nocov */$", src)
   if (any(drop)) cov <- cov[!drop]
+
+  # Drop whole files based on .covrignore
+  # TODO: we drop the directory names here, they are not in the coverage
+  if (file.exists(".covrignore")) {
+    dfnms <- Sys.glob(readLines(".covrignore"))
+    dfnms <- basename(dfnms[file.exists(dfnms)])
+    cfnms <- sub(":.*$", "", names(cov))
+    drop <- cfnms %in% dfnms
+    if (any(drop)) cov <- cov[!drop]
+  }
+
+  # Drop # nocov start -> # nocov end intervals
+  # TODO
+
   cov
 }
 
