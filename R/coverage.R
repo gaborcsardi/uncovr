@@ -226,11 +226,10 @@ summary_line <- function(n_ok, n_fail, n_warn, n_skip) {
 
 issue_summary <- function(x) {
   type <- asNamespace("testthat")$expectation_type(x)
-  loc <- strsplit(asNamespace("testthat")$expectation_location(x), ":")[[1]]
-  loc[1] <- context_name(loc[1])
+  loc <- unclass(asNamespace("testthat")$expectation_location(x))
   frm <- unlist(strsplit(format(x), "\n"))
   header <- paste0(
-    format_type(type), " › ", loc[1], " ", format_loc(loc[2]),
+    format_type(type), " › ", loc,
     " » ", x$test
   )
 
@@ -293,12 +292,6 @@ format_type <- function(type) {
     error = cli::bg_red(cli::col_white("FAIL")),
     failure = cli::bg_red(cli::col_white("FAIL")),
     warning = style_bg_orange(cli::col_white("WARN"))
-  )
-}
-
-format_loc <- function(loc) {
-  cli::col_grey(
-    format(paste0("@", loc), width = 4, justify = "right")
   )
 }
 
