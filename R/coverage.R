@@ -94,7 +94,23 @@ apply_exclusions <- function(cov) {
   }
 
   # Drop # nocov start -> # nocov end intervals
-  # TODO
+  sources <- covr:::traced_files(cov)
+  source_exclusions <- lapply(sources, function(x) {
+    covr:::parse_exclusions(
+      x$file_lines,
+      exclude_pattern = "#[ ]+nocov",
+      exclude_start = "#[ ]+nocov[ ]+start",
+      exclude_end = "#[ ]+nocov[ ]+end"
+    )
+  })
+  filenames <- unname(covr:::display_name(cov))
+  linum <- as.integer(vcapply(strsplit(names(cov), ":"), "[[", 2))
+  drop <- rep(FALSE, length(cov))
+  for (filename in names(source_exclusions)) {
+    drop[filenames == filename &
+         linum %in% source_exclusions[[filename]]] <- TRUE
+  }
+  if (any(drop)) cov <- cov[!drop]
 
   cov
 }
