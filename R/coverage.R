@@ -95,10 +95,30 @@ apply_exclusions <- function(cov) {
 
   # Drop # nocov start -> # nocov end intervals
   sources <- covr:::traced_files(cov)
+
+  # Conditional exclusions
+  sources <- sapply(
+    simplify = FALSE,
+    sources,
+    function(src) {
+      cndex <- grep("#[ ]+nocovif\\b", src$file_lines)
+      should_drop <- vlapply(cndex, function(x) {
+        cnd <- sub("^.*#[ ]+nocovif\\b(.*)$", "\\1", src$file_lines[cndex])
+        cndval <- eval(parse(text = cnd))
+        if (cndval) TRUE else FALSE
+      })
+      drop <- cndex[should_drop]
+      if (any(drop)) {
+        src$file_lines[drop] <- paste0(src$file_lines[drop], "# nocov")
+      }
+      src
+    }
+  )
+
   source_exclusions <- lapply(sources, function(x) {
     covr:::parse_exclusions(
       x$file_lines,
-      exclude_pattern = "#[ ]+nocov",
+      exclude_pattern = "#[ ]+nocov\\b",
       exclude_start = "#[ ]+nocov[ ]+start",
       exclude_end = "#[ ]+nocov[ ]+end"
     )
