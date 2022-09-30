@@ -382,8 +382,8 @@ create_coverage_table <- function(rcv, filter = NULL) {
   sm_pct_lines <- sm_cov_lines / sm_tot_lines * 100
   sm_pct_exprs <- sm_cov_exprs / sm_tot_exprs * 100
 
-  d_lines <- basename(dirname(byline$filename))
-  d_exprs <- basename(dirname(byexpr$filename))
+  d_lines <- fs::path_rel(dirname(byline$filename), getwd())
+  d_exprs <- fs::path_rel(dirname(byexpr$filename), getwd())
   udirs <- unique(c(d_lines, d_exprs))
   bd_tot_lines <- tapply(byline$value, d_lines, length)
   bd_tot_exprs <- tapply(byexpr$value, d_exprs, length)
@@ -392,7 +392,7 @@ create_coverage_table <- function(rcv, filter = NULL) {
   bd_pct_lines <- tapply(byline$value, d_lines, pctfun)
   bd_pct_exprs <- tapply(byexpr$value, d_exprs, pctfun)
 
-  fn <- paste0(basename(dirname(key)), "/", basename(key))
+  fn <- fs::path_rel(key, getwd())
   tab <- data.frame(
     stringsAsFactors = FALSE,
     file = c(sm_nm, paste0(udirs, "/"), fn),
@@ -458,8 +458,8 @@ cov_col <- function(txt, val) {
 #' @export
 
 format.coverage_table <- function(x, ...) {
-  dr <- basename(dirname(x$file))
-  fn <- paste0(dr, "/", basename(x$file))
+  dr <- dirname(x$file)
+  fn <- x$file
   fn[dr == "."] <- x$file[dr == "."]
   px <- ifelse(
     fn == "All files",
