@@ -31,13 +31,13 @@ add_covr_save <- function(trace_dir, loader) {
   writeLines(lines, loader)
 }
 
-collate_r_files <- function(pkg_dir, output) {
+collate_r_files <- function(pkg_dir, output, collate = NULL) {
   r_dir <- file.path(pkg_dir, "R")
   r_files <- withr::with_collate(
     "C",
     tools::list_files_with_type(r_dir,  "code", full.names = TRUE)
   )
-  collate <- desc::desc_get_collate(file = pkg_dir)
+  collate <- collate %||% desc::desc_get_collate(file = pkg_dir)
   if (length(collate) > 0) {
     collate <- file.path(path_r, collate)
     missing <- setdiff(collate, r_files)

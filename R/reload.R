@@ -12,6 +12,12 @@ reload <- function(covr = FALSE, internals = FALSE, helpers = FALSE) {
   recompile_if_needed(covr)
 
   # -----------------------------------------------------------------------
+  # Do this before unloading, because the tools we use might depend on the
+  # package we unload, e.g. desc depends on cli
+
+  collate <- desc::desc_get_collate(file = ".")
+
+  # -----------------------------------------------------------------------
 
   hlpname <- paste0("helpers:", pkg)
   if (hlpname %in% search()) detach(hlpname, character.only = TRUE)
@@ -36,7 +42,7 @@ reload <- function(covr = FALSE, internals = FALSE, helpers = FALSE) {
 
   # -----------------------------------------------------------------------
 
-  collate_r_files(".", file.path(dev_lib, pkg, "R", pkg))
+  collate_r_files(".", file.path(dev_lib, pkg, "R", pkg), collate = collate)
   ns <- loadNamespace(
     pkg,
     keep.source = TRUE,
