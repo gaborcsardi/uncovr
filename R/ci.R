@@ -141,3 +141,7 @@ non_interactive_reporter <- R6::R6Class("non_interactive_reporter",
     end_context = function(context) { }
   )
 )
+
+format_loc <- function(x) {
+  format(x)
+}
