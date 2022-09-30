@@ -486,11 +486,14 @@ format.coverage_table <- function(x, ...) {
     cfbe, " │ "
   )
 
-  maxw <- max(crayon::col_nchar(lines, type = "width"))
+  maxw <- max(cli::ansi_nchar(lines, type = "width"))
   cw <- cli::console_width()
 
-  uc <- vapply(x$uncovered, format_uncovered, "", width = cw - maxw)
-  cuc <- format(c("uncovered line #", "", uc, "", ""))
+  uc <- mapply(format_uncovered, x$uncovered, file = x$file, width = cw - maxw)
+  cuc <- cli::ansi_align(
+    c("uncovered line #", "", uc, "", ""),
+    width = max(cli::ansi_nchar(uc, "width"))
+  )
   cuc[mid] <- cov_col(cuc[mid], pmin(x$pct_lines, x$pct_exprs))
   lines <- paste0(lines, cuc)
 
@@ -510,17 +513,22 @@ format.coverage_table <- function(x, ...) {
   lines
 }
 
-# TODO: consider width
-
-format_uncovered <- function(ranges, width = 80) {
+format_uncovered <- function(ranges, file, width = 80) {
   rstr <- vapply(ranges, FUN.VALUE = character(1), function(r) {
     if (length(r) == 1) as.character(r) else paste0(r[1], "-", r[length(r)])
   })
 
+  ls <- if (Sys.getenv("R_CLI_HYPERLINK_STYLE") == "iterm") "#" else ":"
+  rstr <- vapply(rstr, function(x) {
+    file <- normalizePath(file, mustWork = FALSE)
+    link <- paste0("file://", file, ls, sub("[-].*$", "", x))
+    cli::format_inline("{.href [{x}]({link})}")
+  }, character(1))
+
   rstr[- length(rstr)] <- paste0(rstr[- length(rstr)], ", ")
 
   if (length(rstr) >= 3) {
-    cumw <- cumsum(nchar(rstr))
+    cumw <- cumsum(cli::ansi_nchar(rstr, "width"))
     if (cumw[length(cumw)] > width) {
       last <- rev(which(cumw <= width - 3))[1]
       rstr <- c(rstr[1:last], "...")
