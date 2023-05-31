@@ -63,7 +63,7 @@ test_interactive <- function(filter = NULL, pr = FALSE, ...) {
 
   if (pr) rcv <- keep_new(rcv)
 
-  coverage <- create_coverage_table(rcv, filter = filter)
+  coverage <- create_coverage_table(rcv, filter = filter, pr = pr)
   cat("\n")
   print(coverage)
 
@@ -442,7 +442,7 @@ create_coverage_table <- function(rcv, filter = NULL, pr = FALSE) {
   # Order again, so the directory summaries are at the right place
   tab <- tab[c(1, order(tab$file[-1]) + 1L), , drop = FALSE]
 
-  if (!is.null(filter)) {
+  if (!is.null(filter) && !pr) {
     keep <- tab$pct_lines > 0 | tab$pct_exprs > 0
     keep[1] <- TRUE
     tab <- tab[keep, ]
