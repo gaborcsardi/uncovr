@@ -10,7 +10,7 @@ test <- function(...) {
   }
 }
 
-test_interactive <- function(filter = NULL, ...) {
+test_interactive <- function(filter = NULL, pr = FALSE, ...) {
 
   desc <- read.dcf("DESCRIPTION")
   pkg <- desc[, "Package"][[1]]
@@ -60,6 +60,8 @@ test_interactive <- function(filter = NULL, ...) {
   class(rcv) <- "coverage"
 
   rcv <- apply_exclusions(rcv)
+
+  if (pr) rcv <- keep_new(rcv)
 
   coverage <- create_coverage_table(rcv, filter = filter)
   cat("\n")
@@ -132,6 +134,38 @@ apply_exclusions <- function(cov) {
   }
   if (any(drop)) cov <- cov[!drop]
 
+  cov
+}
+
+keep_new <- function(cov) {
+  out <- processx::run("git", c("symbolic-ref", "refs/remotes/origin/HEAD"))
+  branch <- trimws(sub(".*/", "", out$stdout))
+  out2 <- processx::run(
+    "git",
+    c("diff", "-U0", "-p", branch, "R", if (file.exists("src")) "src")
+  )
+  diff <- strsplit(out2$stdout, "\n", fixed = TRUE)[[1]]
+  new <- structure(list(), names = character())
+  for (line in diff) {
+    if (grepl("^[+][+][+] ", line)) {
+      filename <- sub("^[+][+][+] b/", "", line)
+      new[[filename]] <- integer()
+    } else if (grepl("^@@ ", line)) {
+      pts <- strsplit(line, " ", fixed = TRUE)[[1]]
+      add <- strsplit(sub("^[+]", "", pts[3]), ",", fixed = TRUE)[[1]]
+      from <- as.integer(add[1])
+      len <- as.integer(na.omit(c(add[2], 1))[1])
+      new[[filename]] <- c(new[[filename]], seq(from = from, length.out = len))
+    }
+  }
+
+  filenames <- sub("^[.]/", "", unname(covr:::display_name(cov)))
+  linum <- as.integer(vcapply(strsplit(names(cov), ":"), "[[", 2))
+
+  keep <- filenames %in% names(new) &
+    mapply(linum, new[filenames], FUN = function(l, nl) l %in% nl)
+
+  cov <- cov[keep]
   cov
 }
 
@@ -351,7 +385,7 @@ spinner <- function(frames, i) {
 
 # ------------------------------------------------------------------------
 
-create_coverage_table <- function(rcv, filter = NULL) {
+create_coverage_table <- function(rcv, filter = NULL, pr = FALSE) {
   byline <- covr::tally_coverage(rcv, by = "line")
   byexpr <- covr::tally_coverage(rcv, by = "expression")
 
