@@ -565,7 +565,11 @@ format_uncovered <- function(ranges, file, width = 80) {
     cumw <- cumsum(cli::ansi_nchar(rstr, "width"))
     if (cumw[length(cumw)] > width) {
       last <- rev(which(cumw <= width - 3))[1]
-      rstr <- c(rstr[1:last], "...")
+      rstr <- if (is.na(last)) {
+        "..."
+      } else {
+        c(rstr[1:last], "...")
+      }
     }
   }
 
