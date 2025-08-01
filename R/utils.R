@@ -52,7 +52,7 @@ get_test_file_position <- function(test_file) {
 strpad <- function(x, width = cli::console_width(), chr = " ",
                    align = c("left", "right")) {
   align <- match.arg(align)
-  n <- pmax(0, width - crayon::col_nchar(x))
+  n <- pmax(0, width - cli::ansi_nchar(x, type = "width"))
   spc <- strrep(chr, n)
   paste0(
     if (align == "right") spc,

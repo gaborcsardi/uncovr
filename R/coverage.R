@@ -36,7 +36,7 @@ test_interactive <- function(filter = NULL, pr = FALSE, ...) {
       ...
     ),
     interrupt = function(err) {
-      msg <- crayon::red(
+      msg <- cli::col_red(
         "\n\nInterruped test suite, jumping to top level"
       )
       message(msg)

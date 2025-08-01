@@ -34,14 +34,19 @@ non_interactive_reporter <- R6::R6Class("non_interactive_reporter",
     test_line = NULL,
     width = NULL,
     started = FALSE,
+    test_start_time = NULL,
     prev_type = "foo",
+    cli_num_colors = NULL,
+    num_dots = 0,
 
     initialize = function(package, ...) {
       self$package <- package
       super$initialize(...)
+      self$cli_num_colors <- cli::num_ansi_colors()
     },
 
     show_header = function() {
+      withr::local_options(cli.num_colors = self$cli_num_colors)
       self$cat_line(strpad(
         paste(cli::symbol$pointer, self$package, "test suite "),
         chr = "─"
@@ -57,17 +62,21 @@ non_interactive_reporter <- R6::R6Class("non_interactive_reporter",
       self$test_case <- test
       self$test_line <- get_test_file_position(self$file_name)
       self$started <- FALSE
+      self$test_start_time <- proc.time()
+      self$num_dots <- 0
     },
 
     test_header = function(file, loc, test) {
+      withr::local_options(cli.num_colors = self$cli_num_colors)
       fn <- context_name(file)
       header <- paste0("     › ", fn, " ", format_loc(loc), " » ", test, " ")
-      self$width <- crayon::col_nchar(header)
+      self$width <- cli::ansi_nchar(header, type = "width")
       self$cat_tight(header)
       self$started <- TRUE
     },
 
     add_result = function(context, test, result) {
+      withr::local_options(cli.num_colors = self$cli_num_colors)
 
       type <- asNamespace("testthat")$expectation_type(result)
 
@@ -87,15 +96,23 @@ non_interactive_reporter <- R6::R6Class("non_interactive_reporter",
           self$test_header(self$file_name, self$test_line, test)
         }
 
-        if (self$width >= 70L) {
-          self$cat_tight("\n       ")
-          self$width <- 7L
+        if (self$num_dots == 5) {
+          self$num_dots <- 0
+          if (self$width >= 70L) {
+            self$cat_tight("\n       ")
+            self$width <- 7L
+          } else {
+            self$cat_tight(" ")
+          }
         }
+
         self$cat_tight(".")
+        self$num_dots <- self$num_dots + 1L
         self$width <- self$width + 1L
       }
 
       if (type != "pass" && type != "success") {
+        self$num_dots <- 0
         self$end_test()
         ftp <- format_type(type)
         smy <- issue_summary(result)
@@ -111,21 +128,26 @@ non_interactive_reporter <- R6::R6Class("non_interactive_reporter",
 
     end_test = function(context, test) {
       if (self$started) {
-        # TODO: timings
-        self$cat_line()
+        withr::local_options(cli.num_colors = self$cli_num_colors)
+        time <- proc.time() - self$test_start_time
+        lbl <- prettyunits::pretty_dt(as.difftime(time[[3]], units = "secs"))
+        line <- cli::col_grey(" [", lbl, "]")
+        self$cat_line(line)
         self$started <- FALSE
       }
     },
 
     end_reporter = function() {
+      withr::local_options(cli.num_colors = self$cli_num_colors)
       line <- summary_line(
         self$n_ok, self$n_fail, self$n_warn, self$n_skip
       )
 
       time <- proc.time() - self$start_time
+      lbl <- prettyunits::pretty_dt(as.difftime(time[[3]], units = "secs"))
       msg <- paste0(
         line, "  ",
-        cli::col_grey("[", sprintf("%.1f s", time[[3]]), "]")
+        cli::col_grey("[", lbl, "]")
       )
 
       self$cat_line(strpad(msg))
@@ -133,6 +155,7 @@ non_interactive_reporter <- R6::R6Class("non_interactive_reporter",
     },
 
     end_file = function() {
+      withr::local_options(cli.num_colors = self$cli_num_colors)
       if (self$started) self$cat_tight("\n")
       self$cat_tight("\n")
     },
