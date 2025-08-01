@@ -17,6 +17,8 @@ Imports:
     prettyunits,
     processx,
     R6,
+    stats,
     testthat (>= 2.99),
+    utils,
     withr
 Encoding: UTF-8

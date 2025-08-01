@@ -154,7 +154,7 @@ keep_new <- function(cov) {
       pts <- strsplit(line, " ", fixed = TRUE)[[1]]
       add <- strsplit(sub("^[+]", "", pts[3]), ",", fixed = TRUE)[[1]]
       from <- as.integer(add[1])
-      len <- as.integer(na.omit(c(add[2], 1))[1])
+      len <- as.integer(stats::na.omit(c(add[2], 1))[1])
       new[[filename]] <- c(new[[filename]], seq(from = from, length.out = len))
     }
   }
