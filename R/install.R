@@ -9,7 +9,7 @@ make_lazy_load_db <- function(lib, pkg, ns) {
   loader <- file.path(R.home("share"), "R", "nspackloader.R")
   code <- file.path(lib, pkg, "R", pkg)
   mkdirp(dirname(code))
-  tools:::makeLazyLoadDB(
+  asNamespace("tools")$makeLazyLoadDB(
     ns,
     code,
     compress = FALSE,
@@ -67,5 +67,5 @@ install_sysdata <- function(input, output) {
   if (!file.exists(input)) return()
   env <- new.env(hash = TRUE)
   load(input, env)
-  tools:::makeLazyLoadDB(env, output, compress = FALSE)
+  asNamespace("tools")$makeLazyLoadDB(env, output, compress = FALSE)
 }

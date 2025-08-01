@@ -55,7 +55,7 @@ test_interactive <- function(filter = NULL, pr = FALSE, ...) {
   if (length(trace_files)) rcv <- merge_coverage(rcv, trace_files)
   rcv <- rcv[vapply(rcv, function(x) length(x$value) != 0, logical(1))]
 
-  ccv <- covr:::run_gcov(normalizePath("."))
+  ccv <- asNamespace("covr")$run_gcov(normalizePath("."))
   rcv <- c(rcv, ccv)
   class(rcv) <- "coverage"
 
@@ -96,7 +96,7 @@ apply_exclusions <- function(cov) {
   }
 
   # Drop # nocov start -> # nocov end intervals
-  sources <- covr:::traced_files(cov)
+  sources <- asNamespace("covr")$traced_files(cov)
 
   # Conditional exclusions
   sources <- sapply(
@@ -118,14 +118,14 @@ apply_exclusions <- function(cov) {
   )
 
   source_exclusions <- lapply(sources, function(x) {
-    covr:::parse_exclusions(
+    asNamespace("covr")$parse_exclusions(
       x$file_lines,
       exclude_pattern = "#[ ]+nocov\\b",
       exclude_start = "#[ ]+nocov[ ]+start",
       exclude_end = "#[ ]+nocov[ ]+end"
     )
   })
-  filenames <- unname(covr:::display_name(cov))
+  filenames <- unname(asNamespace("covr")$display_name(cov))
   linum <- as.integer(vcapply(strsplit(names(cov), ":"), "[[", 2))
   drop <- rep(FALSE, length(cov))
   for (filename in names(source_exclusions)) {
@@ -159,7 +159,7 @@ keep_new <- function(cov) {
     }
   }
 
-  filenames <- sub("^[.]/", "", unname(covr:::display_name(cov)))
+  filenames <- sub("^[.]/", "", unname(asNamespace("covr")$display_name(cov)))
   linum <- as.integer(vcapply(strsplit(names(cov), ":"), "[[", 2))
 
   keep <- filenames %in% names(new) &

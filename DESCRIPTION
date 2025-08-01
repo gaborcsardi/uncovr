@@ -19,6 +19,7 @@ Imports:
     R6,
     stats,
     testthat (>= 2.99),
+    tools,
     utils,
     withr
 Encoding: UTF-8

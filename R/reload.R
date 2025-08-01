@@ -38,7 +38,7 @@ reload <- function(covr = FALSE, internals = FALSE, helpers = FALSE) {
   dev_lib <- "dev-lib"
   mkdirp(dev_lib)
   withr::local_libpaths(dev_lib, action = "prefix")
-  suppressMessages(tools:::.install_packages(args = c(".", inst_args)))
+  suppressMessages(asNamespace("tools")$.install_packages(args = c(".", inst_args)))
 
   # -----------------------------------------------------------------------
 
@@ -111,7 +111,7 @@ recompile_if_needed <- function(covr = TRUE) {
   mkdirp(tmplib <- tempfile())
   on.exit(unlink(tmplib, recursive = TRUE), add = TRUE)
   inst_args <- c("-l", tmplib, "--libs-only", "--no-test-load")
-  suppressMessages(tools:::.install_packages(args = c(".", inst_args)))
+  suppressMessages(asNamespace("tools")$.install_packages(args = c(".", inst_args)))
 }
 
 covr_flags <- function() {
