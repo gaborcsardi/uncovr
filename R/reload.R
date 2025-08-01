@@ -1,4 +1,8 @@
-
+#' Reload package
+#'
+#' @param covr Whether to trace functions for covr.
+#' @param internals Whether to attach internal functions to the search path.
+#' @param helpers Whether to load testthat helper functions.
 #' @export
 
 reload <- function(covr = FALSE, internals = FALSE, helpers = FALSE) {

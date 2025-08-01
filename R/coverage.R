@@ -1,4 +1,6 @@
-
+#' Run package tests
+#'
+#' @param ... Passed to [testthat::test_dir()].
 #' @export
 
 test <- function(...) {
