@@ -24,8 +24,12 @@ reload <- function(covr = FALSE, internals = FALSE, helpers = FALSE) {
   # -----------------------------------------------------------------------
 
   hlpname <- paste0("helpers:", pkg)
-  if (hlpname %in% search()) detach(hlpname, character.only = TRUE)
-  if (pkg %in% loadedNamespaces()) unload(pkg)
+  if (hlpname %in% search()) {
+    detach(hlpname, character.only = TRUE)
+  }
+  if (pkg %in% loadedNamespaces()) {
+    unload(pkg)
+  }
 
   inst_args <- c(
     "--no-staged-install",
@@ -42,7 +46,9 @@ reload <- function(covr = FALSE, internals = FALSE, helpers = FALSE) {
   dev_lib <- "dev-lib"
   mkdirp(dev_lib)
   withr::local_libpaths(dev_lib, action = "prefix")
-  suppressMessages(asNamespace("tools")$.install_packages(args = c(".", inst_args)))
+  suppressMessages(asNamespace("tools")$.install_packages(
+    args = c(".", inst_args)
+  ))
 
   # -----------------------------------------------------------------------
 
@@ -56,7 +62,9 @@ reload <- function(covr = FALSE, internals = FALSE, helpers = FALSE) {
 
   # -----------------------------------------------------------------------
 
-  if (covr) asNamespace("covr")$trace_environment(ns)
+  if (covr) {
+    asNamespace("covr")$trace_environment(ns)
+  }
   make_ns_info(pkg, dev_lib)
   make_lazy_load_db(dev_lib, pkg, ns)
   install_sysdata(
@@ -91,17 +99,25 @@ reload <- function(covr = FALSE, internals = FALSE, helpers = FALSE) {
     attach(hlp_env, name = paste0("helpers:", pkg))
   }
 
-  if (covr) add_covr_save(trace_dir, file.path(dev_lib, pkg, "R", pkg))
+  if (covr) {
+    add_covr_save(trace_dir, file.path(dev_lib, pkg, "R", pkg))
+  }
 
   invisible()
 }
 
 recompile_if_needed <- function(covr = TRUE) {
-  if (!file.exists("src")) return()
+  if (!file.exists("src")) {
+    return()
+  }
 
   if (covr) {
-    objfs <- list.files("src", pattern = "[.]o$", recursive = TRUE,
-                        full.names = TRUE)
+    objfs <- list.files(
+      "src",
+      pattern = "[.]o$",
+      recursive = TRUE,
+      full.names = TRUE
+    )
     for (of in objfs) {
       out <- processx::run("nm", of)
       if (!grepl("_gcov_", out$stdout)) {
@@ -115,11 +131,14 @@ recompile_if_needed <- function(covr = TRUE) {
   mkdirp(tmplib <- tempfile())
   on.exit(unlink(tmplib, recursive = TRUE), add = TRUE)
   inst_args <- c("-l", tmplib, "--libs-only", "--no-test-load")
-  suppressMessages(asNamespace("tools")$.install_packages(args = c(".", inst_args)))
+  suppressMessages(asNamespace("tools")$.install_packages(
+    args = c(".", inst_args)
+  ))
 }
 
 covr_flags <- function() {
-  c(CFLAGS = "-O0 --coverage -DGCOV_COMPILE",
+  c(
+    CFLAGS = "-O0 --coverage -DGCOV_COMPILE",
     CXXFLAGS = "-O0 --coverage -DGCOV_COMPILE",
     CXX1XFLAGS = "-O0 --coverage -DGCOV_COMPILE",
     CXX11FLAGS = "-O0 --coverage -DGCOV_COMPILE",

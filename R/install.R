@@ -1,4 +1,3 @@
-
 make_ns_info <- function(pkg, lib) {
   nsinfo <- parseNamespaceFile(basename(getwd()), dirname(getwd()))
   nsinfopath <- file.path(lib, pkg, "Meta", "nsInfo.rds")
@@ -25,7 +24,11 @@ add_covr_save <- function(trace_dir, loader) {
   lines <- readLines(loader)
   lines <- append(
     lines,
-    paste0("reg.finalizer(ns, function(...) { covr:::save_trace(", trace_str, ") }, onexit = TRUE)"),
+    paste0(
+      "reg.finalizer(ns, function(...) { covr:::save_trace(",
+      trace_str,
+      ") }, onexit = TRUE)"
+    ),
     length(lines) - 1L
   )
   writeLines(lines, loader)
@@ -35,7 +38,7 @@ collate_r_files <- function(pkg_dir, output, collate = NULL) {
   r_dir <- file.path(pkg_dir, "R")
   r_files <- withr::with_collate(
     "C",
-    tools::list_files_with_type(r_dir,  "code", full.names = TRUE)
+    tools::list_files_with_type(r_dir, "code", full.names = TRUE)
   )
   collate <- collate %||% desc::desc_get_collate(file = pkg_dir)
   if (length(collate) > 0) {
@@ -64,7 +67,9 @@ collate_r_files <- function(pkg_dir, output, collate = NULL) {
 }
 
 install_sysdata <- function(input, output) {
-  if (!file.exists(input)) return()
+  if (!file.exists(input)) {
+    return()
+  }
   env <- new.env(hash = TRUE)
   load(input, env)
   asNamespace("tools")$makeLazyLoadDB(env, output, compress = FALSE)

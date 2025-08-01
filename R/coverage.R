@@ -13,7 +13,6 @@ test <- function(...) {
 }
 
 test_interactive <- function(filter = NULL, pr = FALSE, ...) {
-
   desc <- read.dcf("DESCRIPTION")
   pkg <- desc[, "Package"][[1]]
 
@@ -54,7 +53,9 @@ test_interactive <- function(filter = NULL, pr = FALSE, ...) {
     pattern = "^covr_trace_[^/]+$",
     full.names = TRUE
   )
-  if (length(trace_files)) rcv <- merge_coverage(rcv, trace_files)
+  if (length(trace_files)) {
+    rcv <- merge_coverage(rcv, trace_files)
+  }
   rcv <- rcv[vapply(rcv, function(x) length(x$value) != 0, logical(1))]
 
   ccv <- asNamespace("covr")$run_gcov(normalizePath("."))
@@ -63,7 +64,9 @@ test_interactive <- function(filter = NULL, pr = FALSE, ...) {
 
   rcv <- apply_exclusions(rcv)
 
-  if (pr) rcv <- keep_new(rcv)
+  if (pr) {
+    rcv <- keep_new(rcv)
+  }
 
   coverage <- create_coverage_table(rcv, filter = filter, pr = pr)
   cat("\n")
@@ -85,7 +88,9 @@ apply_exclusions <- function(cov) {
     grepl("# nocov$", src) |
     grepl("// nocov$", src) |
     grepl("/* nocov */$", src)
-  if (any(drop)) cov <- cov[!drop]
+  if (any(drop)) {
+    cov <- cov[!drop]
+  }
 
   # Drop whole files based on .covrignore
   # TODO: we drop the directory names here, they are not in the coverage
@@ -131,10 +136,14 @@ apply_exclusions <- function(cov) {
   linum <- as.integer(vcapply(strsplit(names(cov), ":"), "[[", 2))
   drop <- rep(FALSE, length(cov))
   for (filename in names(source_exclusions)) {
-    drop[filenames == filename &
-         linum %in% source_exclusions[[filename]]] <- TRUE
+    drop[
+      filenames == filename &
+        linum %in% source_exclusions[[filename]]
+    ] <- TRUE
   }
-  if (any(drop)) cov <- cov[!drop]
+  if (any(drop)) {
+    cov <- cov[!drop]
+  }
 
   cov
 }
@@ -164,7 +173,8 @@ keep_new <- function(cov) {
   filenames <- sub("^[.]/", "", unname(asNamespace("covr")$display_name(cov)))
   linum <- as.integer(vcapply(strsplit(names(cov), ":"), "[[", 2))
 
-  keep <- filenames %in% names(new) &
+  keep <- filenames %in%
+    names(new) &
     mapply(linum, new[filenames], FUN = function(l, nl) l %in% nl)
 
   cov <- cov[keep]
@@ -194,7 +204,8 @@ gcov_cleanup <- function() {
 
 # ------------------------------------------------------------------------
 
-interactive_reporter <- R6::R6Class("interactive_reporter",
+interactive_reporter <- R6::R6Class(
+  "interactive_reporter",
   inherit = testthat::ProgressReporter,
   public = list(
     package = "<unknown>",
@@ -234,7 +245,7 @@ interactive_reporter <- R6::R6Class("interactive_reporter",
       }
 
       self$local_user_output()
-      if (! testthat:::expectation_success(result)) {
+      if (!testthat:::expectation_success(result)) {
         self$cat_tight("\r")
         self$cat_line(paste(issue_summary(result), collapse = "\n"))
       }
@@ -262,12 +273,16 @@ interactive_reporter <- R6::R6Class("interactive_reporter",
 
     end_reporter = function() {
       line <- summary_line(
-        self$n_ok, self$n_fail, self$n_warn, self$n_skip
+        self$n_ok,
+        self$n_fail,
+        self$n_warn,
+        self$n_skip
       )
 
       time <- proc.time() - self$start_time
       msg <- paste0(
-        line, "  ",
+        line,
+        "  ",
         cli::col_grey("[", sprintf("%.1f s", time[[3]]), "]")
       )
 
@@ -289,7 +304,7 @@ summary_line <- function(n_ok, n_fail, n_warn, n_skip) {
 
   paste(
     sep = "  ",
-    if (n_ok)   passn else cli::col_grey(passn),
+    if (n_ok) passn else cli::col_grey(passn),
     if (n_fail) failn else cli::col_grey(failn),
     if (n_warn) warnn else cli::col_grey(warnn),
     if (n_skip) skipn else cli::col_grey(skipn)
@@ -301,14 +316,18 @@ issue_summary <- function(x) {
   loc <- unclass(asNamespace("testthat")$expectation_location(x))
   frm <- unlist(strsplit(format(x), "\n"))
   header <- paste0(
-    format_type(type), " \u203a ", loc,
-    " \u00bb ", x$test
+    format_type(type),
+    " \u203a ",
+    loc,
+    " \u00bb ",
+    x$test
   )
 
   if (type == "skip") {
     header <- paste0(
       header,
-      cli::col_grey(" [", sub("^Reason: ", "", x$message), "]"))
+      cli::col_grey(" [", sub("^Reason: ", "", x$message), "]")
+    )
     frm <- character()
   }
 
@@ -357,7 +376,8 @@ style_bg_grey <- function(...) {
 }
 
 format_type <- function(type) {
-  switch(type,
+  switch(
+    type,
     pass = style_bg_green(cli::col_white("PASS")),
     success = style_bg_green(cli::col_white("PASS")),
     skip = style_bg_blue(cli::col_white("SKIP")),
@@ -369,7 +389,7 @@ format_type <- function(type) {
 
 format_stack <- function(lines) {
   bt <- grep("Backtrace:", lines)[1]
-  if (! is.na(bt)) {
+  if (!is.na(bt)) {
     lines[bt] <- "Backtrace:"
     if (bt > 1) {
       errmsg <- seq(1, bt - 1, by = 1)
@@ -472,7 +492,9 @@ find_zero_ranges <- function(key, value) {
     }
   }
 
-  if (!is.na(start)) out[[length(out) + 1]] <- start:end
+  if (!is.na(start)) {
+    out[[length(out) + 1]] <- start:end
+  }
 
   out
 }
@@ -487,7 +509,7 @@ cov_col <- function(txt, val) {
   ifelse(
     val < 75,
     style_orange(txt),
-  ifelse(val < 95, cli::col_blue(txt), txt)
+    ifelse(val < 95, cli::col_blue(txt), txt)
   )
 }
 
@@ -517,9 +539,12 @@ format.coverage_table <- function(x, ...) {
   cfbe[mid] <- cov_col(fbe[mid], x$pct_exprs)
 
   lines <- paste0(
-    cffn, " \u2502 ",
-    cfbl, " \u2502 ",
-    cfbe, " \u2502 "
+    cffn,
+    " \u2502 ",
+    cfbl,
+    " \u2502 ",
+    cfbe,
+    " \u2502 "
   )
 
   maxw <- max(cli::ansi_nchar(lines, type = "width"))
@@ -555,13 +580,17 @@ format_uncovered <- function(ranges, file, width = 80) {
   })
 
   ls <- if (Sys.getenv("R_CLI_HYPERLINK_STYLE") == "iterm") "#" else ":"
-  rstr <- vapply(rstr, function(x) {
-    file <- normalizePath(file, mustWork = FALSE)
-    link <- paste0("file://", file, ls, sub("[-].*$", "", x))
-    cli::format_inline("{.href [{x}]({link})}")
-  }, character(1))
+  rstr <- vapply(
+    rstr,
+    function(x) {
+      file <- normalizePath(file, mustWork = FALSE)
+      link <- paste0("file://", file, ls, sub("[-].*$", "", x))
+      cli::format_inline("{.href [{x}]({link})}")
+    },
+    character(1)
+  )
 
-  rstr[- length(rstr)] <- paste0(rstr[- length(rstr)], ", ")
+  rstr[-length(rstr)] <- paste0(rstr[-length(rstr)], ", ")
 
   if (length(rstr) >= 3) {
     cumw <- cumsum(cli::ansi_nchar(rstr, "width"))

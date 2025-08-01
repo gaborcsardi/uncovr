@@ -1,4 +1,3 @@
-
 map_chr <- function(X, FUN, ...) {
   vapply(X, FUN, character(1), ...)
 }
@@ -39,7 +38,9 @@ is_interactive <- function() {
 
 get_test_file_call <- function(test_file) {
   calls <- sys.calls()
-  fns <- map_chr(calls, function(x) c(utils::getSrcFilename(x), NA_character_)[1])
+  fns <- map_chr(calls, function(x) {
+    c(utils::getSrcFilename(x), NA_character_)[1]
+  })
   wch <- rev(which(!is.na(fns) & basename(fns) == basename(test_file)))[1]
   if (is.na(wch)) NULL else calls[[wch]]
 }
@@ -49,8 +50,12 @@ get_test_file_position <- function(test_file) {
   utils::getSrcLocation(cll) %||% NA_integer_
 }
 
-strpad <- function(x, width = cli::console_width(), chr = " ",
-                   align = c("left", "right")) {
+strpad <- function(
+  x,
+  width = cli::console_width(),
+  chr = " ",
+  align = c("left", "right")
+) {
   align <- match.arg(align)
   n <- pmax(0, width - cli::ansi_nchar(x, type = "width"))
   spc <- strrep(chr, n)
@@ -62,9 +67,21 @@ strpad <- function(x, width = cli::console_width(), chr = " ",
 }
 
 base_packages <- function() {
-  c("base", "compiler", "datasets", "graphics", "grDevices", "grid",
-    "methods", "parallel", "splines", "stats", "stats4", "tcltk",
-    "tools", "utils"
+  c(
+    "base",
+    "compiler",
+    "datasets",
+    "graphics",
+    "grDevices",
+    "grid",
+    "methods",
+    "parallel",
+    "splines",
+    "stats",
+    "stats4",
+    "tcltk",
+    "tools",
+    "utils"
   )
 }
 

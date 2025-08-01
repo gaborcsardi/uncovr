@@ -1,4 +1,3 @@
-
 #' Unload packages
 #'
 #' It will unload `packages` and their loaded reverse dependencies
@@ -24,7 +23,6 @@
 #' @noRd
 
 unload <- function(packages, msg = "  Unloading %s...") {
-
   badbase <- intersect(base_packages(), packages)
   if (length(badbase) > 0) {
     packages <- setdiff(packages, badbase)
@@ -83,7 +81,9 @@ needs_unload <- function(packages) {
 
 package_imports <- function(package, base = FALSE) {
   imp <- unique(names(getNamespaceInfo(package, "imports")))
-  if (!base) imp <- imp[! imp %in% base_packages()]
+  if (!base) {
+    imp <- imp[!imp %in% base_packages()]
+  }
   # pkgload has some unnamed components somehow?
   imp[imp != ""]
 }
@@ -104,7 +104,9 @@ unload_order_topo <- function(packages) {
   topo <- character()
   while (length(topo) < length(revs)) {
     new <- names(imp_by)[viapply(imp_by, length) == 0]
-    if (length(new) == 0) stop("Loop in package imports???")
+    if (length(new) == 0) {
+      stop("Loop in package imports???")
+    }
     topo <- c(topo, new)
     imp_by <- lapply(imp_by, setdiff, new)[setdiff(names(imp_by), new)]
   }

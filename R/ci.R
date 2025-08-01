@@ -1,4 +1,3 @@
-
 test_non_interactive <- function(pkg = NULL, filter = NULL, ...) {
   pkg <- pkg %||% read.dcf("DESCRIPTION")[, "Package"][[1]]
 
@@ -25,7 +24,8 @@ test_non_interactive <- function(pkg = NULL, filter = NULL, ...) {
   invisible(results)
 }
 
-non_interactive_reporter <- R6::R6Class("non_interactive_reporter",
+non_interactive_reporter <- R6::R6Class(
+  "non_interactive_reporter",
   inherit = testthat::ProgressReporter,
   public = list(
     package = "<unknown>",
@@ -68,7 +68,15 @@ non_interactive_reporter <- R6::R6Class("non_interactive_reporter",
     test_header = function(file, loc, test) {
       withr::local_options(cli.num_colors = self$cli_num_colors)
       fn <- context_name(file)
-      header <- paste0("     \u203a ", fn, " ", format_loc(loc), " \u00bb ", test, " ")
+      header <- paste0(
+        "     \u203a ",
+        fn,
+        " ",
+        format_loc(loc),
+        " \u00bb ",
+        test,
+        " "
+      )
       self$width <- cli::ansi_nchar(header, type = "width")
       self$cat_tight(header)
       self$started <- TRUE
@@ -81,17 +89,16 @@ non_interactive_reporter <- R6::R6Class("non_interactive_reporter",
 
       if (type == "failure") {
         self$n_fail <- self$n_fail + 1
-
       } else if (type == "skip") {
         self$n_skip <- self$n_skip + 1
-
       } else if (type == "warning") {
         self$n_warn <- self$n_warn + 1
-
       } else {
         self$n_ok <- self$n_ok + 1
         if (!self$started) {
-          if (self$prev_type != "success") self$cat_line()
+          if (self$prev_type != "success") {
+            self$cat_line()
+          }
           self$test_header(self$file_name, self$test_line, test)
         }
 
@@ -116,7 +123,9 @@ non_interactive_reporter <- R6::R6Class("non_interactive_reporter",
         ftp <- format_type(type)
         smy <- issue_summary(result)
         # keep skips together
-        if (self$prev_type != type || type != "skip") self$cat_line()
+        if (self$prev_type != type || type != "skip") {
+          self$cat_line()
+        }
         self$cat_line(smy)
         # self$cat_line(strpad(ftp, width = 80 - self$width, align = "right"))
         self$started <- FALSE
@@ -139,13 +148,17 @@ non_interactive_reporter <- R6::R6Class("non_interactive_reporter",
     end_reporter = function() {
       withr::local_options(cli.num_colors = self$cli_num_colors)
       line <- summary_line(
-        self$n_ok, self$n_fail, self$n_warn, self$n_skip
+        self$n_ok,
+        self$n_fail,
+        self$n_warn,
+        self$n_skip
       )
 
       time <- proc.time() - self$start_time
       lbl <- prettyunits::pretty_dt(as.difftime(time[[3]], units = "secs"))
       msg <- paste0(
-        line, "  ",
+        line,
+        "  ",
         cli::col_grey("[", lbl, "]")
       )
 
@@ -155,12 +168,14 @@ non_interactive_reporter <- R6::R6Class("non_interactive_reporter",
 
     end_file = function() {
       withr::local_options(cli.num_colors = self$cli_num_colors)
-      if (self$started) self$cat_tight("\n")
+      if (self$started) {
+        self$cat_tight("\n")
+      }
       self$cat_tight("\n")
     },
 
-    start_context = function(context) { },
-    end_context = function(context) { }
+    start_context = function(context) {},
+    end_context = function(context) {}
   )
 )
 
