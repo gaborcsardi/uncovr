@@ -39,7 +39,7 @@ collate_r_files <- function(pkg_dir, output, collate = NULL) {
   )
   collate <- collate %||% desc::desc_get_collate(file = pkg_dir)
   if (length(collate) > 0) {
-    collate <- file.path(path_r, collate)
+    collate <- file.path(r_dir, collate)
     missing <- setdiff(collate, r_files)
     if (length(missing) > 0) {
       message("Skipping missing files: {.file {missing}}")
