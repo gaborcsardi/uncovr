@@ -5,7 +5,6 @@ Author: Gábor Csárdi
 Maintainer: Gábor Csárdi <csardi.gabor@gmail.com>
 Description: Experimental extensions for testthat.
 License: MIT + file LICENSE
-LazyData: true
 URL: https://github.com/gaborcsardi/testthatlabs
 BugReports: https://github.com/gaborcsardi/testthatlabs/issues
 RoxygenNote: 7.1.1.9001
