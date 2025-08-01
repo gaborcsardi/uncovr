@@ -19,7 +19,7 @@ test_non_interactive <- function(pkg = NULL, filter = NULL, ...) {
     ...
   )
 
-  saveRDS(results, file.path(test_directory, "results.rds"))
+  saveRDS(results, file.path(test_directory, "results.rds"), version = 2)
 
   invisible(results)
 }
