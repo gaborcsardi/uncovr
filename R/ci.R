@@ -49,9 +49,8 @@ non_interactive_reporter <- R6::R6Class("non_interactive_reporter",
       withr::local_options(cli.num_colors = self$cli_num_colors)
       self$cat_line(strpad(
         paste(cli::symbol$pointer, self$package, "test suite "),
-        chr = "─"
+        chr = "\u2500"
       ))
-      self$cat_line()
     },
 
     start_file = function(file) {
@@ -69,7 +68,7 @@ non_interactive_reporter <- R6::R6Class("non_interactive_reporter",
     test_header = function(file, loc, test) {
       withr::local_options(cli.num_colors = self$cli_num_colors)
       fn <- context_name(file)
-      header <- paste0("     › ", fn, " ", format_loc(loc), " » ", test, " ")
+      header <- paste0("     \u203a ", fn, " ", format_loc(loc), " \u00bb ", test, " ")
       self$width <- cli::ansi_nchar(header, type = "width")
       self$cat_tight(header)
       self$started <- TRUE

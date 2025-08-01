@@ -205,7 +205,7 @@ interactive_reporter <- R6::R6Class("interactive_reporter",
     show_header = function() {
       self$cat_line(strpad(
         paste(cli::symbol$pointer, self$package, "test suite "),
-        chr = "─"
+        chr = "\u2500"
       ))
       self$cat_line()
     },
@@ -299,8 +299,8 @@ issue_summary <- function(x) {
   loc <- unclass(asNamespace("testthat")$expectation_location(x))
   frm <- unlist(strsplit(format(x), "\n"))
   header <- paste0(
-    format_type(type), " › ", loc,
-    " » ", x$test
+    format_type(type), " \u203a ", loc,
+    " \u00bb ", x$test
   )
 
   if (type == "skip") {
@@ -515,9 +515,9 @@ format.coverage_table <- function(x, ...) {
   cfbe[mid] <- cov_col(fbe[mid], x$pct_exprs)
 
   lines <- paste0(
-    cffn, " │ ",
-    cfbl, " │ ",
-    cfbe, " │ "
+    cffn, " \u2502 ",
+    cfbl, " \u2502 ",
+    cfbe, " \u2502 "
   )
 
   maxw <- max(cli::ansi_nchar(lines, type = "width"))
