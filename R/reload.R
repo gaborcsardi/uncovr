@@ -125,7 +125,7 @@ recompile_if_needed <- function(covr = TRUE) {
       }
     }
 
-    withr::local_makevars(covr_flags(), assignment = "+=")
+    withr::local_makevars(covr_flags(), .assignment = "+=")
   }
 
   mkdirp(tmplib <- tempfile())
