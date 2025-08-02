@@ -83,6 +83,30 @@ apply_exclusions <- function(cov) {
     if (inherits(x, "line_coverage")) as.character(x$srcref) else ""
   })
 
+  # Drop whole files based on .covrignore
+  if (file.exists(".covrignore")) {
+    dfnms <- Sys.glob(readLines(".covrignore"))
+    dfnms <- dfnms[file.exists(dfnms)]
+    ddnms <- dfnms[file.info(dfnms)$isdir]
+    dfnms <- setdiff(dfnms, ddnms)
+    ddnms <- paste0(ddnms, ifelse(endsWith(ddnms, "/"), "", "/"))
+
+    cfnms <- map_chr(USE.NAMES = FALSE, cov, function(x) {
+      file.path(
+        utils::getSrcDirectory(x$srcref),
+        utils::getSrcFilename(x$srcref)
+      )
+    })
+    cfnms <- sub(paste0(getwd(), "/"), "", cfnms)
+    cfnms <- sub("^[.]/", "", cfnms)
+
+    drop <- cfnms %in% dfnms
+    for (ddnm in ddnms) {
+      drop <- drop | startsWith(cfnms, ddnm)
+    }
+    if (any(drop)) cov <- cov[!drop]
+  }
+
   # Drop single excluded lines
   drop <- grepl("__NO_COVERAGE__$", src) |
     grepl("# nocov$", src) |
@@ -90,16 +114,6 @@ apply_exclusions <- function(cov) {
     grepl("/* nocov */$", src)
   if (any(drop)) {
     cov <- cov[!drop]
-  }
-
-  # Drop whole files based on .covrignore
-  # TODO: we drop the directory names here, they are not in the coverage
-  if (file.exists(".covrignore")) {
-    dfnms <- Sys.glob(readLines(".covrignore"))
-    dfnms <- basename(dfnms[file.exists(dfnms)])
-    cfnms <- sub(":.*$", "", names(cov))
-    drop <- cfnms %in% dfnms
-    if (any(drop)) cov <- cov[!drop]
   }
 
   # Drop # nocov start -> # nocov end intervals
