@@ -593,15 +593,13 @@ format_uncovered <- function(ranges, file, width = 80) {
     if (length(r) == 1) as.character(r) else paste0(r[1], "-", r[length(r)])
   })
 
-  ls <- if (Sys.getenv("R_CLI_HYPERLINK_STYLE") == "iterm") "#" else ":"
-  rstr <- vapply(
+  iterm <- Sys.getenv("R_CLI_HYPERLINK_STYLE") == "iterm"
+  ls <- if (iterm) "#" else ":"
+  rstr <- map_chr(
     rstr,
     function(x) {
-      file <- normalizePath(file, mustWork = FALSE)
-      link <- paste0("file://", file, ls, sub("[-].*$", "", x))
-      cli::format_inline("{.href [{x}]({link})}")
-    },
-    character(1)
+      format_link(x, file, sub("[-].*$", "", x))
+    }
   )
 
   rstr[-length(rstr)] <- paste0(rstr[-length(rstr)], ", ")
@@ -619,6 +617,25 @@ format_uncovered <- function(ranges, file, width = 80) {
   }
 
   paste(rstr, collapse = "")
+}
+
+format_link <- function(text, file, line = NULL) {
+  if (Sys.getenv("POSITRON") == "1") {
+    scheme <- "positron"
+  } else if (Sys.getenv("TERM_PROGRAM") == "vscode") {
+    scheme <- "vscode"
+  } else {
+    return(text)
+  }
+  cli::style_hyperlink(
+    text,
+    paste0(
+      scheme,
+      "://file",
+      normalizePath(file, mustWork = FALSE),
+      line %&&% paste0(":", line)
+    )
+  )
 }
 
 format_pct <- function(x) {
