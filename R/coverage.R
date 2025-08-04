@@ -79,10 +79,6 @@ test_interactive <- function(filter = NULL, pr = FALSE, ...) {
 }
 
 apply_exclusions <- function(cov) {
-  src <- vcapply(cov, function(x) {
-    if (inherits(x, "line_coverage")) as.character(x$srcref) else ""
-  })
-
   # Drop whole files based on .covrignore
   if (file.exists(".covrignore")) {
     dfnms <- Sys.glob(readLines(".covrignore"))
@@ -108,6 +104,10 @@ apply_exclusions <- function(cov) {
   }
 
   # Drop single excluded lines
+  src <- vcapply(cov, function(x) {
+    if (inherits(x, "line_coverage")) as.character(x$srcref) else ""
+  })
+
   drop <- grepl("__NO_COVERAGE__$", src) |
     grepl("# nocov$", src) |
     grepl("// nocov$", src) |
