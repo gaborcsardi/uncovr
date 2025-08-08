@@ -107,9 +107,3 @@ last_char <- function(x) {
   l <- nchar(x)
   substr(x, l, l)
 }
-
-local({
-  1
-  2
-  3
-})
