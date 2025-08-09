@@ -28,6 +28,11 @@ int cli_counter_Elt(SEXP x, R_xlen_t i) {
   return INTEGER(data2)[i]++;
 }
 
+SEXP cov_get_counts(SEXP counter) {
+  SEXP data2 = R_altrep_data2(counter);
+  return Rf_duplicate(data2);
+}
+
 void cli_init_altrep(DllInfo *dll) {
   cov_counter_t = R_make_altinteger_class("cov_counter_t", "testthatlabs", dll);
   R_set_altrep_Length_method(cov_counter_t, cli_counter_Length);

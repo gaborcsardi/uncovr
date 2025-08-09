@@ -19,6 +19,7 @@ SEXP cov_gcov_flush(void) {
 #endif
 
 SEXP cov_make_counter(SEXP len);
+SEXP cov_get_counts(SEXP counter);
 
 #define CALLDEF(name, n) \
   { #name, (DL_FUNC)&name, n }
@@ -26,6 +27,7 @@ SEXP cov_make_counter(SEXP len);
 static const R_CallMethodDef callMethods[]  = {
   CALLDEF(cov_gcov_flush, 0),
   CALLDEF(cov_make_counter, 1),
+  CALLDEF(cov_get_counts, 1),
   { NULL, NULL, 0 }
 };
 
