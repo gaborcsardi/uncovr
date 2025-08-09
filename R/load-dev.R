@@ -1,3 +1,6 @@
+#' @useDynLib testthatlabs, .registration = TRUE
+NULL
+
 opt_setup <- "testthatlabs.setup"
 
 load_dev <- function(path = ".", coverage = FALSE) {
@@ -311,20 +314,14 @@ myseq <- function(from, to, by = 1) {
 }
 
 setup_cov_env <- function(cov_data) {
-  # while ("tools:cov" %in% search()) {
-  #   detach("tools:cov")
-  # }
-  # cov_env <- new.env(parent = emptyenv())
   for (i in seq_len(nrow(cov_data))) {
     assign(
       cov_data$symbol[i],
-      rep(NA_integer_, cov_data$line_count[i]),
+      .Call(cov_make_counter, cov_data$line_count[i]),
       envir = .GlobalEnv
     )
   }
-  # attach(cov_env, name = "tools:cov")
 }
-
 
 re_exclude <- function(pkg) {
   c(

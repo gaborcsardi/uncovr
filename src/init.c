@@ -1,0 +1,39 @@
+#define R_NO_REMAP
+#define R_USE_C99_IN_CXX 1
+#include <R.h>
+#include <Rinternals.h>
+#include <R_ext/Rdynload.h>
+
+// A function to flush test coverate data to disk
+#ifdef GCOV_COMPILE
+void __gcov_dump();
+SEXP cov_gcov_flush() {
+  REprintf("Flushing coverage info\n");
+  __gcov_dump();
+  return R_NilValue;
+}
+#else
+SEXP cov_gcov_flush(void) {
+  return R_NilValue;
+}
+#endif
+
+SEXP cov_make_counter(SEXP len);
+
+#define CALLDEF(name, n) \
+  { #name, (DL_FUNC)&name, n }
+
+static const R_CallMethodDef callMethods[]  = {
+  CALLDEF(cov_gcov_flush, 0),
+  CALLDEF(cov_make_counter, 1),
+  { NULL, NULL, 0 }
+};
+
+void cli_init_altrep(DllInfo *dll);
+
+void R_init_testthatlabs(DllInfo *dll) {
+  cli_init_altrep(dll);
+  R_registerRoutines(dll, NULL, callMethods, NULL, NULL);
+  R_useDynamicSymbols(dll, FALSE);
+  R_forceSymbols(dll, TRUE);
+}
