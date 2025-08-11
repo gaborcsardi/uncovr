@@ -23,9 +23,16 @@ load_dev <- function(path = ".", coverage = FALSE) {
   copy <- c("src", if (setup$coverage) "R")
   plan <- update_package_tree(".", dir, pkgname = pkgname, copy = copy)
 
+  cov_data <- NULL
   if (coverage) {
-    cov_data <- cov_instrument_dir(file.path(dir, pkgname, "R"))
-    setup_cov_env(cov_data)
+    # It is probably ignored by R CMD build, so need to use the master file
+    exc <- if (file.exists(".covrignore")) {
+      normalizePath((".covrignore"))
+    }
+    withr::with_dir(file.path(dir, pkgname), {
+      cov_data <- cov_instrument_dir("R", exclusion_file = exc)
+      setup_cov_env(cov_data)
+    })
   }
 
   loaded <- pkgload::load_all(file.path(dir, pkgname))
@@ -299,9 +306,21 @@ is_link <- function(x) {
   !is.na(rl) & rl != ""
 }
 
-cov_instrument_dir <- function(path = "R") {
-  withr::local_dir(path)
-  rfiles <- dir(pattern = "[.][rR]$")
+apply_covrignore <- function(paths, exclusion_file) {
+  if (!is.null(exclusion_file)) {
+    if (file.exists(exclusion_file)) {
+      excluded <- Sys.glob(readLines(exclusion_file))
+      paths <- setdiff(paths, excluded)
+    }
+  }
+  paths
+}
+
+cov_instrument_dir <- function(path = "R", exclusion_file = ".covrignore") {
+  rfiles <- apply_covrignore(
+    dir(path, pattern = "[.][rR]$", full.names = TRUE),
+    exclusion_file
+  )
   fls <- data.frame(
     path = rfiles,
     symbol = paste0(".__cov_", tools::file_path_sans_ext(basename(rfiles))),
@@ -558,7 +577,7 @@ re_exclude_dir <- function(pkg) {
 
 format.coverage_table2 <- function(x, ...) {
   sm <- attr(x, "summary")
-  fn <- c(sm$name, paste0("R/", x$path))
+  fn <- paste0(" ", c(sm$name, x$path))
   rl <- c(sm$percent_covered, x$percent_covered)
   bl <- format_pct(rl)
 
@@ -573,8 +592,7 @@ format.coverage_table2 <- function(x, ...) {
   maxw <- max(cli::ansi_nchar(lines, type = "width"))
   cw <- cli::console_width()
 
-  path <- file.path("R", x$path)
-  uc <- mapply(format_uncovered, x$uncovered, file = path, width = cw - maxw)
+  uc <- mapply(format_uncovered, x$uncovered, file = x$path, width = cw - maxw)
   cuc <- cli::ansi_align(
     c("uncovered line #", "", "", uc, "", ""),
     width = max(cli::ansi_nchar(uc, "width"))
