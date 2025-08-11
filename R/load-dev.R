@@ -73,8 +73,7 @@ package_coverage <- function(path = ".", test_dir = "tests/testthat") {
   class(dev_data$coverage) <- c("coverage_table2", class(dev_data$coverage))
   class(dev_data) <- c("package_coverage", class(dev_data))
 
-  print(dev_data$coverage)
-  invisible(dev_data)
+  dev_data
 }
 
 add_coverage_summary <- function(coverage) {
@@ -577,7 +576,7 @@ re_exclude_dir <- function(pkg) {
 
 format.coverage_table2 <- function(x, ...) {
   sm <- attr(x, "summary")
-  fn <- paste0(" ", c(sm$name, x$path))
+  fn <- c(sm$name, paste0(" ", x$path))
   rl <- c(sm$percent_covered, x$percent_covered)
   bl <- format_pct(rl)
 
