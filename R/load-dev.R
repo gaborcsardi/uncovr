@@ -290,6 +290,15 @@ cov_instrument_file <- function(path, cov_symbol) {
   ps <- parse(path, keep.source = TRUE)
   psd <- getParseData(ps)
   brc_poss <- which(psd$token == "'{'")
+
+  # drop rlang's {{ embrace operator up front
+  drop <- which(diff(psd$line1[brc_poss]) == 0 & diff(psd$col1[brc_poss]) == 1)
+  drop <- c(drop, drop + 1L)
+  if (length(drop)) {
+    brc_poss <- brc_poss[-drop]
+  }
+
+  # calculcate insertion position for each subexpression of every '{'
   inj_posl <- lapply(brc_poss, get_inject_positions, psd)
   injx <- data.frame(
     line1 = unlist(lapply(inj_posl, "[[", "line1")),
