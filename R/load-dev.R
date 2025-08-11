@@ -3,6 +3,8 @@ NULL
 
 opt_setup <- "testthatlabs.setup"
 
+#' @export
+
 load_dev <- function(path = ".", coverage = FALSE) {
   withr::local_dir(path)
   # setup build options
@@ -35,10 +37,12 @@ load_dev <- function(path = ".", coverage = FALSE) {
   ))
 }
 
+#' @export
+
 package_coverage <- function(path = ".", test_dir = "tests/testthat") {
   withr::local_dir(path)
   dev_data <- load_dev(path = ".", coverage = TRUE)
-  test_results <- testthat::test_dir(
+  dev_data$test_results <- testthat::test_dir(
     test_dir,
     load_package = "none",
     stop_on_failure = FALSE
@@ -53,10 +57,30 @@ package_coverage <- function(path = ".", test_dir = "tests/testthat") {
     dev_data$coverage$uncovered[[i]] <-
       calculate_uncovered_intervals(dev_data$coverage$lines[[i]])
   }
+  dev_data$coverage$percent_covered <-
+    dev_data$coverage$lines_covered / dev_data$coverage$code_lines * 100
+  dev_data$coverage$percent_covered[dev_data$coverage$code_lines == 0] <- 100
+
+  dev_data$coverage <- add_coverage_summary(dev_data$coverage)
+
   class(dev_data$coverage) <- c("coverage_table2", class(dev_data$coverage))
-  dev_data$test_results <- test_results
   class(dev_data) <- c("package_coverage", class(dev_data))
-  dev_data
+
+  print(dev_data$coverage)
+  invisible(dev_data)
+}
+
+add_coverage_summary <- function(coverage) {
+  sm <- data.frame(
+    name = "All files",
+    line_count = sum(coverage$line_count),
+    code_lines = sum(coverage$code_lines),
+    lines_covered = sum(coverage$lines_covered)
+  )
+  sm$percent_covered <- sm$lines_covered / sm$code_lines * 100
+  attr(coverage, "summary") <- sm
+
+  coverage
 }
 
 calculate_uncovered_intervals <- function(lines) {
@@ -284,6 +308,7 @@ cov_instrument_dir <- function(path = "R") {
     line_count = NA_integer_,
     code_lines = NA_integer_,
     lines_covered = 0L,
+    percent_covered = 0,
     lines = I(replicate(length(rfiles), NULL, simplify = FALSE)),
     uncovered = I(replicate(length(rfiles), list(), simplify = FALSE))
   )
@@ -345,9 +370,13 @@ cov_instrument_file <- function(path, cov_symbol) {
   )
 
   # lines where there is no terminal node are definitely not code
-  # TODO: apart from long strings, which we'll need to handle separately.
+  # apart from long strings, which are code
   notterm <- which(psd$text != "")
   res$status[unique(c(psd$line1[notterm], psd$line2[notterm]))] <- NA_character_
+  strconst <- which(psd$token == "STR_CONST")
+  for (str in strconst) {
+    res$status[psd$line1[str]:psd$line2[str]] <- NA_character_
+  }
 
   res$status[inj$line1] <- "instrumented"
   res$id[inj$line1] <- inj$line1
@@ -516,4 +545,75 @@ re_exclude_dir <- function(pkg) {
 
     "^src.*/\\.deps$"
   )
+}
+
+#' @export
+
+`[.coverage_table2` <- function(x, i, j, drop = FALSE) {
+  class(x) <- setdiff(class(x), "coverage_table2")
+  NextMethod("[")
+}
+
+#' @export
+
+format.coverage_table2 <- function(x, ...) {
+  sm <- attr(x, "summary")
+  fn <- c(sm$name, paste0("R/", x$path))
+  rl <- c(sm$percent_covered, x$percent_covered)
+  bl <- format_pct(rl)
+
+  cffn <- ffn <- format(c("code coverage", "", fn, "", "total"))
+  cfbl <- fbl <- format(c("% lines", "", bl, "", bl[1]), justify = "right")
+
+  mid <- 3:(length(ffn) - 2)
+  cffn[mid] <- cov_col(ffn[mid], rl)
+  cfbl[mid] <- cov_col(fbl[mid], rl)
+
+  lines <- paste0(cffn, " \u2502 ", cfbl, " \u2502 ")
+  maxw <- max(cli::ansi_nchar(lines, type = "width"))
+  cw <- cli::console_width()
+
+  path <- file.path("R", x$path)
+  uc <- mapply(format_uncovered, x$uncovered, file = path, width = cw - maxw)
+  cuc <- cli::ansi_align(
+    c("uncovered line #", "", "", uc, "", ""),
+    width = max(cli::ansi_nchar(uc, "width"))
+  )
+  tot <- sm$percent_covered[1]
+  cuc[mid] <- cov_col(cuc[mid], c(tot, x$percent_covered))
+  lines <- paste0(lines, cuc)
+
+  lines[1] <- cli::style_bold(style_bg_grey(cli::col_white(lines[1])))
+  if (tot < 75) {
+    lines[length(lines)] <- cli::bg_red(lines[length(lines)])
+  } else if (tot < 95) {
+    lines[length(lines)] <-
+      style_bg_orange(cli::col_white(lines[length(lines)]))
+  } else {
+    lines[length(lines)] <-
+      style_bg_green(cli::col_white(lines[length(lines)]))
+  }
+  lines[length(lines)] <- cli::style_bold(lines[length(lines)])
+
+  lines
+}
+
+#' @export
+
+print.coverage_table2 <- function(x, ...) {
+  writeLines(format(x, ...))
+  invisible(x)
+}
+
+#' @export
+
+format.package_coverage <- function(x, ...) {
+  c("", format(x$coverage, ...))
+}
+
+#' @export
+
+print.package_coverage <- function(x, ...) {
+  writeLines(format(x, ...))
+  invisible(x)
 }
