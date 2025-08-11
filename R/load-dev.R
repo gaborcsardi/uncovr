@@ -50,10 +50,19 @@ package_coverage <- function(path = ".", test_dir = "tests/testthat") {
     dev_data$coverage$lines[[i]]$coverage[] <- counts[[i]][ids]
     dev_data$coverage$lines_covered[i] <-
       sum(dev_data$coverage$lines[[i]]$coverage > 0, na.rm = TRUE)
+    dev_data$coverage$uncovered[[i]] <-
+      calculate_uncovered_intervals(dev_data$coverage$lines[[i]])
   }
+  class(dev_data$coverage) <- c("coverage_table2", class(dev_data$coverage))
   dev_data$test_results <- test_results
   class(dev_data) <- c("package_coverage", class(dev_data))
   dev_data
+}
+
+calculate_uncovered_intervals <- function(lines) {
+  keep <- lines$status == "instrumented"
+  lineno <- seq_len(nrow(lines))[keep]
+  find_zero_ranges(lineno, lines$coverage[keep])
 }
 
 cov_get_counts <- function(names) {
@@ -275,7 +284,8 @@ cov_instrument_dir <- function(path = "R") {
     line_count = NA_integer_,
     code_lines = NA_integer_,
     lines_covered = 0L,
-    lines = I(replicate(length(rfiles), NULL, simplify = FALSE))
+    lines = I(replicate(length(rfiles), NULL, simplify = FALSE)),
+    uncovered = I(replicate(length(rfiles), list(), simplify = FALSE))
   )
   for (i in seq_along(rfiles)) {
     fls$lines[[i]] <- cov_instrument_file(fls$path[i], fls$symbol[i])
@@ -333,6 +343,12 @@ cov_instrument_file <- function(path, cov_symbol) {
     id = NA_integer_,
     coverage = NA_integer_
   )
+
+  # lines where there is no terminal node are definitely not code
+  # TODO: apart from long strings, which we'll need to handle separately.
+  notterm <- which(psd$text != "")
+  res$status[unique(c(psd$line1[notterm], psd$line2[notterm]))] <- NA_character_
+
   res$status[inj$line1] <- "instrumented"
   res$id[inj$line1] <- inj$line1
 
@@ -341,11 +357,15 @@ cov_instrument_file <- function(path, cov_symbol) {
   for (i in rev(seq_len(nrow(inj)))) {
     inji <- inj[i, , drop = FALSE]
     li <- inji$line1:inji$line2
-    cnt <- li[res$status[li] == "noncode"]
+    if (length(li) == 1) {
+      next
+    }
+    cnt <- li[is.na(res$status[li])]
     res$status[cnt] <- "instrumented"
     res$id[cnt] <- inji$line1
   }
   res$coverage[res$status == "instrumented"] <- 0L
+  res$status[is.na(res$status)] <- "noncode"
 
   res
 }
