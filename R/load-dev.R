@@ -19,14 +19,47 @@ load_dev <- function(path = ".", coverage = FALSE) {
   pkgname <- desc::desc_get("Package", ".")
 
   copy <- c("src", if (setup$coverage) "R")
-  update_package_tree(".", dir, pkgname = pkgname, copy = copy)
+  plan <- update_package_tree(".", dir, pkgname = pkgname, copy = copy)
 
   if (coverage) {
     cov_data <- cov_instrument_dir(file.path(dir, pkgname, "R"))
     setup_cov_env(cov_data)
   }
 
-  pkgload::load_all(file.path(dir, pkgname))
+  loaded <- pkgload::load_all(file.path(dir, pkgname))
+
+  invisible(list(
+    plan = plan,
+    load = loaded,
+    coverage = if (coverage) cov_data
+  ))
+}
+
+package_coverage <- function(path = ".", test_dir = "tests/testthat") {
+  withr::local_dir(path)
+  dev_data <- load_dev(path = ".", coverage = TRUE)
+  test_results <- testthat::test_dir(
+    test_dir,
+    load_package = "none",
+    stop_on_failure = FALSE
+  )
+  cov_names <- dev_data$coverage$symbol
+  counts <- cov_get_counts(cov_names)
+  for (i in seq_along(counts)) {
+    ids <- dev_data$coverage$lines[[i]]$id
+    dev_data$coverage$lines[[i]]$coverage[] <- counts[[i]][ids]
+    dev_data$coverage$lines_covered[i] <-
+      sum(dev_data$coverage$lines[[i]]$coverage > 0, na.rm = TRUE)
+  }
+  dev_data$test_results <- test_results
+  class(dev_data) <- c("package_coverage", class(dev_data))
+  dev_data
+}
+
+cov_get_counts <- function(names) {
+  lapply(names, function(name) {
+    .Call(c_cov_get_counts, get(name, envir = .GlobalEnv))
+  })
 }
 
 get_dev_dir <- function() {
@@ -236,15 +269,21 @@ is_link <- function(x) {
 cov_instrument_dir <- function(path = "R") {
   withr::local_dir(path)
   rfiles <- dir(pattern = "[.][rR]$")
-  res <- data.frame(
+  fls <- data.frame(
     path = rfiles,
     symbol = paste0(".__cov_", tools::file_path_sans_ext(basename(rfiles))),
-    line_count = NA_integer_
+    line_count = NA_integer_,
+    code_lines = NA_integer_,
+    lines_covered = 0L,
+    lines = I(replicate(length(rfiles), NULL, simplify = FALSE))
   )
   for (i in seq_along(rfiles)) {
-    res$line_count[i] <- cov_instrument_file(res$path[i], res$symbol[i])
+    fls$lines[[i]] <- cov_instrument_file(fls$path[i], fls$symbol[i])
+    fls$line_count[i] <- nrow(fls$lines[[i]])
+    fls$code_lines[i] <- sum(fls$lines[[i]]$status == "instrumented")
   }
-  res
+
+  fls
 }
 
 cov_instrument_file <- function(path, cov_symbol) {
@@ -252,25 +291,54 @@ cov_instrument_file <- function(path, cov_symbol) {
   psd <- getParseData(ps)
   brc_poss <- which(psd$token == "'{'")
   inj_posl <- lapply(brc_poss, get_inject_positions, psd)
-  inj <- data.frame(
+  injx <- data.frame(
     line1 = unlist(lapply(inj_posl, "[[", "line1")),
-    col1 = unlist(lapply(inj_posl, "[[", "col1"))
+    col1 = unlist(lapply(inj_posl, "[[", "col1")),
+    line2 = unlist(lapply(inj_posl, "[[", "line2")),
+    col2 = unlist(lapply(inj_posl, "[[", "col2"))
   )
   # work around files without '{'
-  if (nrow(inj)) {
-    inj$code <- paste0("`", cov_symbol, "`[", inj$line1, "]; ")
+  if (nrow(injx)) {
+    injx$code <- paste0("`", cov_symbol, "`[", injx$line1, "]; ")
   } else {
-    inj$code <- character()
+    injx$code <- character()
   }
-  # need to insert code concurrently to the same line
-  lns <- readLines(path)
+
+  # Drop duplicate lines, only the first expression is counted.
+  # TODO: improve this and count every expression individually
+  inj <- injx[!duplicated(injx$line1), , drop = FALSE]
+
+  # need to insert code concurrently to the same line, for future
+  # multi-expression per line support
+  lns0 <- lns <- readLines(path)
   inj_lines <- unique(inj$line1)
   for (il in inj_lines) {
     inj1 <- inj[inj$line1 == il, ]
     lns[il] <- str_insert_parallel(lns[il], inj1$col1, inj1$code)
   }
   writeLines(lns, path)
-  length(lns)
+
+  res <- data.frame(
+    lines = lns0,
+    status = "noncode",
+    id = NA_integer_,
+    coverage = NA_integer_
+  )
+  res$status[inj$line1] <- "instrumented"
+  res$id[inj$line1] <- inj$line1
+
+  # Handle multi-line expressions. We need to do this backwards, so nested
+  # braces work out correctly.
+  for (i in rev(seq_len(nrow(inj)))) {
+    inji <- inj[i, , drop = FALSE]
+    li <- inji$line1:inji$line2
+    cnt <- li[res$status[li] == "noncode"]
+    res$status[cnt] <- "instrumented"
+    res$id[cnt] <- inji$line1
+  }
+  res$coverage[res$status == "instrumented"] <- 0L
+
+  res
 }
 
 get_inject_positions <- function(brc_pos, psd) {
@@ -280,7 +348,7 @@ get_inject_positions <- function(brc_pos, psd) {
   expr_pos <- expr_pos[psd$token[expr_pos] != "COMMENT"]
   # first one is '{', last one is '}', drop them
   expr_pos <- expr_pos[c(-1, -length(expr_pos))]
-  psd[expr_pos, c("line1", "col1")]
+  psd[expr_pos, c("line1", "col1", "line2", "col2")]
 }
 
 str_insert_parallel <- function(str, pos, insert) {
@@ -317,7 +385,7 @@ setup_cov_env <- function(cov_data) {
   for (i in seq_len(nrow(cov_data))) {
     assign(
       cov_data$symbol[i],
-      .Call(cov_make_counter, cov_data$line_count[i]),
+      .Call(c_cov_make_counter, cov_data$line_count[i]),
       envir = .GlobalEnv
     )
   }

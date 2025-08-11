@@ -14,9 +14,21 @@ context_name <- function(filename) {
   filename
 }
 
-`%||%` <- function(l, r) if (is.null(l)) r else l
+`%||%` <- function(l, r) {
+  if (is.null(l)) {
+    r
+  } else {
+    l
+  }
+}
 
-`%&&%` <- function(l, r) if (is.null(l)) NULL else r
+`%&&%` <- function(l, r) {
+  if (is.null(l)) {
+    NULL
+  } else {
+    r
+  }
+}
 
 is_interactive <- function() {
   opt <- getOption("rlib_interactive")

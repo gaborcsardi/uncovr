@@ -2,7 +2,7 @@
 "_PACKAGE"
 
 ## usethis namespace: start
-#' @useDynLib testthatlabs, .registration = TRUE
+#' @useDynLib testthatlabs, .registration = TRUE, .fixes = "c_"
 ## usethis namespace: end
 NULL
 
