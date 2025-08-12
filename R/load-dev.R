@@ -22,16 +22,14 @@ paste_named <- function(orig, new) {
   orig
 }
 
-#' @export
-
-load_package <- function(
+load_package_setup <- function(
   path = ".",
   type = c("debug", "release", "coverage"),
   makeflags = NULL
 ) {
+  withr::local_dir(path)
   type <- match.arg(type)
   makeflags <- makeflags %||% get_makeflags(type)
-  withr::local_dir(path)
 
   # setup build options
   makeflags <- makeflags
@@ -50,8 +48,27 @@ load_package <- function(
   pkgname <- desc::desc_get("Package", ".")
   setup[["pkgname"]] <- pkgname
 
+  setup
+}
+
+#' @export
+
+load_package <- function(
+  path = ".",
+  type = c("debug", "release", "coverage"),
+  makeflags = NULL
+) {
+  withr::local_dir(path)
+  setup <- load_package_setup(path, type, makeflags)
+  withr::local_options(structure(list(setup), names = opt_setup))
+
   copy <- c("src", if (type == "coverage") "R")
-  plan <- update_package_tree(".", dir, pkgname = pkgname, copy = copy)
+  plan <- update_package_tree(
+    ".",
+    setup$dir,
+    pkgname = setup$pkgname,
+    copy = copy
+  )
 
   cov_data <- NULL
   if (type == "coverage") {
@@ -59,7 +76,7 @@ load_package <- function(
     exc <- if (file.exists(".covrignore")) {
       normalizePath((".covrignore"))
     }
-    withr::with_dir(file.path(dir, pkgname), {
+    withr::with_dir(file.path(setup$dir, setup$pkgname), {
       cov_data <- cov_instrument_dir("R", exclusion_file = exc)
       setup_cov_env(cov_data)
     })
@@ -67,7 +84,7 @@ load_package <- function(
 
   withr::local_options(pkg.build_extra_flags = FALSE)
   withr::local_makevars(setup$compiler_flags, .assignment = "+=")
-  loaded <- pkgload::load_all(file.path(dir, pkgname))
+  loaded <- pkgload::load_all(file.path(setup$dir, setup$pkgname))
 
   invisible(list(
     setup = setup,
@@ -86,9 +103,14 @@ package_coverage <- function(
   reporter = NULL
 ) {
   withr::local_dir(path)
-  dev_data <- load_package(path = ".", type = "coverage")
-  pkg_path <- file.path(dev_data$setup$dir, dev_data$setup$pkgname)
+
+  # clean up .gcda files, because pkgbuild wrongly considers them as source
+  # files and thinks that the dll is out of data, because they are newer
+  setup <- load_package_setup(".", type = "coverage")
+  pkg_path <- file.path(setup$dir, setup$pkgname)
   gcov_cleanup(pkg_path)
+
+  dev_data <- load_package(path = ".", type = "coverage")
   dev_data$test_results <- testthat::test_dir(
     test_dir,
     load_package = "none",
@@ -96,6 +118,7 @@ package_coverage <- function(
     filter = filter,
     reporter = reporter
   )
+
   cov_names <- dev_data$coverage$symbol
   counts <- cov_get_counts(cov_names)
   for (i in seq_along(counts)) {
