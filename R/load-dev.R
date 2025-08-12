@@ -3,16 +3,47 @@ NULL
 
 opt_setup <- "testthatlabs.setup"
 
+get_makeflags <- function(type = c("debug", "release", "coverage")) {
+  type <- match.arg(type)
+  if (type == "debug") {
+    pkgbuild::compiler_flags(debug = TRUE)
+  } else if (type == "release") {
+    pkgbuild::compiler_flags(debug = FALSE)
+  } else if (type == "coverage") {
+    paste_named(pkgbuild::compiler_flags(debug = TRUE), covr_flags())
+  }
+}
+
+paste_named <- function(orig, new) {
+  for (nm in names(new)) {
+    orig[[nm]] <- if (nm %in% names(orig)) {
+      paste(orig[[nm]], new[[nm]])
+    } else {
+      new[[nm]]
+    }
+  }
+  orig
+}
+
 #' @export
 
-load_dev <- function(path = ".", coverage = FALSE) {
+load_dev <- function(
+  path = ".",
+  type = c("debug", "release", "coverage"),
+  makeflags = NULL
+) {
+  type <- match.arg(type)
+  makeflags <- makeflags %||% get_makeflags(type)
   withr::local_dir(path)
+
   # setup build options
+  makeflags <- makeflags
   setup <- list(
     version = 1L,
     rver = as.character(getRversion()[, 1:2]),
     platform = R.Version()$platform,
-    coverage = coverage
+    type = type,
+    compiler_flags = get_makeflags(type)
   )
   setup[["hash"]] = cli::hash_obj_sha1(setup)
   withr::local_options(structure(list(setup), names = opt_setup))
@@ -20,11 +51,11 @@ load_dev <- function(path = ".", coverage = FALSE) {
   dir <- get_dev_dir()
   pkgname <- desc::desc_get("Package", ".")
 
-  copy <- c("src", if (setup$coverage) "R")
+  copy <- c("src", if (type == "coverage") "R")
   plan <- update_package_tree(".", dir, pkgname = pkgname, copy = copy)
 
   cov_data <- NULL
-  if (coverage) {
+  if (type == "coverage") {
     # It is probably ignored by R CMD build, so need to use the master file
     exc <- if (file.exists(".covrignore")) {
       normalizePath((".covrignore"))
@@ -35,12 +66,14 @@ load_dev <- function(path = ".", coverage = FALSE) {
     })
   }
 
+  withr::local_options(pkg.build_extra_flags = FALSE)
+  withr::local_makevars(setup$compiler_flags, .assignment = "+=")
   loaded <- pkgload::load_all(file.path(dir, pkgname))
 
   invisible(list(
     plan = plan,
     load = loaded,
-    coverage = if (coverage) cov_data
+    coverage = if (type == "coverage") cov_data
   ))
 }
 
@@ -48,7 +81,7 @@ load_dev <- function(path = ".", coverage = FALSE) {
 
 package_coverage <- function(path = ".", test_dir = "tests/testthat") {
   withr::local_dir(path)
-  dev_data <- load_dev(path = ".", coverage = TRUE)
+  dev_data <- load_dev(path = ".", type = "coverage")
   dev_data$test_results <- testthat::test_dir(
     test_dir,
     load_package = "none",
@@ -292,6 +325,8 @@ update_package_tree <- function(
 
   plan_file <- file.path(dst, "plan.rds")
   saveRDS(plan, plan_file)
+  setup_file <- file.path(dst, "setup.rds")
+  saveRDS(getOption(opt_setup), setup_file)
 
   invisible(plan)
 }
@@ -416,7 +451,7 @@ cov_instrument_file <- function(path, cov_symbol) {
 
   # we add line exclusions here, so it is theoretically possible
   # to only exclude parts of a multi-line expression
-  drop <- parse_line_exclusions(lns0)
+  drop <- parse_line_exclusions(lns0, path)
   if (length(drop)) {
     res$status[drop] <- "excluded"
     res$id[drop] <- NA_integer_
@@ -426,14 +461,14 @@ cov_instrument_file <- function(path, cov_symbol) {
   res
 }
 
-parse_line_exclusions <- function(lns) {
+parse_line_exclusions <- function(lns, path) {
   sort(unique(c(
-    parse_line_exclusions_single(lns),
-    parse_line_exclusions_ranges(lns)
+    parse_line_exclusions_single(lns, path),
+    parse_line_exclusions_ranges(lns, path)
   )))
 }
 
-parse_line_exclusions_single <- function(lns) {
+parse_line_exclusions_single <- function(lns, path) {
   which(
     grepl("__NO_COVERAGE__$", lns) |
       grepl("#[ ]*nocov$", lns) |
@@ -442,7 +477,7 @@ parse_line_exclusions_single <- function(lns) {
   )
 }
 
-parse_line_exclusions_ranges <- function(lns) {
+parse_line_exclusions_ranges <- function(lns, path) {
   start <- grep("#[ ]*nocov[ ]+(start|begin)", lns)
   end <- grep("#[ ]*nocov[ ]+end", lns)
 
