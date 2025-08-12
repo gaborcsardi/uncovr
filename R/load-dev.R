@@ -49,7 +49,9 @@ load_dev <- function(
   withr::local_options(structure(list(setup), names = opt_setup))
 
   dir <- get_dev_dir()
+  setup[["dir"]] <- dir
   pkgname <- desc::desc_get("Package", ".")
+  setup[["pkgname"]] <- pkgname
 
   copy <- c("src", if (type == "coverage") "R")
   plan <- update_package_tree(".", dir, pkgname = pkgname, copy = copy)
@@ -71,6 +73,7 @@ load_dev <- function(
   loaded <- pkgload::load_all(file.path(dir, pkgname))
 
   invisible(list(
+    setup = setup,
     plan = plan,
     load = loaded,
     coverage = if (type == "coverage") cov_data
@@ -82,6 +85,8 @@ load_dev <- function(
 package_coverage <- function(path = ".", test_dir = "tests/testthat") {
   withr::local_dir(path)
   dev_data <- load_dev(path = ".", type = "coverage")
+  pkg_path <- file.path(dev_data$setup$dir, dev_data$setup$pkgname)
+  gcov_cleanup(pkg_path)
   dev_data$test_results <- testthat::test_dir(
     test_dir,
     load_package = "none",
@@ -97,6 +102,27 @@ package_coverage <- function(path = ".", test_dir = "tests/testthat") {
     dev_data$coverage$uncovered[[i]] <-
       calculate_uncovered_intervals(dev_data$coverage$lines[[i]])
   }
+
+  if (file.exists("src")) {
+    # try to flush the coverage data for the package
+    # TODO: is there are a more robust way?
+    tryCatch(
+      asNamespace(dev_data$setup$pkgname)$gcov_flush(),
+      error = function(...) {
+        stop(cli::format_error(c(
+          "Could not run `gcov_flush()` in the {.pkg dev_data$setup$pkgname}
+          package. You need to add a `gcov_flush()` function to it, that
+          calls `__gcov_flush()`, see an example in the {.pkg ps} package."
+        )))
+      }
+    )
+    exc <- if (file.exists(".covrignore")) {
+      normalizePath((".covrignore"))
+    }
+    ccoverage <- load_c_coverage(pkg_path, exc)
+    dev_data$coverage <- rbind(dev_data$coverage, ccoverage)
+  }
+
   dev_data$coverage$percent_covered <-
     dev_data$coverage$lines_covered / dev_data$coverage$code_lines * 100
   dev_data$coverage$percent_covered[dev_data$coverage$code_lines == 0] <- 100
@@ -345,6 +371,11 @@ apply_covrignore <- function(paths, exclusion_file) {
     if (file.exists(exclusion_file)) {
       excluded <- Sys.glob(readLines(exclusion_file))
       paths <- setdiff(paths, excluded)
+      dirs <- excluded[file.exists(excluded) & is_dir(excluded)]
+      dirs <- ifelse(endsWith(dirs, "/"), dirs, paste0(dirs, "/"))
+      for (d in dirs) {
+        paths <- paths[!startsWith(paths, d)]
+      }
     }
   }
   paths
@@ -724,4 +755,129 @@ format.package_coverage <- function(x, ...) {
 print.package_coverage <- function(x, ...) {
   writeLines(format(x, ...))
   invisible(x)
+}
+
+gcov_cleanup <- function(path) {
+  path <- file.path(path, "src")
+  gcda <- dir(path, pattern = "[.]gcda$", full.names = TRUE, recursive = TRUE)
+  gcov <- dir(path, pattern = "[.]gcov$", full.names = TRUE, recursive = TRUE)
+  unlink(c(gcda, gcov))
+}
+
+load_c_coverage <- function(path, exclusion_file = NULL) {
+  withr::local_dir(path)
+  gcno <- dir("src", pattern = "[.]gcno$", full.names = TRUE, recursive = TRUE)
+  gcno <- apply_covrignore(gcno, exclusion_file)
+
+  # Need to run gcov separately for each subdirectory that has gcno files
+  dirs <- unique(dirname(gcno))
+
+  pxs <- lapply(dirs, function(d) {
+    fnms <- dir(d, recursive = TRUE, pattern = "[.]gcno$")
+    processx::process$new("gcov", c("-p", "-b", fnms), wd = d)
+  })
+
+  while (length(pxs) > 0) {
+    pr <- processx::poll(pxs, 1000)
+    pr <- vapply(pr, "[[", "", "process")
+    dn <- pr != "timeout" & pr != "silent"
+    st <- vapply(pxs[dn], function(p) p$get_exit_status(), 1L)
+    oh <- pxs[dn][st != 0]
+    if (length(oh)) {
+      warning(
+        "gcov failed for directories: ",
+        paste(names(pxs)[oh], collapse = ", ")
+      )
+    }
+    pxs <- pxs[!dn]
+  }
+
+  ccov <- parse_gcov(".")
+  ccov <- ccov[map_int(ccov, nrow) > 0]
+
+  # need to apply exclusions again, because dependent and potentially
+  # excluded .h files were still picked up
+  paths <- sub("^[.]/", "", map_chr(ccov, function(x) x$file[1]))
+  keep <- paths %in% apply_covrignore(paths, exclusion_file)
+  ccov <- ccov[keep]
+
+  # line exclusions
+  for (i in seq_along(ccov)) {
+    ccov[[i]]$status <- ifelse(
+      is.na(ccov[[i]]$coverage),
+      "noncode",
+      "instrumented"
+    )
+    drop <- parse_line_exclusions(ccov[[i]]$code, res$path[i])
+    if (length(drop)) {
+      ccov[[i]]$status[drop] <- "excluded"
+      ccov[[i]]$coverage[drop] <- NA_integer_
+    }
+  }
+
+  res <- data.frame(
+    stringsAsFactors = FALSE,
+    path = sub("^[.]/", "", map_chr(ccov, function(x) x$file[1])),
+    symbol = NA_character_,
+    line_count = map_int(ccov, nrow),
+    code_lines = map_int(ccov, function(x) sum(!is.na(x$coverage))),
+    lines_covered = map_int(ccov, function(x) {
+      sum(x$coverage > 0, na.rm = TRUE)
+    }),
+    percent_covered = NA_real_,
+    lines = I(replicate(length(ccov), NULL, simplify = FALSE)),
+    uncovered = I(replicate(length(ccov), NULL, simplify = FALSE))
+  )
+  res$percent_covered <- ifelse(
+    res$code_lines == 0,
+    100,
+    res$lines_covered / res$code_lines * 100
+  )
+  for (i in seq_along(ccov)) {
+    res$lines[[i]] <- data.frame(
+      lines = ccov[[i]]$code,
+      status = ccov[[i]]$status,
+      id = ccov[[i]]$line,
+      coverage = ccov[[i]]$coverage
+    )
+    res$uncovered[[i]] <-
+      calculate_uncovered_intervals(res$lines[[i]])
+  }
+
+  res
+}
+
+parse_gcov <- function(root = ".") {
+  gcov <- dir(
+    root,
+    recursive = TRUE,
+    pattern = "[.]gcov$",
+    full.names = TRUE
+  )
+
+  # drop files that have an absolute path, typically system headers
+  gcov <- gcov[!startsWith(basename(gcov), "#")]
+
+  ps <- lapply(gcov, parse_gcov_file)
+  ps
+}
+
+parse_gcov_file <- function(path) {
+  disp <- display_name(path)
+  df <- .Call(c_cov_parse_gcov, path, disp)
+  class(df) <- c("tbl", "data.frame")
+  attr(df, "row.names") <- seq_len(length(df[[1]]))
+  df
+}
+
+display_name <- function(x) {
+  x <- sub("[.]gcov", "", x)
+  if (startsWith(basename(x), "^")) {
+    x <- gsub("^", "..", fixed = TRUE, x)
+    x <- gsub("#", "/", fixed = TRUE, x)
+    x
+  } else {
+    b <- gsub("#", "/", basename(x))
+    paste0(dirname(x), "/", b)
+  }
 }
