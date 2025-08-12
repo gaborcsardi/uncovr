@@ -1,6 +1,3 @@
-#' @useDynLib testthatlabs, .registration = TRUE
-NULL
-
 opt_setup <- "testthatlabs.setup"
 
 get_makeflags <- function(type = c("debug", "release", "coverage")) {
@@ -27,7 +24,7 @@ paste_named <- function(orig, new) {
 
 #' @export
 
-load_dev <- function(
+load_package <- function(
   path = ".",
   type = c("debug", "release", "coverage"),
   makeflags = NULL
@@ -84,7 +81,7 @@ load_dev <- function(
 
 package_coverage <- function(path = ".", test_dir = "tests/testthat") {
   withr::local_dir(path)
-  dev_data <- load_dev(path = ".", type = "coverage")
+  dev_data <- load_package(path = ".", type = "coverage")
   pkg_path <- file.path(dev_data$setup$dir, dev_data$setup$pkgname)
   gcov_cleanup(pkg_path)
   dev_data$test_results <- testthat::test_dir(
