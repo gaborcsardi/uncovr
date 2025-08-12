@@ -79,7 +79,12 @@ load_package <- function(
 
 #' @export
 
-package_coverage <- function(path = ".", test_dir = "tests/testthat") {
+package_coverage <- function(
+  path = ".",
+  test_dir = "tests/testthat",
+  filter = NULL,
+  reporter = NULL
+) {
   withr::local_dir(path)
   dev_data <- load_package(path = ".", type = "coverage")
   pkg_path <- file.path(dev_data$setup$dir, dev_data$setup$pkgname)
@@ -87,7 +92,9 @@ package_coverage <- function(path = ".", test_dir = "tests/testthat") {
   dev_data$test_results <- testthat::test_dir(
     test_dir,
     load_package = "none",
-    stop_on_failure = FALSE
+    stop_on_failure = FALSE,
+    filter = filter,
+    reporter = reporter
   )
   cov_names <- dev_data$coverage$symbol
   counts <- cov_get_counts(cov_names)
@@ -107,9 +114,9 @@ package_coverage <- function(path = ".", test_dir = "tests/testthat") {
       asNamespace(dev_data$setup$pkgname)$gcov_flush(),
       error = function(...) {
         stop(cli::format_error(c(
-          "Could not run `gcov_flush()` in the {.pkg dev_data$setup$pkgname}
+          "Could not run `gcov_flush()` in the {.pkg {dev_data$setup$pkgname}}
           package. You need to add a `gcov_flush()` function to it, that
-          calls `__gcov_flush()`, see an example in the {.pkg ps} package."
+          calls `__gcov_dump()`, see an example in the {.pkg ps} package."
         )))
       }
     )
