@@ -414,36 +414,63 @@ cov_instrument_file <- function(path, cov_symbol) {
   res$coverage[res$status == "instrumented"] <- 0L
   res$status[is.na(res$status)] <- "noncode"
 
-  # now add line exclusions
-  drop <- which(
-    grepl("__NO_COVERAGE__$", lns0) |
-      grepl("# nocov$", lns0) |
-      grepl("// nocov$", lns0) |
-      grepl("/* nocov */$", lns0)
-  )
+  # we add line exclusions here, so it is theoretically possible
+  # to only exclude parts of a multi-line expression
+  drop <- parse_line_exclusions(lns0)
   if (length(drop)) {
     res$status[drop] <- "excluded"
     res$id[drop] <- NA_integer_
     res$coverage[drop] <- NA_integer_
   }
-  start <- grep("#[ ]*nocov[ ]+(start|begin)", lns0)
-  end <- grep("#[ ]*nocov[ ]+end", lns0)
-  if (length(start)) {
-    for (i in seq_along(start)) {
-      # TODO: check intervals
-      res$status[start[i]:end[i]] <- "excluded"
-      res$id[start[i]:end[i]] <- NA_integer_
-      res$coverage[start[i]:end[i]] <- NA_integer_
-    }
-    if (length(end) > length(start)) {
-      stop(cli::format_error(
-        "Found {.code # nocov end} in file {.path {path}}, in line {end[i+1]}
-         without the corresponding {.code #nocov start}."
-      ))
-    }
-  }
 
   res
+}
+
+parse_line_exclusions <- function(lns) {
+  sort(unique(c(
+    parse_line_exclusions_single(lns),
+    parse_line_exclusions_ranges(lns)
+  )))
+}
+
+parse_line_exclusions_single <- function(lns) {
+  which(
+    grepl("__NO_COVERAGE__$", lns) |
+      grepl("#[ ]*nocov$", lns) |
+      grepl("//[ ]*nocov$", lns) |
+      grepl("/[*][ ]*nocov[ ]* [*]/$", lns)
+  )
+}
+
+parse_line_exclusions_ranges <- function(lns) {
+  start <- grep("#[ ]*nocov[ ]+(start|begin)", lns)
+  end <- grep("#[ ]*nocov[ ]+end", lns)
+
+  length(start) <- length(end) <- max(length(start), length(end))
+  if (length(start) == 0) {
+    return(integer())
+  }
+
+  keep <- rep(TRUE, length(lns))
+  ranges <- data.frame(stringsAsFactors = FALSE, start = start, end = end)
+
+  for (i in seq_len(nrow(ranges))) {
+    if (is.na(ranges$start[i])) {
+      stop(cli::format_error(
+        "Found {.code # nocov end} without {.code # nocov start} at
+        {.path {path}}:{ranges$end[i]}."
+      ))
+    }
+    if (is.na(ranges$end[i]) || ranges$start[i] > ranges$end[i]) {
+      stop(cli::format_error(
+        "Found {.code # nocov start} without {.code # nocov end} at
+        {.path {path}}:{ranges$start[i]}."
+      ))
+    }
+    keep[ranges$start[i]:ranges$end[i]] <- FALSE
+  }
+
+  which(!keep)
 }
 
 get_inject_positions <- function(brc_pos, psd) {
