@@ -136,12 +136,19 @@ package_coverage <- function(path = ".", test_dir = "tests/testthat") {
 }
 
 add_coverage_summary <- function(coverage) {
+  # by directory
+  dirs <- as.factor(dirname(coverage$path))
+  bd_line_count <- tapply(coverage$line_count, dirs, sum)
+  bd_code_lines <- tapply(coverage$code_lines, dirs, sum)
+  bd_lines_covered <- tapply(coverage$lines_covered, dirs, sum)
+
   sm <- data.frame(
-    name = "All files",
-    line_count = sum(coverage$line_count),
-    code_lines = sum(coverage$code_lines),
-    lines_covered = sum(coverage$lines_covered)
+    name = c("All files", levels(dirs)),
+    line_count = c(sum(coverage$line_count), bd_line_count),
+    code_lines = c(sum(coverage$code_lines), bd_code_lines),
+    lines_covered = c(sum(coverage$lines_covered), bd_lines_covered)
   )
+
   sm$percent_covered <- sm$lines_covered / sm$code_lines * 100
   attr(coverage, "summary") <- sm
 
@@ -705,7 +712,8 @@ re_exclude_dir <- function(pkg) {
 
 format.coverage_table2 <- function(x, ...) {
   sm <- attr(x, "summary")
-  fn <- c(sm$name, paste0(" ", x$path))
+  fn0 <- c(sm$name[1], paste0(sm$name[-1], "/"), x$path)
+  fn <- c(sm$name[1], paste0(sm$name[-1], "/"), paste0(" ", x$path))
   rl <- c(sm$percent_covered, x$percent_covered)
   bl <- format_pct(rl)
 
@@ -722,24 +730,28 @@ format.coverage_table2 <- function(x, ...) {
 
   uc <- mapply(format_uncovered, x$uncovered, file = x$path, width = cw - maxw)
   cuc <- cli::ansi_align(
-    c("uncovered line #", "", "", uc, "", ""),
+    c("uncovered line #", "", rep("", nrow(sm)), uc, "", ""),
     width = max(cli::ansi_nchar(uc, "width"))
   )
-  tot <- sm$percent_covered[1]
+  tot <- sm$percent_covered
   cuc[mid] <- cov_col(cuc[mid], c(tot, x$percent_covered))
   lines <- paste0(lines, cuc)
 
+  # bottom line
   lines[1] <- cli::style_bold(style_bg_grey(cli::col_white(lines[1])))
-  if (tot < 75) {
-    lines[length(lines)] <- cli::bg_red(lines[length(lines)])
-  } else if (tot < 95) {
+  if (tot[1] < 75) {
+    lines[length(lines)] <- style_bg_orange(lines[length(lines)])
+  } else if (tot[1] < 95) {
     lines[length(lines)] <-
-      style_bg_orange(cli::col_white(lines[length(lines)]))
+      cli::bg_blue(cli::col_white(lines[length(lines)]))
   } else {
     lines[length(lines)] <-
       style_bg_green(cli::col_white(lines[length(lines)]))
   }
   lines[length(lines)] <- cli::style_bold(lines[length(lines)])
+
+  # directory summaries at the right place
+  lines[mid] <- lines[mid][c(1, order(fn0[-1]) + 1)]
 
   lines
 }
