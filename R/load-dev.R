@@ -111,7 +111,7 @@ package_coverage <- function(
     # try to flush the coverage data for the package
     # TODO: is there are a more robust way?
     tryCatch(
-      asNamespace(dev_data$setup$pkgname)$gcov_flush(),
+      gcov_flush_package(dev_data$setup$pkgname),
       error = function(...) {
         stop(cli::format_error(c(
           "Could not run `gcov_flush()` in the {.pkg {dev_data$setup$pkgname}}
@@ -137,6 +137,23 @@ package_coverage <- function(
   class(dev_data) <- c("package_coverage", class(dev_data))
 
   dev_data
+}
+
+gcov_flush_package <- function(package) {
+  # First try a function from the package itself, specifically made to
+  # do this
+  tryCatch(
+    {
+      asNamespace(package)$gcov_flush()
+      return()
+    },
+    error = function(...) {}
+  )
+
+  # Otherwise try to find the symbols in the DLL
+  dll <- getNamespaceInfo(package, "DLLs")[[1]]
+  handle <- unclass(dll)$handle
+  .Call(c_cov_gcov_flush_package, handle)
 }
 
 add_coverage_summary <- function(coverage) {
