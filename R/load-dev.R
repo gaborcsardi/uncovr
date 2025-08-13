@@ -59,6 +59,7 @@ load_package <- function(
   makeflags = NULL
 ) {
   withr::local_dir(path)
+  type <- match.arg(type)
   setup <- load_package_setup(path, type, makeflags)
   withr::local_options(structure(list(setup), names = opt_setup))
 
