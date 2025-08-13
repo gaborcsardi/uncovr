@@ -156,6 +156,8 @@ package_coverage <- function(
 
   dev_data$coverage <- add_coverage_summary(dev_data$coverage)
 
+  dev_data$coverage_filter <- filter
+
   class(dev_data$coverage) <- c("coverage_table2", class(dev_data$coverage))
   class(dev_data) <- c("package_coverage", class(dev_data))
 
@@ -754,7 +756,66 @@ re_exclude_dir <- function(pkg) {
 
 #' @export
 
-format.coverage_table2 <- function(x, ...) {
+format.coverage_table2 <- function(x, filter = NULL, ...) {
+  if (is.null(filter)) {
+    format_coverage_table2_full(x, ...)
+  } else {
+    format_coverage_table2_filter(x, filter, ...)
+  }
+}
+
+format_coverage_table2_filter <- function(x, filter, ...) {
+  mch <- grepl(filter, x$path)
+  if (length(mch) == 0) {
+    warning(
+      "No matching code file for '",
+      filter,
+      "', showing full coverage table"
+    )
+    return(format_coverage_table_full(x, ...))
+  }
+
+  x <- x[mch, ]
+  bl <- format_pct(x$percent_covered)
+  cffn <- ffn <- format(c("code coverage", "", x$path))
+  cfbl <- fbl <- format(c("% lines", "", bl))
+
+  mid <- 3:(length(ffn))
+  cffn[mid] <- cov_col(ffn[mid], x$percent_covered)
+  cfbl[mid] <- cov_col(fbl[mid], x$percent_covered)
+
+  lines <- paste0(cffn, " \u2502 ", cfbl, "\u2502 ")
+  maxw <- max(cli::ansi_nchar(lines, type = "width"))
+  cw <- cli::console_width()
+
+  uc <- mapply(format_uncovered, x$uncovered, file = x$path, width = 1000L)
+  uc <- cli::ansi_strwrap(
+    uc,
+    width = cw - maxw,
+    exdent = maxw,
+    simplify = FALSE
+  )
+  ucls <- lengths(uc)
+  uc <- map_chr(uc, paste, collapse = "\n")
+  if (any(ucls > 1)) {
+    cuc <- c("uncovered line #", "", uc)
+    cuc[1] <- cli::ansi_align(cuc[1], width = cw - maxw)
+  } else {
+    cuc <- cli::ansi_align(
+      c("uncovered line #", "", uc),
+      width = max(cli::ansi_nchar(uc, "width"))
+    )
+  }
+  cuc[mid] <- cov_col(cuc[mid], x$percent_covered)
+  lines <- paste0(lines, cuc)
+
+  # top line
+  lines[1] <- cli::style_bold(style_bg_grey(cli::col_white(lines[1])))
+
+  lines
+}
+
+format_coverage_table2_full <- function(x, ...) {
   sm <- attr(x, "summary")
   fn0 <- c(sm$name[1], paste0(sm$name[-1], "/"), x$path)
   fn <- c(sm$name[1], paste0(sm$name[-1], "/"), paste0(" ", x$path))
@@ -781,8 +842,10 @@ format.coverage_table2 <- function(x, ...) {
   cuc[mid] <- cov_col(cuc[mid], c(tot, x$percent_covered))
   lines <- paste0(lines, cuc)
 
-  # bottom line
+  # top line
   lines[1] <- cli::style_bold(style_bg_grey(cli::col_white(lines[1])))
+
+  # bottom line
   if (tot[1] < 75) {
     lines[length(lines)] <- style_bg_orange(lines[length(lines)])
   } else if (tot[1] < 95) {
@@ -810,7 +873,7 @@ print.coverage_table2 <- function(x, ...) {
 #' @export
 
 format.package_coverage <- function(x, ...) {
-  c("", format(x$coverage, ...))
+  c("", format(x$coverage, filter = x$coverage_filter, ...))
 }
 
 #' @export
