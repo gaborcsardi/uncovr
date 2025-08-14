@@ -89,7 +89,8 @@ load_package <- function(
 
   withr::local_options(pkg.build_extra_flags = FALSE)
   withr::local_makevars(setup$compiler_flags, .assignment = "+=")
-  loaded <- pkgload::load_all(file.path(setup$dir, setup$pkgname))
+  pkg_dir <- file.path(setup$dir, setup$pkgname)
+  loaded <- pkgload::load_all(pkg_dir)
 
   if (local_install) {
     lib <- file.path(setup[["dir"]], "__dev_lib__")
@@ -98,7 +99,7 @@ load_package <- function(
     }
     quick_install_loaded(
       setup[["pkgname"]],
-      ".",
+      pkg_dir,
       lib,
       loaded,
       inject_script = inject_script
