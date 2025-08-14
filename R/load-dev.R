@@ -95,7 +95,16 @@ load_package <- function(
 
   if (local_install) {
     lib <- file.path(setup[["dir"]], "__dev_lib__")
-    quick_install_loaded(setup[["pkgname"]], ".", lib, loaded)
+    inject_script <- if (type == "coverage") {
+      setup_cov_inject_script(file.path(lib, setup$pkgname), cov_data)
+    }
+    quick_install_loaded(
+      setup[["pkgname"]],
+      ".",
+      lib,
+      loaded,
+      inject_script = inject_script
+    )
     update_libpath(lib, setup[["pkgname"]])
     setup$dev_lib <- lib
   }
@@ -106,6 +115,40 @@ load_package <- function(
     load = loaded,
     coverage = if (type == "coverage") cov_data
   ))
+}
+
+setup_cov_inject_script <- function(target, cov_data) {
+  script <- file.path(target, "R", "inject.R")
+  ttlsoname <- paste0("testthatlabs", .Platform$dynlib.ext)
+  ttlpkg <- find.package("testthatlabs")
+  ttlso <- file.path(ttlpkg, "libs", ttlsoname)
+  if (!file.exists(ttlso)) {
+    ttlso <- file.path(ttlpkg, "src", ttlsoname)
+  }
+  stopifnot(file.exists(ttlso))
+  mkdirp(file.path(target, "libs"))
+  tgtsoname <- paste0("covxx", .Platform$dynlib.ext)
+  file.copy(ttlso, file.path(target, "libs", tgtsoname))
+
+  lns <- c(
+    "# coverage counter injection by testthatlabs",
+    "local({",
+    "  info <- loadingNamespaceInfo()",
+    "  pkg <- info$pkgname",
+    "  tgtsoname <- paste0('covxx', .Platform$dynlib.ext)",
+    "  dl <- dyn.load(file.path(info$libname, pkg, 'libs', tgtsoname))",
+    "  mc <- getNativeSymbolInfo('cov_make_counter', dl)",
+    sprintf(
+      "  assign('%s', .Call(mc, %dL), envir = .GlobalEnv)",
+      cov_data$symbol,
+      cov_data$line_count
+    ),
+    "})"
+  )
+
+  mkdirp(dirname(script))
+  writeLines(lns, script)
+  script
 }
 
 update_libpath <- function(lib, pkgname) {
@@ -119,7 +162,13 @@ clean_libpath <- function(pkgname) {
   update_libpath(NULL, pkgname)
 }
 
-quick_install_loaded <- function(pkgname, dir, lib, loaded) {
+quick_install_loaded <- function(
+  pkgname,
+  dir,
+  lib,
+  loaded,
+  inject_script = NULL
+) {
   withr::local_dir(dir)
   tgt <- file.path(lib, pkgname)
   mkdirp(tgt)
@@ -160,9 +209,15 @@ quick_install_loaded <- function(pkgname, dir, lib, loaded) {
     ls(loaded$env, all.names = TRUE),
     c(native, ".__DEVTOOLS__")
   )
+
   filebase <- file.path(tgt, "R", pkgname)
   mkdirp(dirname(filebase))
-  file.copy(file.path(R.home("share"), "R", "nspackloader.R"), filebase)
+  file.create(filebase)
+  if (!is.null(inject_script)) {
+    file.append(filebase, inject_script)
+  }
+  file.append(filebase, file.path(R.home("share"), "R", "nspackloader.R"))
+
   tools:::makeLazyLoadDB(
     loaded$env,
     filebase = filebase,

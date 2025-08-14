@@ -60,6 +60,8 @@ SEXP cov_gcov_flush_package(SEXP dll) {
   return Rf_ScalarLogical(TRUE);
 }
 
+void cov_init_altrep(DllInfo *dll);
+
 #define CALLDEF(name, n) \
   { #name, (DL_FUNC)&name, n }
 
@@ -75,10 +77,15 @@ static const R_CallMethodDef callMethods[]  = {
   { NULL, NULL, 0 }
 };
 
-void cli_init_altrep(DllInfo *dll);
+void R_init_covxx(DllInfo *dll) {
+  cov_init_altrep(dll);
+  R_registerRoutines(dll, NULL, callMethods, NULL, NULL);
+  R_useDynamicSymbols(dll, FALSE);
+  R_forceSymbols(dll, TRUE);
+}
 
 void R_init_testthatlabs(DllInfo *dll) {
-  cli_init_altrep(dll);
+  cov_init_altrep(dll);
   R_registerRoutines(dll, NULL, callMethods, NULL, NULL);
   R_useDynamicSymbols(dll, FALSE);
   R_forceSymbols(dll, TRUE);
