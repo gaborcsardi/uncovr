@@ -37,16 +37,14 @@ load_package_setup <- function(
     version = 1L,
     rver = as.character(getRversion()[, 1:2]),
     platform = R.Version()$platform,
-    type = type,
-    compiler_flags = get_makeflags(type)
+    type = type
   )
   setup[["hash"]] = cli::hash_obj_sha1(setup)
-  withr::local_options(structure(list(setup), names = opt_setup))
+  setup[["compiler_flags"]] <- get_makeflags(type)
+  setup[["dir"]] <- get_dev_dir(setup)
+  setup[["pkgname"]] <- desc::desc_get("Package", ".")
 
-  dir <- get_dev_dir()
-  setup[["dir"]] <- dir
-  pkgname <- desc::desc_get("Package", ".")
-  setup[["pkgname"]] <- pkgname
+  withr::local_options(structure(list(setup), names = opt_setup))
 
   setup
 }
@@ -372,11 +370,7 @@ cov_get_counts <- function(names) {
   })
 }
 
-get_dev_dir <- function() {
-  setup <- getOption(opt_setup)
-  if (is.null(setup)) {
-    stop("No dev build setup. :(")
-  }
+get_dev_dir <- function(setup) {
   file.path(".dev", setup$hash)
 }
 
