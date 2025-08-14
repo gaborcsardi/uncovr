@@ -144,9 +144,9 @@ quick_install_loaded <- function(pkgname, dir, lib, loaded) {
 
   # R code
   # First remove native routines from the list of symbols
-  if (length(loaded$dll)) {
+  native <- if (length(loaded$dll)) {
     native_info <- readRDS(file.path(tgt, "Meta", "nsInfo.rds"))$nativeRoutines
-    native <- unlist(lapply(names(loaded$dll), function(dllname) {
+    unlist(lapply(names(loaded$dll), function(dllname) {
       fixes <- native_info[[dllname]][["registrationFixes"]]
       paste0(
         fixes[1L],
