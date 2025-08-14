@@ -280,8 +280,17 @@ quick_install_loaded <- function(
   }
 }
 
+# TODO: this is much simpler than base e.g. we don't use .Rinstignore
 copy_inst_files <- function(src, tgt) {
-  # TODO
+  inst <- file.path(src, "inst")
+  if (!file.exists(inst)) {
+    return()
+  }
+
+  fls <- dir(inst, full.names = TRUE, include.dirs = TRUE, no.. = TRUE)
+  for (fl in fls) {
+    file.copy(fl, tgt, recursive = TRUE)
+  }
 }
 
 #' @export
