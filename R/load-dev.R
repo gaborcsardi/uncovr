@@ -1149,7 +1149,7 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
   while (length(pxs) > 0) {
     pr <- processx::poll(pxs, 1000)
     pr <- vapply(pr, "[[", "", "process")
-    dn <- pr != "timeout" & pr != "silent"
+    dn <- pr == "ready"
     st <- vapply(pxs[dn], function(p) p$get_exit_status(), 1L)
     oh <- pxs[dn][st != 0]
     if (length(oh)) {
