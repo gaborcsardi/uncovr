@@ -56,12 +56,17 @@ load_package_setup <- function(
 load_package <- function(
   path = ".",
   type = c("debug", "release", "coverage"),
-  makeflags = NULL
+  makeflags = NULL,
+  clean = FALSE
 ) {
   withr::local_dir(path)
   type <- match.arg(type)
   setup <- load_package_setup(path, type, makeflags)
   withr::local_options(structure(list(setup), names = opt_setup))
+
+  if (clean) {
+    unlink(setup[["dir"]], recursive = TRUE)
+  }
 
   copy <- c("src", if (type == "coverage") "R")
   plan <- update_package_tree(
@@ -101,7 +106,8 @@ package_coverage <- function(
   path = ".",
   test_dir = "tests/testthat",
   filter = NULL,
-  reporter = NULL
+  reporter = NULL,
+  clean = FALSE
 ) {
   withr::local_dir(path)
 
@@ -109,9 +115,11 @@ package_coverage <- function(
   # files and thinks that the dll is out of data, because they are newer
   setup <- load_package_setup(".", type = "coverage")
   pkg_path <- file.path(setup$dir, setup$pkgname)
-  gcov_cleanup(pkg_path)
+  if (!clean) {
+    gcov_cleanup(pkg_path)
+  }
 
-  dev_data <- load_package(path = ".", type = "coverage")
+  dev_data <- load_package(path = ".", type = "coverage", clean = clean)
   dev_data$test_results <- testthat::test_dir(
     test_dir,
     load_package = "none",
