@@ -893,6 +893,10 @@ re_exclude <- function(pkg) {
     paste0(
       "(?i)", # these are case insensitive
       c(
+        "[.]o$",
+        "[.]so$",
+        "[.]dll$",
+
         "(^|/)\\.DS_Store$", # by macOS finder
         "^\\.RData$", # .RData at /
         "~$",
