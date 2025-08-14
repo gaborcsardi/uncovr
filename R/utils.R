@@ -2,6 +2,10 @@ map_chr <- function(X, FUN, ...) {
   vapply(X, FUN, character(1), ...)
 }
 
+map_int <- function(X, FUN, ...) {
+  vapply(X, FUN, integer(1), ...)
+}
+
 mkdirp <- function(path) {
   dir.create(path, recursive = TRUE, showWarnings = FALSE)
 }
