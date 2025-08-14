@@ -186,10 +186,16 @@ quick_install_loaded <- function(
   loaded,
   inject_script = NULL
 ) {
-  # relative path, so it first
+  # relative path, so do it first
   tgt <- file.path(lib, pkgname)
   mkdirp(tgt)
   tgt <- normalizePath(tgt)
+
+  # detto
+  if (!is.null(inject_script)) {
+    inject_script <- normalizePath(inject_script)
+  }
+
   withr::local_dir(dir)
 
   tools:::.install_package_description(".", tgt)
