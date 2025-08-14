@@ -378,7 +378,7 @@ cov_get_counts <- function(names) {
   })
 }
 
-get_dev_dir <- function(setup) {
+get_dev_dir <- function(setup = list(hash = "")) {
   file.path(".dev", setup$hash)
 }
 
@@ -1167,4 +1167,34 @@ display_name <- function(x) {
     b <- gsub("#", "/", basename(x))
     paste0(dirname(x), "/", b)
   }
+}
+
+#' @export
+
+list_builds <- function(path = ".") {
+  withr::local_dir(path)
+  dirs <- dir(get_dev_dir(), full.names = TRUE, include.dirs = TRUE)
+  setup_paths <- file.path(dirs, "setup.rds")
+  setups <- lapply(setup_paths, readRDS)
+  builds <- data.frame(
+    stringsAsFactors = FALSE,
+    type = map_chr(setups, "[[", "type"),
+    r_version = map_chr(setups, "[[", "rver"),
+    platform = map_chr(setups, "[[", "platform"),
+    last_built = file.mtime(setup_paths),
+    disk_size = dir_size(dirs),
+    id = basename(dirs)
+  )
+  rownames(builds) <- NULL
+  class(builds) <- c("tbl", class(builds))
+
+  builds
+}
+
+dir_size <- function(dirs) {
+  map_dbl(dirs, function(dir) {
+    paths <- list.files(dir, recursive = TRUE, full.names = TRUE)
+    paths <- paths[!is_link(paths)]
+    sum(file.size(paths))
+  })
 }

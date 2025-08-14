@@ -6,6 +6,10 @@ map_int <- function(X, FUN, ...) {
   vapply(X, FUN, integer(1), ...)
 }
 
+map_dbl <- function(X, FUN, ...) {
+  vapply(X, FUN, double(1), ...)
+}
+
 mkdirp <- function(path) {
   dir.create(path, recursive = TRUE, showWarnings = FALSE)
 }
