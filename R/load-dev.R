@@ -268,9 +268,17 @@ package_coverage <- function(
     local_install = local_install
   )
   on.exit(clean_libpath(dev_data$setup$pkgname), add = TRUE)
+  if (!local_install) {
+    # TODO: only message if parallel tests are on
+    message("`local_install = FALSE` turns off parallel testthat!")
+    withr::local_envvar(TESTTHAT_PARALLEL = "false")
+  }
+  # TODO: ideally we would use load_package = "none" in the main process and
+  # load_package = "installed" in the testthat workers
   dev_data$test_results <- testthat::test_dir(
     test_dir,
-    load_package = "none",
+    package = setup[["pkgname"]],
+    load_package = if (local_install) "installed" else "none",
     stop_on_failure = FALSE,
     filter = filter,
     reporter = reporter
