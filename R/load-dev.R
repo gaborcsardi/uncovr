@@ -186,26 +186,44 @@ quick_install_loaded <- function(
   loaded,
   inject_script = NULL
 ) {
-  withr::local_dir(dir)
+  # relative path, so it first
   tgt <- file.path(lib, pkgname)
   mkdirp(tgt)
+  tgt <- normalizePath(tgt)
+  withr::local_dir(dir)
 
   tools:::.install_package_description(".", tgt)
   tools:::.install_package_namespace_info(".", tgt)
   tools:::.install_package_indices(".", tgt)
 
   # copy libs
-  # TODO: use install.libs.R if exists
-  shlib_ext <- .Platform[["dynlib.ext"]]
-  dlls <- Sys.glob(paste0("src/*", shlib_ext))
-  if (length(dlls)) {
-    libs <- file.path(tgt, "libs")
-    arch <- .Platform[["r_arch"]]
-    if (arch != "") {
-      libs <- paste0(libs, arch)
+  arch <- .Platform[["r_arch"]]
+  ilr <- "install.libs.R"
+  if (file.exists(file.path("src", ilr))) {
+    local.env <- local({
+      SHLIB_EXT <- .Platform$dynlib.ext
+      R_PACKAGE_DIR <- tgt
+      R_PACKAGE_NAME <- pkgname
+      R_PACKAGE_SOURCE <- "."
+      R_ARCH <- arch
+      WINDOWS <- is_windows()
+      environment()
+    })
+    parent.env(local.env) <- .GlobalEnv
+    withr::with_dir("src", {
+      source(ilr, local = local.env)
+    })
+  } else {
+    shlib_ext <- .Platform[["dynlib.ext"]]
+    dlls <- Sys.glob(paste0("src/*", shlib_ext))
+    if (length(dlls)) {
+      libs <- file.path(tgt, "libs")
+      if (arch != "") {
+        libs <- paste0(libs, arch)
+      }
+      mkdirp(libs)
+      file.copy(dlls, libs, overwrite = TRUE)
     }
-    mkdirp(libs)
-    file.copy(dlls, libs, overwrite = TRUE)
   }
 
   # R code
