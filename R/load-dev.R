@@ -127,7 +127,6 @@ quick_install_loaded <- function(pkgname, dir, lib, loaded) {
   tools:::.install_package_description(".", tgt)
   tools:::.install_package_namespace_info(".", tgt)
   tools:::.install_package_indices(".", tgt)
-  file.copy(file.path(".", "NAMESPACE"), file.path(tgt, "NAMESPACE"))
 
   # copy libs
   # TODO: use install.libs.R if exists
@@ -172,9 +171,14 @@ quick_install_loaded <- function(pkgname, dir, lib, loaded) {
   )
 
   # some potential extra files
-  if (file.exists("LICENSE")) {
-    file.copy("LICENSE", tgt)
+  extra <- c("NAMESPACE", "LICENCE", "LICENSE", "NEWS", "NEWS.md")
+  for (fn in extra) {
+    if (file.exists(fn)) {
+      file.copy(fn, tgt, overwrite = TRUE)
+    }
   }
+
+  # inst/
   if (file.exists("inst")) {
     copy_inst_files(".", tgt)
   }
