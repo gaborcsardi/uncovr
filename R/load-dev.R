@@ -57,7 +57,8 @@ load_package <- function(
   path = ".",
   type = c("debug", "release", "coverage"),
   makeflags = NULL,
-  clean = FALSE
+  clean = FALSE,
+  local_install = FALSE
 ) {
   withr::local_dir(path)
   type <- match.arg(type)
@@ -92,12 +93,95 @@ load_package <- function(
   withr::local_makevars(setup$compiler_flags, .assignment = "+=")
   loaded <- pkgload::load_all(file.path(setup$dir, setup$pkgname))
 
+  if (local_install) {
+    lib <- file.path(setup[["dir"]], "__dev_lib__")
+    quick_install_loaded(setup[["pkgname"]], ".", lib, loaded)
+    update_libpath(lib, setup[["pkgname"]])
+    setup$dev_lib <- lib
+  }
+
   invisible(list(
     setup = setup,
     plan = plan,
     load = loaded,
     coverage = if (type == "coverage") cov_data
   ))
+}
+
+update_libpath <- function(lib, pkgname) {
+  # remove exixting dev library for the same package, if any
+  current <- .libPaths()
+  current <- current[!grepl(paste0("/__dev_lib__$"), current)]
+  .libPaths(c(lib, current))
+}
+
+clean_libpath <- function(pkgname) {
+  update_libpath(NULL, pkgname)
+}
+
+quick_install_loaded <- function(pkgname, dir, lib, loaded) {
+  withr::local_dir(dir)
+  tgt <- file.path(lib, pkgname)
+  mkdirp(tgt)
+
+  tools:::.install_package_description(".", tgt)
+  tools:::.install_package_namespace_info(".", tgt)
+  tools:::.install_package_indices(".", tgt)
+  file.copy(file.path(".", "NAMESPACE"), file.path(tgt, "NAMESPACE"))
+
+  # copy libs
+  # TODO: use install.libs.R if exists
+  shlib_ext <- .Platform[["dynlib.ext"]]
+  dlls <- Sys.glob(paste0("src/*", shlib_ext))
+  if (length(dlls)) {
+    libs <- file.path(tgt, "libs")
+    arch <- .Platform[["r_arch"]]
+    if (arch != "") {
+      libs <- paste0(libs, arch)
+    }
+    mkdirp(libs)
+    file.copy(dlls, libs, overwrite = TRUE)
+  }
+
+  # R code
+  # First remove native routines from the list of symbols
+  if (length(loaded$dll)) {
+    native_info <- readRDS(file.path(tgt, "Meta", "nsInfo.rds"))$nativeRoutines
+    native <- unlist(lapply(names(loaded$dll), function(dllname) {
+      fixes <- native_info[[dllname]][["registrationFixes"]]
+      paste0(
+        fixes[1L],
+        unlist(lapply(getDLLRegisteredRoutines(loaded$dll[[dllname]]), names)),
+        fixes[2L]
+      )
+    }))
+  }
+  # also remove .__DEVTOOLS__, this is a not a load_all()-d package
+  variables <- setdiff(
+    ls(loaded$env, all.names = TRUE),
+    c(native, ".__DEVTOOLS__")
+  )
+  filebase <- file.path(tgt, "R", pkgname)
+  mkdirp(dirname(filebase))
+  file.copy(file.path(R.home("share"), "R", "nspackloader.R"), filebase)
+  tools:::makeLazyLoadDB(
+    loaded$env,
+    filebase = filebase,
+    variables = variables,
+    compress = FALSE
+  )
+
+  # some potential extra files
+  if (file.exists("LICENSE")) {
+    file.copy("LICENSE", tgt)
+  }
+  if (file.exists("inst")) {
+    copy_inst_files(".", tgt)
+  }
+}
+
+copy_inst_files <- function(src, tgt) {
+  # TODO
 }
 
 #' @export
@@ -107,7 +191,8 @@ package_coverage <- function(
   test_dir = "tests/testthat",
   filter = NULL,
   reporter = NULL,
-  clean = FALSE
+  clean = FALSE,
+  local_install = TRUE
 ) {
   withr::local_dir(path)
 
@@ -119,7 +204,13 @@ package_coverage <- function(
     gcov_cleanup(pkg_path)
   }
 
-  dev_data <- load_package(path = ".", type = "coverage", clean = clean)
+  dev_data <- load_package(
+    path = ".",
+    type = "coverage",
+    clean = clean,
+    local_install = local_install
+  )
+  on.exit(clean_libpath(dev_data$setup$pkgname), add = TRUE)
   dev_data$test_results <- testthat::test_dir(
     test_dir,
     load_package = "none",
