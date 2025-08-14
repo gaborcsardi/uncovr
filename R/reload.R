@@ -152,7 +152,7 @@ covr_flags <- function() {
 
     # LDFLAGS is ignored on windows and visa versa
     LDFLAGS = if (!is_windows()) {
-      "--coverage -Wl,-export_dynamic"
+      "--coverage"
     } else {
       NULL
     },
