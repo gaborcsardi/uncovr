@@ -141,6 +141,24 @@ setup_cov_inject_script <- function(target, cov_data) {
       cov_data$symbol,
       cov_data$line_count
     ),
+    "  output <- file.path(",
+    "    dirname(info$libname), ",
+    "    'cov',",
+    "    paste0(Sys.getpid(), '.rda')",
+    "  )",
+    "  dir.create(dirname(output), showWarnings = FALSE, recursive = TRUE)",
+    "  reg.finalizer(",
+    "    .GlobalEnv,",
+    "    function(e) {",
+    "      save(",
+    "        list = ls(all.names = TRUE, pattern = '^[.]__cov_', envir = e),",
+    "        file = output,",
+    "        compression_level = 0,",
+    "        envir = e",
+    "     )",
+    "    },",
+    "    onexit = TRUE",
+    "  )",
     "})"
   )
 
@@ -268,6 +286,11 @@ package_coverage <- function(
     local_install = local_install
   )
   on.exit(clean_libpath(dev_data$setup$pkgname), add = TRUE)
+
+  # clean up files from subprocesses
+  subprocdir <- file.path(setup$dir, "cov")
+  unlink(subprocdir, recursive = TRUE)
+
   if (!local_install) {
     # TODO: only message if parallel tests are on
     message("`local_install = FALSE` turns off parallel testthat!")
@@ -286,6 +309,7 @@ package_coverage <- function(
 
   cov_names <- dev_data$coverage$symbol
   counts <- cov_get_counts(cov_names)
+  counts <- add_subprocess_coverage(counts, subprocdir)
   for (i in seq_along(counts)) {
     ids <- dev_data$coverage$lines[[i]]$id
     dev_data$coverage$lines[[i]]$coverage[] <- counts[[i]][ids]
@@ -327,6 +351,23 @@ package_coverage <- function(
   class(dev_data) <- c("package_coverage", class(dev_data))
 
   dev_data
+}
+
+add_subprocess_coverage <- function(counts, subprocdir) {
+  fls <- list.files(subprocdir, full.names = TRUE)
+  for (fl in fls) {
+    e <- new.env(parent = emptyenv())
+    tryCatch(
+      {
+        load(fl, envir = e)
+        for (n in ls(e, all.names = TRUE)) {
+          counts[[n]] <- counts[[n]] + e[[n]]
+        }
+      },
+      error = function(e) message("Failed to process subprocess code coverage")
+    )
+  }
+  counts
 }
 
 gcov_flush_package <- function(package) {
@@ -373,9 +414,12 @@ calculate_uncovered_intervals <- function(lines) {
 }
 
 cov_get_counts <- function(names) {
-  lapply(names, function(name) {
-    .Call(c_cov_get_counts, get(name, envir = .GlobalEnv))
-  })
+  structure(
+    lapply(names, function(name) {
+      .Call(c_cov_get_counts, get(name, envir = .GlobalEnv))
+    }),
+    names = names
+  )
 }
 
 get_dev_dir <- function(setup = list(hash = "")) {
