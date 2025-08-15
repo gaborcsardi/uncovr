@@ -14,6 +14,7 @@ Imports:
     covr,
     desc,
     fs,
+    pillar,
     pkgbuild,
     prettyunits,
     processx,

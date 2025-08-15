@@ -116,6 +116,10 @@ load_package <- function(
   ))
 }
 
+#' @export
+
+l <- load_package
+
 setup_cov_inject_script <- function(target, cov_data) {
   script <- file.path(target, "R", "inject.R")
   ttlsoname <- paste0("testthatlabs", .Platform$dynlib.ext)
@@ -386,6 +390,10 @@ package_coverage <- function(
 
   dev_data
 }
+
+#' @export
+
+t <- package_coverage
 
 add_subprocess_coverage <- function(counts, subprocdir) {
   fls <- list.files(subprocdir, full.names = TRUE)
