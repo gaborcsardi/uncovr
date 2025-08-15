@@ -1268,7 +1268,10 @@ list_builds <- function(path = ".") {
     id = basename(dirs)
   )
   rownames(builds) <- NULL
+
+  # Better printing if pillar is available
   class(builds) <- c("tbl", class(builds))
+  requireNamespace("pillar", quietly = TRUE)
 
   builds
 }
