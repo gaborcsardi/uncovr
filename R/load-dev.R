@@ -23,8 +23,8 @@ paste_named <- function(orig, new) {
 }
 
 load_package_setup <- function(
-  path = ".",
   type = c("debug", "release", "coverage"),
+  path = ".",
   makeflags = NULL
 ) {
   withr::local_dir(path)
@@ -52,15 +52,15 @@ load_package_setup <- function(
 #' @export
 
 load_package <- function(
-  path = ".",
   type = c("debug", "release", "coverage"),
+  path = ".",
   makeflags = NULL,
   clean = FALSE,
   local_install = FALSE
 ) {
   withr::local_dir(path)
   type <- match.arg(type)
-  setup <- load_package_setup(path, type, makeflags)
+  setup <- load_package_setup(type, path, makeflags)
   withr::local_options(structure(list(setup), names = opt_setup))
 
   if (clean) {
@@ -300,9 +300,9 @@ copy_inst_files <- function(src, tgt) {
 #' @export
 
 package_coverage <- function(
+  filter = NULL,
   path = ".",
   test_dir = "tests/testthat",
-  filter = NULL,
   reporter = NULL,
   clean = FALSE,
   local_install = TRUE
@@ -311,15 +311,15 @@ package_coverage <- function(
 
   # clean up .gcda files, because pkgbuild wrongly considers them as source
   # files and thinks that the dll is out of data, because they are newer
-  setup <- load_package_setup(".", type = "coverage")
+  setup <- load_package_setup(type = "coverage", path = ".")
   pkg_path <- file.path(setup$dir, setup$pkgname)
   if (!clean) {
     gcov_cleanup(pkg_path)
   }
 
   dev_data <- load_package(
-    path = ".",
     type = "coverage",
+    path = ".",
     clean = clean,
     local_install = local_install
   )
