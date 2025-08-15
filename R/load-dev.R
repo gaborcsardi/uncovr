@@ -49,6 +49,48 @@ load_package_setup <- function(
   setup
 }
 
+#' Load a package tree for development
+#'
+#' A wrapper on [pkgload::load_all()] to load a package tree from a
+#' dev build.
+#'
+#' @param type Build type. One of:
+#'   - `"debug"`: Compiled with debug flags. (Passes `debug = TRUE` to
+#'     [pkgbuild::compiler_flags()].)
+#'   - `"release"`: Compiled without debug flags. (Passes `debug = FALSE` to
+#'     [pkgbuild::compiler_flags()].)
+#'   - `"coverage"`: Compiled with debug flags and code coverage support.
+#' @param path Path to the package tree.
+#' @param makeflags Named character vector to override the default make flags.
+#' @param clean Whether to delete the build directory before the build.
+#' @param local_install Whether to install the built package into a local
+#'   library and add that library to the beginning of the library path.
+#'
+#' @return
+#' A list with entries:
+#' - `setup`: List of the build setup. Entries:
+#'   - `version`: Version of format of the build directory.
+#'   - `rver`: R version. (First two digits only.)
+#'   - `platform`: Build platform triplet.
+#'   - `type`: The build type.
+#'   - `hash`: The hash of the setup that is used as the build directory
+#'     name.
+#'   - `compiler_flags`: Nemed character vector of extra `Makevars` flags
+#'     to use.
+#'   - `dir`: The build directory.
+#'   - `pkgname`: The name of the package.
+#' - `plan`: Data frame of the plan to create the build directory. Columns:
+#'   - `path`: Relative path of the file.
+#'   - `isdir`: Whether it is a directory.
+#'   - `action`: How to create the path in the build directory: `"link"` or
+#'     `"copy"`.
+#'   - `target`: Relative path of the file or directory in the build
+#'     directory.
+#'   - `hash`: Hash of the file for files, it is `NA` for directories.
+#' - `load`: The return value of [pkgload::load_all()].
+#' - `coverage`: For `type = "coverage"` builds a data frame with the
+#'   code coverage instrumentation data for R files. See
+#'   [package_coverage()] for the structure.
 #' @export
 
 load_package <- function(
@@ -116,6 +158,9 @@ load_package <- function(
   ))
 }
 
+#' @details
+#' `l()` is an alias of `load_package()`.
+#' @rdname load_package
 #' @export
 
 l <- load_package
@@ -297,6 +342,52 @@ copy_inst_files <- function(src, tgt) {
   }
 }
 
+#' Run package tests and show test coverage results
+#'
+#' @details
+#' Performs the following steps:
+#' - Builds the package in a build directory, or updates the most recent
+#'   build, if there is one.
+#' - Loads the package from the build directory using [pkgload::load_all()].
+#' - Installs the package into a local library (by default).
+#' - Runs the package tests.
+#' - Calculates and shows the test coverage of the package's source files.
+#'
+#' @param filter Regular expression to filter both the test files (via the
+#'   `filter` argument of [testthat::test_dir()]), and the source files
+#'   in the coverage results.
+#' @param test_dir Test directory to use. Defaults to `tests/testthat`
+#'   within the package tree.
+#' @inheritParams load_package
+#'
+#' @return A list of class `package_coverage` with entries:
+#'   - `setup`: Build setup, see [load_package()].
+#'   - `plan`: Build plan, see [load_package()].
+#'   - `load`: Return value of [pkgload::load_all()].
+#'   - `coverage`: Code coverage results. Columns:
+#'     - `path`: Relative path to the R code file.
+#'     - `symbol`: The R variable that is used to collect the coverage for
+#'       this file.
+#'     - `line_count`: Total number of lines in the file.
+#'     - `code_lines`: Number of code lines (that are not excluded).
+#'     - `lines_covered`: The number of covered lines will be stored here
+#'       after a test coverage run. For `load_package()` it is all zero.
+#'     - `percent_covered`: The test coverage percentage of the file will
+#'       be stored here after a test coverage run. For `load_package()` it is
+#'       all zero.
+#'     - `lines`: A list column with a data frame for each file. The data
+#'       frame has columns:
+#'       - `lines`: The code line.
+#'       - `status`: Whether this line is `"instrumented"`, `"noncode"` or
+#'         `"excluded"`.
+#'       - `id` The id of the counter that applies to this line. Often the
+#'         same as the line number, but not always, e.g. for multi-line
+#'         expressions. `NA` for lines that are not `"instrumented"`.
+#'       - `coverage`: The number of times the line was covered will be filled
+#'         in here after a test coverage run. For `load_package()` it is zero,
+#'         but `NA` for lines that are not `"instrumented"`.
+#'   - `test_results`: Return value of [testthat::test_dir()].
+#'
 #' @export
 
 package_coverage <- function(
@@ -391,6 +482,10 @@ package_coverage <- function(
   dev_data
 }
 
+#' @rdname package_coverage
+#' @details
+#'
+#' `t()` is an alias of `package_coverage()`.
 #' @export
 
 t <- package_coverage
@@ -1259,6 +1354,16 @@ display_name <- function(x) {
   }
 }
 
+#' List development builds
+#'
+#' @inheritParams load_package
+#' @return Data frame with columns:
+#'   - `type`: Build type, character.
+#'   - `r_version`: R version, first two digits only, character.
+#'   - `platform`: Build platform triplet, character.
+#'   - `last_built`: Time stamp of the last build, [POSIXct].
+#'   - `dist_size`: Size of the build directory in bytes, double.
+#'   - `id`: Name of the build directory.
 #' @export
 
 list_builds <- function(path = ".") {
