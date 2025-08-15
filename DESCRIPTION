@@ -14,7 +14,6 @@ Imports:
     covr,
     desc,
     fs,
-    pillar,
     pkgbuild,
     prettyunits,
     processx,
@@ -24,4 +23,6 @@ Imports:
     tools,
     utils,
     withr
+Suggests:
+    pillar
 Encoding: UTF-8
