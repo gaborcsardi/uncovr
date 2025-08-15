@@ -247,9 +247,9 @@ quick_install_loaded <- function(
 
   withr::local_dir(dir)
 
-  tools:::.install_package_description(".", tgt)
-  tools:::.install_package_namespace_info(".", tgt)
-  tools:::.install_package_indices(".", tgt)
+  asNamespace("tools")$.install_package_description(".", tgt)
+  asNamespace("tools")$.install_package_namespace_info(".", tgt)
+  asNamespace("tools")$.install_package_indices(".", tgt)
 
   # copy libs
   arch <- .Platform[["r_arch"]]
@@ -308,7 +308,7 @@ quick_install_loaded <- function(
   }
   file.append(filebase, file.path(R.home("share"), "R", "nspackloader.R"))
 
-  tools:::makeLazyLoadDB(
+  asNamespace("tools")$makeLazyLoadDB(
     loaded$env,
     filebase = filebase,
     variables = variables,
@@ -358,6 +358,8 @@ copy_inst_files <- function(src, tgt) {
 #'   in the coverage results.
 #' @param test_dir Test directory to use. Defaults to `tests/testthat`
 #'   within the package tree.
+#' @param reporter The testthat reporter to use. Passed to
+#'   [testthat::test_dir()].
 #' @inheritParams load_package
 #'
 #' @return A list of class `package_coverage` with entries:
@@ -802,7 +804,7 @@ cov_instrument_dir <- function(path = "R", exclusion_file = ".covrignore") {
 
 cov_instrument_file <- function(path, cov_symbol) {
   ps <- parse(path, keep.source = TRUE)
-  psd <- getParseData(ps)
+  psd <- utils::getParseData(ps)
   brc_poss <- which(psd$token == "'{'")
 
   # drop rlang's {{ embrace operator up front
@@ -1118,7 +1120,7 @@ format_coverage_table2_filter <- function(x, filter, ...) {
       filter,
       "', showing full coverage table"
     )
-    return(format_coverage_table_full(x, ...))
+    return(format_coverage_table2_full(x, ...))
   }
 
   x <- x[mch, ]

@@ -33,6 +33,9 @@ in the coverage results.}
 \item{test_dir}{Test directory to use. Defaults to `tests/testthat`
 within the package tree.}
 
+\item{reporter}{The testthat reporter to use. Passed to
+[testthat::test_dir()].}
+
 \item{clean}{Whether to delete the build directory before the build.}
 
 \item{local_install}{Whether to install the built package into a local
