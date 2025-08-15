@@ -15,6 +15,7 @@ Imports:
     desc,
     fs,
     pkgbuild,
+    pkgload,
     prettyunits,
     processx,
     R6,
