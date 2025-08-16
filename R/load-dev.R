@@ -308,6 +308,14 @@ quick_install_loaded <- function(
   }
   file.append(filebase, file.path(R.home("share"), "R", "nspackloader.R"))
 
+  # TODO: one issue is that `load_all()` runs `.onLoad()` which might manipulate
+  # the namespace in a way that is not idempotent. We save the manipulated
+  # namespace, and then when `.onLoad()` runs again at package load it fails.
+  # E.g. pillar deleting 'strrep' from the namespace is such manipulation.
+  # We can't even special case pillar here in a way that won't be broken by
+  # potential pillar changes in the future. Fix in pillar:
+  # https://github.com/r-lib/pillar/pull/798
+
   asNamespace("tools")$makeLazyLoadDB(
     loaded$env,
     filebase = filebase,
