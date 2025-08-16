@@ -6,22 +6,6 @@
 #include <Rinternals.h>
 #include <R_ext/Rdynload.h>
 
-// A function to flush test coverate data to disk
-#ifdef GCOV_COMPILE
-void __gcov_dump();
-void __gcov_reset();
-SEXP cov_gcov_flush() {
-  REprintf("Flushing coverage info\n");
-  __gcov_dump();
-  __gcov_reset();
-  return R_NilValue;
-}
-#else
-SEXP cov_gcov_flush(void) {
-  return R_NilValue;
-}
-#endif
-
 SEXP cov_make_counter(SEXP len);
 SEXP cov_get_counts(SEXP counter);
 SEXP cov_read_file_raw(SEXP path);
@@ -66,7 +50,6 @@ void cov_init_altrep(DllInfo *dll);
   { #name, (DL_FUNC)&name, n }
 
 static const R_CallMethodDef callMethods[]  = {
-  CALLDEF(cov_gcov_flush, 0),
   CALLDEF(cov_make_counter, 1),
   CALLDEF(cov_get_counts, 1),
   CALLDEF(cov_read_file_raw, 1),

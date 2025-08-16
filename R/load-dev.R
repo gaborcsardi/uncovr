@@ -452,7 +452,6 @@ package_coverage <- function(
 
   if (file.exists("src")) {
     # try to flush the coverage data for the package
-    # TODO: is there are a more robust way?
     tryCatch(
       gcov_flush_package(dev_data$setup$pkgname),
       error = function(...) {
