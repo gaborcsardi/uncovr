@@ -109,7 +109,12 @@ load_package <- function(
     unlink(setup[["dir"]], recursive = TRUE)
   }
 
-  copy <- c("src", if (type == "coverage") "R")
+  # TODO: need to copy tests otherwise pkgload/rprojroot resolves the
+  # symlink back to the original package directory. We could create a
+  # directory and copy the contents. We could have a way to create
+  # the 'tests' directory but then symlink everything else under it,
+  # instead of copying.
+  copy <- c("src", if (type == "coverage") c("R", "tests"))
   plan <- update_package_tree(
     ".",
     setup$dir,
