@@ -11,15 +11,12 @@ RoxygenNote: 7.3.2.9000
 Depends: R (>= 3.5)
 Imports:
     cli,
-    covr,
     desc,
-    fs,
     pkgbuild,
     pkgload,
     prettyunits,
     processx,
     R6,
-    stats,
     testthat (>= 2.99),
     tools,
     utils,

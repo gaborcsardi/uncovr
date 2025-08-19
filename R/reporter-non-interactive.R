@@ -1,29 +1,3 @@
-test_non_interactive <- function(pkg = NULL, filter = NULL, ...) {
-  pkg <- pkg %||% read.dcf("DESCRIPTION")[, "Package"][[1]]
-
-  if (file.exists("testthat")) {
-    test_directory <- "testthat"
-  } else if (file.exists("tests")) {
-    test_directory <- "tests/testthat"
-  } else {
-    stop("Could not find testthat tests")
-  }
-
-  results <- testthat::test_dir(
-    test_directory,
-    reporter = non_interactive_reporter$new(pkg),
-    filter = filter,
-    load_helpers = TRUE,
-    stop_on_failure = TRUE,
-    env = new.env(parent = asNamespace(pkg)),
-    ...
-  )
-
-  saveRDS(results, file.path(test_directory, "results.rds"), version = 2)
-
-  invisible(results)
-}
-
 non_interactive_reporter <- R6::R6Class(
   "non_interactive_reporter",
   inherit = testthat::ProgressReporter,

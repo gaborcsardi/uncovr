@@ -38,26 +38,6 @@ context_name <- function(filename) {
   }
 }
 
-is_interactive <- function() {
-  opt <- getOption("rlib_interactive")
-  opt2 <- getOption("rlang_interactive")
-  if (isTRUE(opt)) {
-    TRUE
-  } else if (identical(opt, FALSE)) {
-    FALSE
-  } else if (isTRUE(opt2)) {
-    TRUE
-  } else if (identical(opt2, FALSE)) {
-    FALSE
-  } else if (tolower(getOption("knitr.in.progress", "false")) == "true") {
-    FALSE
-  } else if (identical(Sys.getenv("TESTTHAT"), "true")) {
-    FALSE
-  } else {
-    base::interactive()
-  }
-}
-
 get_test_file_call <- function(test_file) {
   calls <- sys.calls()
   fns <- map_chr(calls, function(x) {
@@ -88,42 +68,31 @@ strpad <- function(
   )
 }
 
-base_packages <- function() {
-  c(
-    "base",
-    "compiler",
-    "datasets",
-    "graphics",
-    "grDevices",
-    "grid",
-    "methods",
-    "parallel",
-    "splines",
-    "stats",
-    "stats4",
-    "tcltk",
-    "tools",
-    "utils"
-  )
+# key is ordered
+
+find_zero_ranges <- function(key, value) {
+  out <- list()
+  start <- end <- NA_integer_
+  for (i in seq_along(key)) {
+    if (value[i] == 0 && is.na(start)) {
+      start <- end <- key[i]
+    } else if (value[i] == 0 && !is.na(start)) {
+      end <- key[i]
+    } else if (value[i] != 0 && !is.na(start)) {
+      out[[length(out) + 1]] <- start:end
+      start <- end <- NA_integer_
+    } else if (value[i] != 0 && is.na(start)) {
+      # Nothing to do
+    }
+  }
+
+  if (!is.na(start)) {
+    out[[length(out) + 1]] <- start:end
+  }
+
+  out
 }
 
-lapply_with_names <- function(X, FUN, ...) {
-  structure(lapply(X, FUN, ...), names = X)
-}
-
-vlapply <- function(X, FUN, ...) {
-  vapply(X, FUN, FUN.VALUE = logical(1), ...)
-}
-
-viapply <- function(X, FUN, ...) {
-  vapply(X, FUN, FUN.VALUE = integer(1), ...)
-}
-
-vcapply <- function(X, FUN, ...) {
-  vapply(X, FUN, FUN.VALUE = character(1), ...)
-}
-
-last_char <- function(x) {
-  l <- nchar(x)
-  substr(x, l, l)
+is_windows <- function() {
+  .Platform$OS.type == "windows"
 }
