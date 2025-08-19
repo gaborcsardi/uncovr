@@ -141,7 +141,7 @@ load_package <- function(
 
   # need to patch first code file to create counters (if coverage)
   if (type == "coverage") {
-    code_files <- pkgload:::find_code(pkg_dir)
+    code_files <- find_code(pkg_dir)
     fn1 <- code_files[1]
     setup$covxxso <- inject_covxxso(setup$dir)
     writeLines(
@@ -191,6 +191,31 @@ setup_cov_env <- function(cov_data) {
       envir = .GlobalEnv
     )
   }
+}
+
+find_code <- function(path = ".", quiet = FALSE) {
+  path_r <- file.path(path, "R")
+  r_files <- withr::with_collate(
+    "C",
+    tools::list_files_with_type(path_r, "code", full.names = TRUE)
+  )
+  collate <- desc::desc_get_collate(file = path)
+  if (length(collate) > 0) {
+    collate <- file.path(path_r, collate)
+    missing <- setdiff(collate, r_files)
+    if (!quiet && length(missing) > 0) {
+      cli::cli_alert_info("Skipping missing files: {.file {missing}}")
+    }
+    collate <- setdiff(collate, missing)
+    extra <- setdiff(r_files, collate)
+    if (!quiet && length(extra) > 0) {
+      cli::cli_alert_info(
+        "Adding files missing in collate: {.file {extra}}"
+      )
+    }
+    r_files <- union(collate, r_files)
+  }
+  r_files
 }
 
 setup_cov_inject_script <- function(target, cov_data) {
