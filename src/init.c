@@ -16,14 +16,14 @@ SEXP cov_read_file_raw(SEXP path);
 SEXP cov_read_lines(SEXP path);
 SEXP cov_parse_gcov(SEXP path, SEXP displayname);
 
-SEXP cov_gcov_flush_package(SEXP dll) {
-  DllInfo *cdll = (DllInfo*) R_ExternalPtrAddr(dll);
+SEXP cov_gcov_flush_package(SEXP dllhandle) {
+  void *cdllhandle = (void *) R_ExternalPtrAddr(dllhandle);
 
   DL_FUNC ptr;
 #ifdef _WIN32
-  ptr = (DL_FUNC) GetProcAddress((HMODULE)cdll, "__gcov_dump");
+  ptr = (DL_FUNC) GetProcAddress((HMODULE)cdllhandle, "__gcov_dump");
 #else
-  ptr = (DL_FUNC) dlsym(cdll, "__gcov_dump");
+  ptr = (DL_FUNC) dlsym(cdllhandle, "__gcov_dump");
 #endif
   if (!ptr) {
     Rf_error("Cannot find __gcov_dump symbol");
@@ -31,9 +31,9 @@ SEXP cov_gcov_flush_package(SEXP dll) {
   ptr();
 
 #ifdef _WIN32
-  ptr =(DL_FUNC) GetProcAddress((HMODULE)cdll, "__gcov_reset");
+  ptr =(DL_FUNC) GetProcAddress((HMODULE)cdllhandle, "__gcov_reset");
 #else
-  ptr =(DL_FUNC) dlsym(cdll, "__gcov_reset");
+  ptr =(DL_FUNC) dlsym(cdllhandle, "__gcov_reset");
 #endif
   if (!ptr) {
     Rf_error("Cannot find __gcov_reset symbol");
