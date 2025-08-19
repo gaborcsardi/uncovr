@@ -265,6 +265,11 @@ inject_covxxso <- function(build_dir) {
 # In the main process we create the counters manually before loading
 # the package. But we need to create the counters when loading the package
 # with `load_all()` in a subprocess, we do that here.
+#
+# These additional commands do not create any objects, so they do not run
+# when the (quick) installed package is loaded by `library()`. For that
+# case we patch the namespace loader file that loads the package to create
+# the counters.
 
 create_counters_lines <- function(setup, cov_data) {
   outdir <- file.path(setup$dir, "cov")
