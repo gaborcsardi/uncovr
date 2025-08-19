@@ -1,4 +1,8 @@
+#ifdef _WIN32
+#include "windows.h"
+#else
 #include <dlfcn.h>
+#endif
 
 #define R_NO_REMAP
 #define R_USE_C99_IN_CXX 1
@@ -11,35 +15,30 @@ SEXP cov_get_counts(SEXP counter);
 SEXP cov_read_file_raw(SEXP path);
 SEXP cov_read_lines(SEXP path);
 SEXP cov_parse_gcov(SEXP path, SEXP displayname);
-SEXP cov_dlsym(SEXP dll, SEXP sym) {
-  DllInfo *cdll = (DllInfo*) R_ExternalPtrAddr(dll);
-  const char *csym = CHAR(STRING_ELT(sym, 0));
-  void *res = dlsym(cdll, csym);
-  REprintf("%s pointer: %p\n", csym, res);
-  return R_NilValue;
-}
-
-typedef void (*fptr_t)(void);
 
 SEXP cov_gcov_flush_package(SEXP dll) {
   DllInfo *cdll = (DllInfo*) R_ExternalPtrAddr(dll);
-  union {
-    void *ptr;
-    void (*dump) (void);
-    void (*reset) (void);
-  } fptr;
 
-  fptr.ptr = dlsym(cdll, "__gcov_dump");
-  if (!fptr.ptr) {
+  DL_FUNC ptr;
+#ifdef _WIN32
+  ptr = (DL_FUNC) GetProcAddress((HMODULE)cdll, "__gcov_dump");
+#else
+  ptr = (DL_FUNC) dlsym(cdll, "__gcov_dump");
+#endif
+  if (!ptr) {
     Rf_error("Cannot find __gcov_dump symbol");
   }
-  fptr.dump();
+  ptr();
 
-  fptr.ptr = dlsym(cdll, "__gcov_reset");
-  if (!fptr.ptr) {
+#ifdef _WIN32
+  ptr =(DL_FUNC) GetProcAddress((HMODULE)cdll, "__gcov_reset");
+#else
+  ptr =(DL_FUNC) dlsym(cdll, "__gcov_reset");
+#endif
+  if (!ptr) {
     Rf_error("Cannot find __gcov_reset symbol");
   }
-  fptr.reset();
+  ptr();
 
   return Rf_ScalarLogical(TRUE);
 }
@@ -55,7 +54,6 @@ static const R_CallMethodDef callMethods[]  = {
   CALLDEF(cov_read_file_raw, 1),
   CALLDEF(cov_read_lines, 1),
   CALLDEF(cov_parse_gcov, 2),
-  CALLDEF(cov_dlsym, 2),
   CALLDEF(cov_gcov_flush_package, 1),
   { NULL, NULL, 0 }
 };
