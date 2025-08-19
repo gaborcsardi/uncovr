@@ -131,7 +131,7 @@ load_package <- function(
       normalizePath((".covrignore"))
     }
     withr::with_dir(pkg_dir, {
-      cov_data <- cov_instrument_dir("R", exclusion_file = exc)
+      cov_data <- cov_instrument_dir("R", setup$pkgname, exclusion_file = exc)
       setup_cov_env(cov_data)
     })
   }
@@ -876,14 +876,24 @@ apply_covrignore <- function(paths, exclusion_file) {
   paths
 }
 
-cov_instrument_dir <- function(path = "R", exclusion_file = ".covrignore") {
+cov_instrument_dir <- function(
+  path = "R",
+  pkgname = desc::desc_get("Package", dirname(path)),
+  exclusion_file = ".covrignore"
+) {
   rfiles <- apply_covrignore(
     dir(path, pattern = "[.][rR]$", full.names = TRUE),
     exclusion_file
   )
+  symbol <- paste0(
+    ".__cov_",
+    pkgname,
+    "_",
+    tools::file_path_sans_ext(basename(rfiles))
+  )
   fls <- data.frame(
     path = rfiles,
-    symbol = paste0(".__cov_", tools::file_path_sans_ext(basename(rfiles))),
+    symbol = symbol,
     line_count = NA_integer_,
     code_lines = NA_integer_,
     lines_covered = 0L,
