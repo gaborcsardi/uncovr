@@ -38,7 +38,7 @@ test_interactive <- function(filter = NULL, pr = FALSE, ...) {
     ),
     interrupt = function(err) {
       msg <- cli::col_red(
-        "\n\nInterruped test suite, jumping to top level"
+        "\n\nInterrupted test suite, jumping to top level"
       )
       message(msg)
       invokeRestart("abort")

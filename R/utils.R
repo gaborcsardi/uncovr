@@ -2,6 +2,14 @@ map_chr <- function(X, FUN, ...) {
   vapply(X, FUN, character(1), ...)
 }
 
+map_int <- function(X, FUN, ...) {
+  vapply(X, FUN, integer(1), ...)
+}
+
+map_dbl <- function(X, FUN, ...) {
+  vapply(X, FUN, double(1), ...)
+}
+
 mkdirp <- function(path) {
   dir.create(path, recursive = TRUE, showWarnings = FALSE)
 }
@@ -14,9 +22,21 @@ context_name <- function(filename) {
   filename
 }
 
-`%||%` <- function(l, r) if (is.null(l)) r else l
+`%||%` <- function(l, r) {
+  if (is.null(l)) {
+    r
+  } else {
+    l
+  }
+}
 
-`%&&%` <- function(l, r) if (is.null(l)) NULL else r
+`%&&%` <- function(l, r) {
+  if (is.null(l)) {
+    NULL
+  } else {
+    r
+  }
+}
 
 is_interactive <- function() {
   opt <- getOption("rlib_interactive")

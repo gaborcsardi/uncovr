@@ -151,8 +151,16 @@ covr_flags <- function() {
     FLIBS = "-lgcov",
 
     # LDFLAGS is ignored on windows and visa versa
-    LDFLAGS = if (!is_windows()) "--coverage" else NULL,
-    SHLIB_LIBADD = if (is_windows()) "--coverage" else NULL
+    LDFLAGS = if (!is_windows()) {
+      "--coverage"
+    } else {
+      NULL
+    },
+    SHLIB_LIBADD = if (is_windows()) {
+      "--coverage"
+    } else {
+      NULL
+    }
   )
 }
 

@@ -8,12 +8,14 @@ License: MIT + file LICENSE
 URL: https://github.com/gaborcsardi/testthatlabs
 BugReports: https://github.com/gaborcsardi/testthatlabs/issues
 RoxygenNote: 7.3.2.9000
-Depends: R (>= 3.3)
+Depends: R (>= 3.5)
 Imports:
     cli,
     covr,
     desc,
     fs,
+    pkgbuild,
+    pkgload,
     prettyunits,
     processx,
     R6,
@@ -22,4 +24,6 @@ Imports:
     tools,
     utils,
     withr
+Suggests:
+    pillar
 Encoding: UTF-8

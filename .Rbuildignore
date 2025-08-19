@@ -8,3 +8,7 @@
 ^codecov\.yml$
 ^[\.]?air\.toml$
 ^\.vscode$
+^\.dev$
+^src/.*[.]o$
+^src/.*[.]so$
+^src/.*[.]dll$
