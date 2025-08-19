@@ -122,13 +122,15 @@ load_package <- function(
     copy = copy
   )
 
+  pkg_dir <- file.path(setup$dir, setup$pkgname)
+
   cov_data <- NULL
   if (type == "coverage") {
     # It is probably ignored by R CMD build, so need to use the master file
     exc <- if (file.exists(".covrignore")) {
       normalizePath((".covrignore"))
     }
-    withr::with_dir(file.path(setup$dir, setup$pkgname), {
+    withr::with_dir(pkg_dir, {
       cov_data <- cov_instrument_dir("R", exclusion_file = exc)
       setup_cov_env(cov_data)
     })
@@ -136,7 +138,18 @@ load_package <- function(
 
   withr::local_options(pkg.build_extra_flags = FALSE)
   withr::local_makevars(setup$compiler_flags, .assignment = "+=")
-  pkg_dir <- file.path(setup$dir, setup$pkgname)
+
+  # need to patch first code file to create counters (if coverage)
+  if (type == "coverage") {
+    code_files <- pkgload:::find_code(pkg_dir)
+    fn1 <- code_files[1]
+    setup$covxxso <- inject_covxxso(setup$dir)
+    writeLines(
+      c(create_counters_lines(setup, cov_data), readLines(fn1)),
+      fn1
+    )
+  }
+
   loaded <- pkgload::load_all(pkg_dir)
 
   if (local_install) {
@@ -169,6 +182,16 @@ load_package <- function(
 #' @export
 
 l <- load_package
+
+setup_cov_env <- function(cov_data) {
+  for (i in seq_len(nrow(cov_data))) {
+    assign(
+      cov_data$symbol[i],
+      .Call(c_cov_make_counter, cov_data$line_count[i]),
+      envir = .GlobalEnv
+    )
+  }
+}
 
 setup_cov_inject_script <- function(target, cov_data) {
   script <- file.path(target, "R", "inject.R")
@@ -220,6 +243,68 @@ setup_cov_inject_script <- function(target, cov_data) {
   mkdirp(dirname(script))
   writeLines(lns, script)
   script
+}
+
+# Copy testthatlabs.so into the build directory, so we can read it
+# from there
+inject_covxxso <- function(build_dir) {
+  soname <- paste0("testthatlabs", .Platform$dynlib.ext)
+  covxxso <- system.file(package = "testthatlabs", "libs", soname)
+  if (covxxso == "") {
+    covxxso <- system.file(package = "testthatlabs", "src", soname)
+  }
+  if (covxxso == "") {
+    stop("Could not find ", soname, " for test coverage counter injection")
+  }
+  soname2 <- paste0("covxx", .Platform$dynlib.ext)
+  target <- file.path(build_dir, soname2)
+  file.copy(covxxso, target)
+  target
+}
+
+# In the main process we create the counters manually before loading
+# the package. But we need to create the counters when loading the package
+# with `load_all()` in a subprocess, we do that here.
+
+create_counters_lines <- function(setup, cov_data) {
+  outdir <- file.path(setup$dir, "cov")
+  mkdirp(outdir)
+  subs <- list(
+    covxxso_ = normalizePath(setup$covxxso),
+    symbols_ = cov_data$symbol,
+    linums_ = cov_data$line_count,
+    outdir_ = normalizePath(outdir)
+  )
+  deparse(
+    substitute(
+      local({
+        dl <- dyn.load(covxxso_)
+        mc <- getNativeSymbolInfo("cov_make_counter", dl)
+        symbols <- symbols_
+        linums <- linums_
+        for (i in seq_along(symbols)) {
+          if (is.null(.GlobalEnv[[symbols[i]]])) {
+            assign(symbols[i], .Call(mc, linums[i]), envir = .GlobalEnv)
+          }
+        }
+        output <- file.path(outdir_, paste0(Sys.getpid(), '.rda'))
+        reg.finalizer(
+          .GlobalEnv,
+          function(e) {
+            dir.create(dirname(output), showWarnings = FALSE, recursive = TRUE)
+            save(
+              list = ls(all.names = TRUE, pattern = "^[.]__cov_", envir = e),
+              file = output,
+              compression_level = 0,
+              envir = e
+            )
+          },
+          onexit = TRUE
+        )
+      }),
+      subs
+    )
+  )
 }
 
 update_libpath <- function(lib, pkgname) {
@@ -434,18 +519,19 @@ package_coverage <- function(
   # clean up files from subprocesses
   subprocdir <- file.path(setup$dir, "cov")
   unlink(subprocdir, recursive = TRUE)
+  dir.create(subprocdir)
+  subprocdir <- normalizePath(subprocdir)
 
   if (!local_install) {
     # TODO: only message if parallel tests are on
     message("`local_install = FALSE` turns off parallel testthat!")
     withr::local_envvar(TESTTHAT_PARALLEL = "false")
   }
-  # TODO: ideally we would use load_package = "none" in the main process and
-  # load_package = "installed" in the testthat workers
+  withr::local_dir(pkg_path)
   dev_data$test_results <- testthat::test_dir(
     test_dir,
     package = setup[["pkgname"]],
-    load_package = if (local_install) "installed" else "none",
+    load_package = "none",
     stop_on_failure = FALSE,
     filter = filter,
     reporter = reporter
@@ -478,7 +564,7 @@ package_coverage <- function(
     exc <- if (file.exists(".covrignore")) {
       normalizePath((".covrignore"))
     }
-    ccoverage <- load_c_coverage(pkg_path, exc)
+    ccoverage <- load_c_coverage(".", exc)
     dev_data$coverage <- rbind(dev_data$coverage, ccoverage)
   }
 
@@ -992,16 +1078,6 @@ myseq <- function(from, to, by = 1) {
     } else {
       seq(from, to, by = by)
     }
-  }
-}
-
-setup_cov_env <- function(cov_data) {
-  for (i in seq_len(nrow(cov_data))) {
-    assign(
-      cov_data$symbol[i],
-      .Call(c_cov_make_counter, cov_data$line_count[i]),
-      envir = .GlobalEnv
-    )
   }
 }
 
