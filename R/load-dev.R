@@ -185,6 +185,10 @@ load_package <- function(
     inject_script <- if (type == "coverage") {
       setup_cov_inject_script(file.path(lib, setup$pkgname), cov_data)
     }
+    # TODO: run the quick_install_loaded() script from a fake .onLoad,
+    # before the actualy .onLoad, in case .onLoad manipulates the namespace,
+    # e.g. like in the pillar package:
+    # https://github.com/r-lib/pillar/blob/d7e85eddd826da733c5aec12ccfb4d274c2eb5a6/R/zzz.R#L53
     quick_install_loaded(
       setup[["pkgname"]],
       pkg_dir,
