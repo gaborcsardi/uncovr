@@ -573,14 +573,16 @@ package_coverage <- function(
   subprocdir <- normalizePath(subprocdir)
 
   withr::local_dir(pkg_path)
-  dev_data$test_results <- testthat::test_dir(
-    test_dir,
-    package = setup[["pkgname"]],
-    load_package = "none",
-    stop_on_failure = FALSE,
-    filter = filter,
-    reporter = reporter
-  )
+  withr::with_envvar(c(TESTTHAT_COVERAGE = setup$pkgname), {
+    dev_data$test_results <- testthat::test_dir(
+      test_dir,
+      package = setup[["pkgname"]],
+      load_package = "none",
+      stop_on_failure = FALSE,
+      filter = filter,
+      reporter = reporter
+    )
+  })
 
   cov_names <- dev_data$coverage$symbol
   counts <- cov_get_counts(cov_names)
