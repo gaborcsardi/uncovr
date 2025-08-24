@@ -70,7 +70,7 @@ load_package_setup <- function(
   setup[["hash"]] = cli::hash_obj_sha1(setup)
   setup[["compiler_flags"]] <- get_makeflags(type)
   setup[["dir"]] <- get_dev_dir(setup)
-  setup[["pkgname"]] <- desc::desc_get("Package", ".")
+  setup[["pkgname"]] <- unname(desc::desc_get("Package", "."))
 
   withr::local_options(structure(list(setup), names = opt_setup))
 
@@ -163,8 +163,8 @@ load_package <- function(
   withr::local_makevars(setup$compiler_flags, .assignment = "+=")
 
   # need to patch first code file to create counters (if coverage)
+  code_files <- find_code(pkg_dir)
   if (type == "coverage") {
-    code_files <- find_code(pkg_dir)
     fn1 <- code_files[1]
     setup$covxxso <- inject_covxxso(setup$dir)
     writeLines(
@@ -173,26 +173,30 @@ load_package <- function(
     )
   }
 
-  loaded <- pkgload::load_all(pkg_dir)
-
   if (local_install) {
     lib <- file.path(setup[["dir"]], "__dev_lib__")
     inject_script <- if (type == "coverage") {
       setup_cov_inject_script(file.path(lib, setup$pkgname), cov_data)
     }
-    # TODO: run the quick_install_loaded() script from a fake .onLoad,
+    fnx <- code_files[length(code_files)]
+    # Need to run the quick_install_loaded() script from a fake .onLoad,
     # before the actualy .onLoad, in case .onLoad manipulates the namespace,
     # e.g. like in the pillar package:
     # https://github.com/r-lib/pillar/blob/d7e85eddd826da733c5aec12ccfb4d274c2eb5a6/R/zzz.R#L53
-    quick_install_loaded(
-      setup[["pkgname"]],
-      pkg_dir,
-      lib,
-      loaded,
-      inject_script = inject_script
+    writeLines(
+      c(
+        readLines(fnx),
+        inject_onload_lines(setup, pkg_dir, lib, inject_script, fnx)
+      ),
+      fnx
     )
-    update_libpath(lib, setup[["pkgname"]])
     setup$dev_lib <- lib
+  }
+
+  loaded <- pkgload::load_all(pkg_dir)
+
+  if (local_install) {
+    update_libpath(lib, setup[["pkgname"]])
   }
 
   invisible(list(
@@ -209,6 +213,71 @@ load_package <- function(
 #' @export
 
 l <- load_package
+
+inject_onload_lines <- function(setup, pkg_dir, lib, inject_script, fnx) {
+  subs <- list(
+    pkgname_ = setup$pkgname,
+    pkg_dir_ = normalizePath(pkg_dir),
+    lib_ = normalizePath(lib),
+    inject_script_ = normalizePath(inject_script),
+    fnx_ = normalizePath(fnx)
+  )
+  deparse(
+    substitute(
+      {
+        "__COV__ DELETE FROM HERE"
+        `.__cov_has_onload` <- exists(
+          ".onLoad",
+          inherits = FALSE,
+          mode = "function"
+        )
+        if (`.__cov_has_onload`) {
+          .__cov__onload <- .onLoad
+        }
+        .onLoad <- function(libname, pkgname) {
+          ns <- asNamespace(pkgname_)
+          # restore old .onLoad (if any) and clean up namespace
+          # need to do this before the quick install
+          has_onload <- ns$`.__cov_has_onload`
+          if (has_onload) {
+            assign(".onLoad", ns$`.__cov__onload`, envir = ns)
+            rm(list = ".__cov__onload", envir = ns)
+          } else {
+            rm(list = ".onLoad", envir = ns)
+          }
+          rm(list = ".__cov_has_onload", envir = ns)
+
+          # install the package
+          loaded <- list(
+            dll = ns$.__NAMESPACE__.$DLLs,
+            env = ns
+          )
+          asNamespace("testthatlabs")$quick_install_loaded(
+            pkgname_,
+            pkg_dir_,
+            lib_,
+            loaded,
+            inject_script_
+          )
+          # clean up source file, in case this file is loaded with `load_all()`
+          lns <- readLines(fnx_)
+          d1 <- grep("__COV__ DELETE FROM HERE", lns, fixed = TRUE)[1]
+          d2 <- grep("__COV__ DELETE UNTIL HERE", lns, fixed = TRUE)[2]
+          lns <- lns[-(d1:d2)]
+          writeLines(lns, fnx_)
+
+          # call original .onLoad
+          # TODO: is this ok, or needs Tailcall()?
+          if (has_onload) {
+            ns$.onLoad(libname, pkgname)
+          }
+        }
+        "__COV__ DELETE UNTIL HERE"
+      },
+      subs
+    )
+  )
+}
 
 setup_cov_env <- function(cov_data) {
   for (i in seq_len(nrow(cov_data))) {
