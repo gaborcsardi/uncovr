@@ -62,7 +62,7 @@ A list with entries:
 - `load`: The return value of [pkgload::load_all()].
 - `coverage`: For `type = "coverage"` builds a data frame with the
   code coverage instrumentation data for R files. See
-  [package_coverage()] for the structure.
+  [test_package()] for the structure.
 }
 \description{
 A wrapper on [pkgload::load_all()] to load a package tree from a

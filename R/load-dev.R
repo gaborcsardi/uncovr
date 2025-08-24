@@ -118,7 +118,7 @@ load_package_setup <- function(
 #' - `load`: The return value of [pkgload::load_all()].
 #' - `coverage`: For `type = "coverage"` builds a data frame with the
 #'   code coverage instrumentation data for R files. See
-#'   [package_coverage()] for the structure.
+#'   [test_package()] for the structure.
 #' @export
 
 load_package <- function(
@@ -608,7 +608,7 @@ copy_inst_files <- function(src, tgt) {
 #'
 #' @export
 
-package_coverage <- function(
+test_package <- function(
   filter = NULL,
   path = ".",
   test_dir = "tests/testthat",
@@ -696,13 +696,13 @@ package_coverage <- function(
   dev_data
 }
 
-#' @rdname package_coverage
+#' @rdname test_package
 #' @details
 #'
-#' `t()` is an alias of `package_coverage()`.
+#' `t()` is an alias of `test_package()`.
 #' @export
 
-t <- package_coverage
+t <- test_package
 
 add_subprocess_coverage <- function(counts, subprocdir) {
   fls <- list.files(subprocdir, full.names = TRUE)
