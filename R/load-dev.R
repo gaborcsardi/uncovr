@@ -137,12 +137,7 @@ load_package <- function(
     unlink(setup[["dir"]], recursive = TRUE)
   }
 
-  # TODO: need to copy tests otherwise pkgload/rprojroot resolves the
-  # symlink back to the original package directory. We could create a
-  # directory and copy the contents. We could have a way to create
-  # the 'tests' directory but then symlink everything else under it,
-  # instead of copying.
-  copy <- c("src", if (type == "coverage") c("R", "tests"))
+  copy <- c("src", if (type == "coverage") "R")
   plan <- update_package_tree(
     ".",
     setup$dir,
@@ -576,7 +571,6 @@ package_coverage <- function(
   dir.create(subprocdir)
   subprocdir <- normalizePath(subprocdir)
 
-  withr::local_dir(pkg_path)
   withr::with_envvar(c(TESTTHAT_COVERAGE = setup$pkgname), {
     dev_data$test_results <- testthat::test_dir(
       test_dir,
@@ -615,7 +609,7 @@ package_coverage <- function(
     exc <- if (file.exists(".covrignore")) {
       normalizePath((".covrignore"))
     }
-    ccoverage <- load_c_coverage(".", exc)
+    ccoverage <- load_c_coverage(pkg_path, exc)
     dev_data$coverage <- rbind(dev_data$coverage, ccoverage)
   }
 
