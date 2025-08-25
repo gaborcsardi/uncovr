@@ -1709,7 +1709,8 @@ d <- document_package
 
 #' Install local package tree
 #'
-#' @param INSTALL_opts,... Additional arguments are passed to [utils::install.packages()].
+#' @param lib,INSTALL_opts,... Additional arguments are passed to
+#'   [utils::install.packages()].
 #' @inheritParams load_package
 #'
 #' @export

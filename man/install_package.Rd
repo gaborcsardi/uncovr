@@ -39,7 +39,8 @@ i(
 
 \item{clean}{Whether to delete the build directory before the build.}
 
-\item{INSTALL_opts, ...}{Additional arguments are passed to [utils::install.packages()].}
+\item{lib, INSTALL_opts, ...}{Additional arguments are passed to
+[utils::install.packages()].}
 }
 \description{
 Install local package tree
