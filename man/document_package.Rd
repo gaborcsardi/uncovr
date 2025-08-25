@@ -2,9 +2,12 @@
 % Please edit documentation in R/load-dev.R
 \name{document_package}
 \alias{document_package}
+\alias{d}
 \title{Run roxygen2 to generate the package manual and namespace files}
 \usage{
 document_package(path = ".", clean = FALSE, local_install = TRUE)
+
+d(path = ".", clean = FALSE, local_install = TRUE)
 }
 \arguments{
 \item{path}{Path to the package tree.}
@@ -20,4 +23,7 @@ The same as [load_package()], with an additional field `roxy`,
 }
 \description{
 Loads the debug build, and calls [roxygen2::roxygenize()].
+}
+\details{
+`d()` is an alias of `document_package()`.
 }
