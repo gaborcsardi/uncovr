@@ -126,7 +126,7 @@ load_package <- function(
   path = ".",
   makeflags = NULL,
   clean = FALSE,
-  local_install = FALSE
+  local_install = TRUE
 ) {
   withr::local_dir(path)
   type <- match.arg(type)

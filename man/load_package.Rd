@@ -10,7 +10,7 @@ load_package(
   path = ".",
   makeflags = NULL,
   clean = FALSE,
-  local_install = FALSE
+  local_install = TRUE
 )
 
 l(
@@ -18,7 +18,7 @@ l(
   path = ".",
   makeflags = NULL,
   clean = FALSE,
-  local_install = FALSE
+  local_install = TRUE
 )
 }
 \arguments{
