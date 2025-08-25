@@ -17,6 +17,7 @@ Imports:
     prettyunits,
     processx,
     R6,
+    roxygen2,
     testthat (>= 2.99),
     tools,
     utils,
