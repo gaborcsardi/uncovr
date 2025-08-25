@@ -137,7 +137,7 @@ load_package <- function(
     unlink(setup[["dir"]], recursive = TRUE)
   }
 
-  copy <- c("src", if (type == "coverage") "R")
+  copy <- c("src", if (type == "coverage" || local_install) "R")
   plan <- update_package_tree(
     ".",
     setup$dir,
@@ -215,11 +215,12 @@ load_package <- function(
 l <- load_package
 
 inject_onload_lines <- function(setup, pkg_dir, lib, inject_script, fnx) {
+  mkdirp(lib)
   subs <- list(
     pkgname_ = setup$pkgname,
     pkg_dir_ = normalizePath(pkg_dir),
     lib_ = normalizePath(lib),
-    inject_script_ = normalizePath(inject_script),
+    inject_script_ = if (!is.null(inject_script)) normalizePath(inject_script),
     fnx_ = normalizePath(fnx)
   )
   deparse(
