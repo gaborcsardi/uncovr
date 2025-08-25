@@ -1673,3 +1673,29 @@ dir_size <- function(dirs) {
     sum(file.size(paths))
   })
 }
+
+#' Run roxygen2 to generate the package manual and namespace files
+#'
+#' Loads the debug build, and calls [roxygen2::roxygenize()].
+#'
+#' @inheritParams load_package
+#' @return The same as [load_package()], with an additional field `roxy`,
+#'   that contains the return value of [roxygen2::roxygenize()].
+#'
+#' @export
+
+document_package <- function(path = ".", clean = FALSE, local_install = TRUE) {
+  withr::local_dir(path)
+  dev_data <- load_package(
+    type = "debug",
+    path = ".",
+    clean = clean,
+    local_install = local_install
+  )
+
+  dev_data$roxy <- roxygen2::roxygenize(load_code = function(path) {
+    dev_data$load$env
+  })
+
+  invisible(dev_data)
+}
