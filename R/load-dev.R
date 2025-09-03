@@ -227,7 +227,7 @@ inject_onload_lines <- function(setup, pkg_dir, lib, inject_script, fnx) {
     substitute(
       {
         "__COV__ DELETE FROM HERE"
-        `.__cov_has_onload` <- exists(
+        `.__cov_has_onload` <- base::exists(
           ".onLoad",
           inherits = FALSE,
           mode = "function"
@@ -236,24 +236,24 @@ inject_onload_lines <- function(setup, pkg_dir, lib, inject_script, fnx) {
           .__cov__onload <- .onLoad
         }
         .onLoad <- function(libname, pkgname) {
-          ns <- asNamespace(pkgname_)
+          ns <- base::asNamespace(pkgname_)
           # restore old .onLoad (if any) and clean up namespace
           # need to do this before the quick install
           has_onload <- ns$`.__cov_has_onload`
           if (has_onload) {
-            assign(".onLoad", ns$`.__cov__onload`, envir = ns)
-            rm(list = ".__cov__onload", envir = ns)
+            base::assign(".onLoad", ns$`.__cov__onload`, envir = ns)
+            base::rm(list = ".__cov__onload", envir = ns)
           } else {
-            rm(list = ".onLoad", envir = ns)
+            base::rm(list = ".onLoad", envir = ns)
           }
-          rm(list = ".__cov_has_onload", envir = ns)
+          base::rm(list = ".__cov_has_onload", envir = ns)
 
           # install the package
-          loaded <- list(
+          loaded <- base::list(
             dll = ns$.__NAMESPACE__.$DLLs,
             env = ns
           )
-          asNamespace("testthatlabs")$quick_install_loaded(
+          base::asNamespace("testthatlabs")$quick_install_loaded(
             pkgname_,
             pkg_dir_,
             lib_,
@@ -261,11 +261,11 @@ inject_onload_lines <- function(setup, pkg_dir, lib, inject_script, fnx) {
             inject_script_
           )
           # clean up source file, in case this file is loaded with `load_all()`
-          lns <- readLines(fnx_)
-          d1 <- grep("__COV__ DELETE FROM HERE", lns, fixed = TRUE)[1]
-          d2 <- grep("__COV__ DELETE UNTIL HERE", lns, fixed = TRUE)[2]
+          lns <- base::readLines(fnx_)
+          d1 <- base::grep("__COV__ DELETE FROM HERE", lns, fixed = TRUE)[1]
+          d2 <- base::grep("__COV__ DELETE UNTIL HERE", lns, fixed = TRUE)[2]
           lns <- lns[-(d1:d2)]
-          writeLines(lns, fnx_)
+          base::writeLines(lns, fnx_)
 
           # call original .onLoad
           # TODO: is this ok, or needs Tailcall()?
@@ -405,22 +405,30 @@ create_counters_lines <- function(setup, cov_data) {
   deparse(
     substitute(
       local({
-        dl <- dyn.load(covxxso_)
-        mc <- getNativeSymbolInfo("cov_make_counter", dl)
+        dl <- base::dyn.load(covxxso_)
+        mc <- base::getNativeSymbolInfo("cov_make_counter", dl)
         symbols <- symbols_
         linums <- linums_
-        for (i in seq_along(symbols)) {
-          if (is.null(.GlobalEnv[[symbols[i]]])) {
-            assign(symbols[i], .Call(mc, linums[i]), envir = .GlobalEnv)
+        for (i in base::seq_along(symbols)) {
+          if (base::is.null(.GlobalEnv[[symbols[i]]])) {
+            base::assign(symbols[i], .Call(mc, linums[i]), envir = .GlobalEnv)
           }
         }
-        output <- file.path(outdir_, paste0(Sys.getpid(), '.rda'))
-        reg.finalizer(
+        output <- base::file.path(outdir_, paste0(Sys.getpid(), '.rda'))
+        base::reg.finalizer(
           .GlobalEnv,
           function(e) {
-            dir.create(dirname(output), showWarnings = FALSE, recursive = TRUE)
-            save(
-              list = ls(all.names = TRUE, pattern = "^[.]__cov_", envir = e),
+            base::dir.create(
+              dirname(output),
+              showWarnings = FALSE,
+              recursive = TRUE
+            )
+            base::save(
+              list = base::ls(
+                all.names = TRUE,
+                pattern = "^[.]__cov_",
+                envir = e
+              ),
               file = output,
               compression_level = 0,
               envir = e
@@ -1064,7 +1072,7 @@ cov_instrument_file <- function(path, cov_symbol) {
     inj1 <- inj[inj$line1 == il, ]
     lns[il] <- str_insert_parallel(lns[il], inj1$col1, inj1$code)
   }
-  writeLines(lns, path)
+  base::writeLines(lns, path)
 
   res <- data.frame(
     lines = lns0,

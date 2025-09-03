@@ -96,5 +96,3 @@ find_zero_ranges <- function(key, value) {
 is_windows <- function() {
   .Platform$OS.type == "windows"
 }
-{
-}
