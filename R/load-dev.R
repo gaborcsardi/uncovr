@@ -336,8 +336,9 @@ setup_cov_inject_script <- function(target, cov_data) {
     "  tgtsoname <- paste0('covxx', .Platform$dynlib.ext)",
     "  dl <- dyn.load(file.path(info$libname, pkg, 'libs', tgtsoname))",
     "  mc <- getNativeSymbolInfo('cov_make_counter', dl)",
+    "  mycall <- base::.Call",
     sprintf(
-      "  assign('%s', .Call(mc, %dL), envir = .GlobalEnv)",
+      "  assign('%s', mycall(mc, %dL), envir = .GlobalEnv)",
       cov_data$symbol,
       cov_data$line_count
     ),
@@ -409,9 +410,10 @@ create_counters_lines <- function(setup, cov_data) {
         mc <- base::getNativeSymbolInfo("cov_make_counter", dl)
         symbols <- symbols_
         linums <- linums_
+        mycall <- base::.Call
         for (i in base::seq_along(symbols)) {
           if (base::is.null(.GlobalEnv[[symbols[i]]])) {
-            base::assign(symbols[i], .Call(mc, linums[i]), envir = .GlobalEnv)
+            base::assign(symbols[i], mycall(mc, linums[i]), envir = .GlobalEnv)
           }
         }
         output <- base::file.path(outdir_, paste0(Sys.getpid(), '.rda'))
