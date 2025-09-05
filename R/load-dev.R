@@ -60,7 +60,6 @@ load_package_setup <- function(
   makeflags <- makeflags %||% get_makeflags(type)
 
   # setup build options
-  makeflags <- makeflags
   setup <- list(
     version = 1L,
     rver = as.character(getRversion()[, 1:2]),
@@ -68,7 +67,7 @@ load_package_setup <- function(
     type = type
   )
   setup[["hash"]] = cli::hash_obj_sha1(setup)
-  setup[["compiler_flags"]] <- get_makeflags(type)
+  setup[["compiler_flags"]] <- makeflags
   setup[["dir"]] <- get_dev_dir(setup)
   setup[["pkgname"]] <- unname(desc::desc_get("Package", "."))
 
