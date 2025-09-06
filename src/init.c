@@ -43,6 +43,28 @@ SEXP cov_gcov_flush_package(SEXP dllhandle) {
   return Rf_ScalarLogical(TRUE);
 }
 
+#ifdef COV_BUILD_SAFE
+#define FRAME_LOCK_MASK (1<<14)
+#define FRAME_IS_LOCKED(e) (ENVFLAGS(e) & FRAME_LOCK_MASK)
+#define LOCK_FRAME(e) SET_ENVFLAGS(e, ENVFLAGS(e) | FRAME_LOCK_MASK)
+#define UNLOCK_FRAME(e) SET_ENVFLAGS(e, ENVFLAGS(e) & (~ FRAME_LOCK_MASK))
+SEXP cov_lock_base() {
+  LOCK_FRAME(R_BaseEnv);
+  return Rf_ScalarLogical(1);
+}
+SEXP cov_unlock_base() {
+  UNLOCK_FRAME(R_BaseEnv);
+  return Rf_ScalarLogical(1);
+}
+#else
+SEXP cov_lock_base() {
+  return Rf_ScalarLogical(0);
+}
+SEXP cov_unlock_base() {
+  return Rf_ScalarLogical(0);
+}
+#endif
+
 void cov_init_altrep(DllInfo *dll);
 
 #define CALLDEF(name, n) \
@@ -55,6 +77,8 @@ static const R_CallMethodDef callMethods[]  = {
   CALLDEF(cov_read_lines, 1),
   CALLDEF(cov_parse_gcov, 2),
   CALLDEF(cov_gcov_flush_package, 1),
+  CALLDEF(cov_lock_base, 0),
+  CALLDEF(cov_unlock_base, 0),
   { NULL, NULL, 0 }
 };
 
