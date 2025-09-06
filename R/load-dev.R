@@ -354,7 +354,7 @@ setup_cov_inject_script <- function(target, cov_data) {
     "  )",
     "  dir.create(dirname(output), showWarnings = FALSE, recursive = TRUE)",
     "  reg.finalizer(",
-    "    .GlobalEnv,",
+    "    env,",
     "    function(e) {",
     "      save(",
     "        list = ls(all.names = TRUE, pattern = '^[.]__cov_', envir = e),",
