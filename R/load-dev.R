@@ -1067,7 +1067,7 @@ cov_instrument_file <- function(path, cov_symbol) {
 
   # need to insert code concurrently to the same line, for future
   # multi-expression per line support
-  lns0 <- lns <- readLines(path)
+  lns0 <- lns <- untabify(readLines(path))
   inj_lines <- unique(inj$line1)
   for (il in inj_lines) {
     inj1 <- inj[inj$line1 == il, ]
@@ -1120,6 +1120,27 @@ cov_instrument_file <- function(path, cov_symbol) {
 
   res
 }
+
+# `getParseData()` gives te wrong coordinates for lines with TAB characters,
+# it counts each TAB as 8 spaces, so we need to circumvent that.
+# But prepare for this to be fixed at some point.
+
+untabify <- local({
+  opt <- options(
+    keep.parse.data = TRUE,
+    keep.parse.data.pkgs = TRUE,
+    keep.source = TRUE,
+    keep.source.pkgs = TRUE
+  )
+  on.exit(options(opt), add = TRUE)
+  badtab <- getParseData(parse(text = "\tx", keep.source = TRUE))$col1[1] == 9
+  function(x) {
+    if (badtab) {
+      x <- gsub("\t", strrep(" ", 8), fixed = TRUE, x)
+    }
+    x
+  }
+})
 
 parse_line_exclusions <- function(lns, path) {
   sort(unique(c(
