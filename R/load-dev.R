@@ -280,11 +280,13 @@ inject_onload_lines <- function(setup, pkg_dir, lib, inject_script, fnx) {
 }
 
 setup_cov_env <- function(cov_data) {
+  on.exit(.Call(c_cov_lock_base), add = TRUE)
+  env <- if (.Call(c_cov_unlock_base)) baseenv() else globalenv()
   for (i in seq_len(nrow(cov_data))) {
     assign(
       cov_data$symbol[i],
       .Call(c_cov_make_counter, cov_data$line_count[i]),
-      envir = .GlobalEnv
+      envir = env
     )
   }
 }
@@ -334,13 +336,17 @@ setup_cov_inject_script <- function(target, cov_data) {
     "  pkg <- info$pkgname",
     "  tgtsoname <- paste0('covxx', .Platform$dynlib.ext)",
     "  dl <- dyn.load(file.path(info$libname, pkg, 'libs', tgtsoname))",
+    "  lb <- getNativeSymbolInfo('cov_lock_base', dl)",
+    "  ulb <- getNativeSymbolInfo('cov_unlock_base', dl)",
     "  mc <- getNativeSymbolInfo('cov_make_counter', dl)",
     "  mycall <- base::.Call",
+    "  env <- if (mycall(ulb)) baseenv() else globalenv()",
     sprintf(
-      "  assign('%s', mycall(mc, %dL), envir = .GlobalEnv)",
+      "  assign('%s', mycall(mc, %dL), envir = env)",
       cov_data$symbol,
       cov_data$line_count
     ),
+    "  mycall(lb)",
     "  output <- file.path(",
     "    dirname(info$libname), ",
     "    'cov',",
@@ -407,12 +413,15 @@ create_counters_lines <- function(setup, cov_data) {
       local({
         dl <- base::dyn.load(covxxso_)
         mc <- base::getNativeSymbolInfo("cov_make_counter", dl)
+        lb <- base::getNativeSymbolInfo("cov_lock_base", dl)
+        ulb <- base::getNativeSymbolInfo("cov_unlock_base", dl)
         symbols <- symbols_
         linums <- linums_
         mycall <- base::.Call
+        env <- if (mycall(ulb)) baseenv() else globalenv()
         for (i in base::seq_along(symbols)) {
-          if (base::is.null(.GlobalEnv[[symbols[i]]])) {
-            base::assign(symbols[i], mycall(mc, linums[i]), envir = .GlobalEnv)
+          if (base::is.null(env[[symbols[i]]])) {
+            base::assign(symbols[i], mycall(mc, linums[i]), envir = env)
           }
         }
         output <- base::file.path(outdir_, paste0(Sys.getpid(), '.rda'))
@@ -775,9 +784,14 @@ calculate_uncovered_intervals <- function(lines) {
 }
 
 cov_get_counts <- function(names) {
+  env <- if (length(names) > 1 && exists(names[1], envir = baseenv())) {
+    baseenv()
+  } else {
+    globalenv()
+  }
   structure(
     lapply(names, function(name) {
-      .Call(c_cov_get_counts, get(name, envir = .GlobalEnv))
+      .Call(c_cov_get_counts, get(name, envir = env))
     }),
     names = names
   )
