@@ -1397,9 +1397,17 @@ format_coverage_table2_filter <- function(x, filter, ...) {
   uc <- cli::ansi_strwrap(
     uc,
     width = cw - maxw,
-    exdent = maxw,
     simplify = FALSE
   )
+  for (i in seq_along(uc)) {
+    if (length(uc[[i]]) > 1) {
+      uc[[i]][-1] <- paste0(
+        strrep(" ", maxw - 2),
+        cli::col_none("\u2502 "),
+        uc[[i]][-1]
+      )
+    }
+  }
   ucls <- lengths(uc)
   uc <- map_chr(uc, paste, collapse = "\n")
   if (any(ucls > 1)) {
