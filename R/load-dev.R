@@ -742,7 +742,7 @@ trim_srcref <- function(s) {
     start_column = utils::getSrcLocation(s, "column"),
     end_column = utils::getSrcLocation(s, "column", first = FALSE),
     start_byte = utils::getSrcLocation(s, "byte"),
-    end_byte = getSrcLocation(s, "byte", first = FALSE)
+    end_byte = utils::getSrcLocation(s, "byte", first = FALSE)
   )
 }
 
