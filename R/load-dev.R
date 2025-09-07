@@ -712,7 +712,43 @@ test_package <- function(
   class(dev_data$coverage) <- c("coverage_table2", class(dev_data$coverage))
   class(dev_data) <- c("package_coverage", class(dev_data))
 
+  test_results_file <- file.path(setup$dir, "last-tests.rds")
+  quick_save_rds(trim_test_results(dev_data$test_results), test_results_file)
+  coverage_results_file <- file.path(setup$dir, "last-coverage.rds")
+  saveRDS(dev_data$coverage, coverage_results_file, compress = FALSE)
+
   dev_data
+}
+
+trim_test_results <- function(tr) {
+  for (i in seq_along(tr)) {
+    for (j in seq_along(tr[[i]]$results)) {
+      if (!is.null(tr[[i]]$results[[j]]$srcref)) {
+        tr[[i]]$results[[j]]$srcref <- trim_srcref(tr[[i]]$results[[j]]$srcref)
+      }
+    }
+  }
+  class(tr) <- unique(c("testthat_results", class(tr)))
+  tr
+}
+
+trim_srcref <- function(s) {
+  list(
+    chr = as.character(s),
+    directory = getSrcDirectory(s),
+    filename = getSrcFilename(s),
+    start_row = getSrcLocation(s, "line"),
+    end_row = getSrcLocation(s, "line", first = FALSE),
+    start_column = getSrcLocation(s, "column"),
+    end_column = getSrcLocation(s, "column", first = FALSE),
+    start_byte = getSrcLocation(s, "byte"),
+    end_byte = getSrcLocation(s, "byte", first = FALSE)
+  )
+}
+
+quick_save_rds <- function(obj, path) {
+  ser <- serialize(obj, NULL, xdr = FALSE)
+  writeBin(ser, path)
 }
 
 #' @rdname test_package
@@ -1473,6 +1509,11 @@ format_coverage_table2_full <- function(x, ...) {
   # directory summaries at the right place
   lines[mid] <- lines[mid][c(1, order(fn0[-1]) + 1)]
 
+  test_results <- attr(x, "test_results")
+  if (!is.null(test_results)) {
+    lines <- c(lines, "", format(test_results))
+  }
+
   lines
 }
 
@@ -1726,6 +1767,52 @@ dir_size <- function(dirs) {
   })
 }
 
+#' Find and print the last test results
+#'
+#' @return The test results in a list with class testthat_results. If there
+#'   are no previous results, then a message is shown and `NULL` is
+#'   returned.
+#'
+#' @inheritParams load_package
+#' @export
+
+last_test_results <- function(path = ".") {
+  withr::local_dir(path)
+  setup <- load_package_setup(type = "coverage", path = ".")
+  test_results_file <- file.path(setup$dir, "last-tests.rds")
+  if (!file.exists(test_results_file)) {
+    message("No test results yet. Run `test_package()!")
+    return(invisible(NULL))
+  }
+
+  tr <- readRDS(test_results_file)
+  attr(tr, "at") <- file.mtime(test_results_file)
+  tr
+}
+
+#' Find and print the last test coverage results
+#'
+#' @return A package_coverage object. If there are no previous results,
+#'   then a message is shown and `NULL` is returned.
+#'
+#' @export
+
+last_coverage_results <- function(path = ".") {
+  withr::local_dir(path)
+  setup <- load_package_setup(type = "coverage", path = ".")
+  coverage_results_file <- file.path(setup$dir, "last-coverage.rds")
+  if (!file.exists(coverage_results_file)) {
+    message("No test coverage yet. Run `test_package()!")
+    return(invisible(NULL))
+  }
+
+  cr <- readRDS(coverage_results_file)
+  attr(cr, "at") <- file.mtime(coverage_results_file)
+  attr(cr, "test_results") <- suppressMessages(last_test_results("."))
+
+  cr
+}
+
 #' Run roxygen2 to generate the package manual and namespace files
 #'
 #' Loads the debug build, and calls [roxygen2::roxygenize()].
@@ -1818,3 +1905,132 @@ install_package <- function(
 #' @export
 
 i <- install_package
+
+#' @export
+
+print.testthat_results <- function(x, ...) {
+  writeLines(format(x, ...))
+  invisible(x)
+}
+
+#' @export
+
+format.testthat_results <- function(x, ...) {
+  # This uses some testthat internals, ideally it would be in testthat
+  file <- factor(map_chr(x, "[[", "file"))
+  broken <- map_int(x, function(x1) {
+    sum(map_lgl(x1$results, expectation_broken))
+  })
+  skip <- map_int(x, function(x1) {
+    sum(map_lgl(x1$results, expectation_skip))
+  })
+  warning <- map_int(x, function(x1) {
+    sum(map_lgl(x1$results, expectation_warning))
+  })
+  success <- map_int(x, function(x1) {
+    sum(map_lgl(x1$results, expectation_success))
+  })
+  by_file <- data.frame(
+    file = levels(file),
+    broken = tapply(broken, file, sum),
+    skip = tapply(skip, file, sum),
+    warning = tapply(warning, file, sum),
+    success = tapply(success, file, sum)
+  )
+  by_file$context <- sub("^test-?", "", sub("[.][rR]$", "", by_file$file))
+  by_file <- by_file[order(by_file$context), ]
+
+  report_by_file <- by_file[
+    by_file$broken > 0 | by_file$skip > 0 | by_file$warning > 0,
+  ]
+  pkg <- attr(x, "pkg")
+  at <- attr(x, "at")
+  if (!is.null(at)) {
+    at[] <- round(unclass(at))
+  }
+
+  c(
+    if (nrow(report_by_file) > 0) {
+      F <- format(c("F", zero(report_by_file$broken)))
+      W <- format(c("W", zero(report_by_file$warning)))
+      S <- format(c("S", zero(report_by_file$skip)))
+      OK <- format(c(cli::symbol$tick, zero(report_by_file$success)))
+      ctx <- c("Context", report_by_file$context)
+      c(
+        cli::rule(left = pkg %||% ""),
+
+        paste0(
+          c(style_orange(F[1]), style(F[-1], "broken")),
+          " ",
+          c(cli::col_magenta(W[1]), style(W[-1], "warning")),
+          " ",
+          c(cli::col_blue(S[1]), style(S[-1], "skip")),
+          " ",
+          c(cli::col_green(OK[1]), style(OK[-1], "success")),
+          " \u2502 ",
+          ctx
+        ),
+        cli::rule(line = 2)
+      )
+    },
+    "",
+    paste0(
+      summary_line(
+        n_ok = sum(by_file$success),
+        n_fail = sum(by_file$broken),
+        n_warn = sum(by_file$warning),
+        n_skip = sum(by_file$skip)
+      ),
+      if (!is.null(at)) {
+        paste0(
+          cli::col_grey("   @ "),
+          cli::col_grey(round(at)),
+          cli::col_grey(", "),
+          cli::col_grey(format_time_ago$time_ago(at))
+        )
+      }
+    )
+  )
+}
+
+style <- function(x, how = c("broken", "warning", "skip", "success")) {
+  how <- match.arg(how)
+  st <- switch(
+    how,
+    broken = style_bg_orange,
+    warning = cli::bg_magenta,
+    skip = cli::bg_blue,
+    success = cli::col_green
+  )
+  ifelse(grepl("^\\s*$", x), x, st(x))
+}
+
+expectation_broken <- function(exp) {
+  expectation_failure(exp) || expectation_error(exp)
+}
+
+expectation_failure <- function(exp) {
+  expectation_type(exp) == "failure"
+}
+
+expectation_error <- function(exp) {
+  expectation_type(exp) == "error"
+}
+
+expectation_skip <- function(exp) {
+  expectation_type(exp) == "skip"
+}
+
+expectation_warning <- function(exp) {
+  expectation_type(exp) == "warning"
+}
+
+expectation_success <- function(exp) {
+  !expectation_broken(exp) &&
+    !expectation_skip(exp) &&
+    !expectation_warning(exp)
+}
+
+expectation_type <- function(exp) {
+  gsub("^expectation_", "", class(exp)[[1]])
+}

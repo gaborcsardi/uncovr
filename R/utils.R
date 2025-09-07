@@ -10,6 +10,10 @@ map_dbl <- function(X, FUN, ...) {
   vapply(X, FUN, double(1), ...)
 }
 
+map_lgl <- function(X, FUN, ...) {
+  vapply(X, FUN, logical(1), ...)
+}
+
 mkdirp <- function(path) {
   dir.create(path, recursive = TRUE, showWarnings = FALSE)
 }
@@ -95,4 +99,8 @@ find_zero_ranges <- function(key, value) {
 
 is_windows <- function() {
   .Platform$OS.type == "windows"
+}
+
+zero <- function(x) {
+  ifelse(x == 0, "", x)
 }
