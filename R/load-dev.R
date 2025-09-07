@@ -735,14 +735,14 @@ trim_test_results <- function(tr) {
 trim_srcref <- function(s) {
   list(
     chr = as.character(s),
-    directory = getSrcDirectory(s),
-    filename = getSrcFilename(s),
-    start_row = getSrcLocation(s, "line"),
-    end_row = getSrcLocation(s, "line", first = FALSE),
-    start_column = getSrcLocation(s, "column"),
-    end_column = getSrcLocation(s, "column", first = FALSE),
-    start_byte = getSrcLocation(s, "byte"),
-    end_byte = getSrcLocation(s, "byte", first = FALSE)
+    directory = utils::getSrcDirectory(s),
+    filename = utils::getSrcFilename(s),
+    start_row = utils::getSrcLocation(s, "line"),
+    end_row = utils::getSrcLocation(s, "line", first = FALSE),
+    start_column = utils::getSrcLocation(s, "column"),
+    end_column = utils::getSrcLocation(s, "column", first = FALSE),
+    start_byte = utils::getSrcLocation(s, "byte"),
+    end_byte = utils::getSrcLocation(s, "byte", first = FALSE)
   )
 }
 
