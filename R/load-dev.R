@@ -637,6 +637,10 @@ test_package <- function(
 ) {
   withr::local_dir(path)
 
+  if (Sys.getenv("NOT_CRAN") == "") {
+    withr::local_envvar(NOT_CRAN = "true")
+  }
+
   # clean up .gcda files, because pkgbuild wrongly considers them as source
   # files and thinks that the dll is out of data, because they are newer
   setup <- load_package_setup(type = "coverage", path = ".")
