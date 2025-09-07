@@ -742,7 +742,7 @@ trim_srcref <- function(s) {
     start_column = utils::getSrcLocation(s, "column"),
     end_column = utils::getSrcLocation(s, "column", first = FALSE),
     start_byte = utils::getSrcLocation(s, "byte"),
-    end_byte = utils::getSrcLocation(s, "byte", first = FALSE)
+    end_byte = getSrcLocation(s, "byte", first = FALSE)
   )
 }
 
@@ -1769,11 +1769,11 @@ dir_size <- function(dirs) {
 
 #' Find and print the last test results
 #'
+#' @inheritParams load_package
 #' @return The test results in a list with class testthat_results. If there
 #'   are no previous results, then a message is shown and `NULL` is
 #'   returned.
 #'
-#' @inheritParams load_package
 #' @export
 
 last_test_results <- function(path = ".") {
@@ -1792,6 +1792,7 @@ last_test_results <- function(path = ".") {
 
 #' Find and print the last test coverage results
 #'
+#' @inheritParams load_package
 #' @return A package_coverage object. If there are no previous results,
 #'   then a message is shown and `NULL` is returned.
 #'

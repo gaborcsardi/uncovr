@@ -6,6 +6,9 @@
 \usage{
 last_coverage_results(path = ".")
 }
+\arguments{
+\item{path}{Path to the package tree.}
+}
 \value{
 A package_coverage object. If there are no previous results,
   then a message is shown and `NULL` is returned.
