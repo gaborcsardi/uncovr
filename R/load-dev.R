@@ -1956,9 +1956,7 @@ format.testthat_results <- function(x, ...) {
       S <- format(c("S", zero(report_by_file$skip)))
       OK <- format(c(cli::symbol$tick, zero(report_by_file$success)))
       ctx <- c("Context", report_by_file$context)
-      c(
-        cli::rule(left = pkg %||% ""),
-
+      lines <- c(
         paste0(
           c(style_orange(F[1]), style(F[-1], "broken")),
           " ",
@@ -1972,6 +1970,8 @@ format.testthat_results <- function(x, ...) {
         ),
         cli::rule(line = 2)
       )
+      lines[1] <- style_bg_grey(cli::ansi_align(lines[1]))
+      lines
     },
     "",
     paste0(
