@@ -11,7 +11,8 @@ test_package(
   test_dir = "tests/testthat",
   reporter = NULL,
   clean = FALSE,
-  local_install = TRUE
+  local_install = TRUE,
+  show_coverage = TRUE
 )
 
 t(
@@ -20,7 +21,8 @@ t(
   test_dir = "tests/testthat",
   reporter = NULL,
   clean = FALSE,
-  local_install = TRUE
+  local_install = TRUE,
+  show_coverage = TRUE
 )
 }
 \arguments{
@@ -40,6 +42,8 @@ within the package tree.}
 
 \item{local_install}{Whether to install the built package into a local
 library and add that library to the beginning of the library path.}
+
+\item{show_coverage}{Whether to show code coverage results.}
 }
 \value{
 A list of class `package_coverage` with entries:

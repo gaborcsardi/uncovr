@@ -7,6 +7,7 @@
 rerun_failing_tests(
   path = ".",
   types = c("fail", "warning", "skip", "all")[1],
+  show_coverage = FALSE,
   ...
 )
 }
@@ -16,6 +17,8 @@ rerun_failing_tests(
 \item{types}{Test result types to re-run, a character vector, possible
 elements are `"fail"` (default), `"warning"`, `"skip"`, "`all`".
 `"all"` is equivalent to `c("fail", "warning", "skip")`.}
+
+\item{show_coverage}{Whether to show code coverage results.}
 
 \item{...}{Additional arguments are passed to [test_package()].}
 }

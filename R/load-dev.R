@@ -595,6 +595,7 @@ copy_inst_files <- function(src, tgt) {
 #'   within the package tree.
 #' @param reporter The testthat reporter to use. Passed to
 #'   [testthat::test_dir()].
+#' @param show_coverage Whether to show code coverage results.
 #' @inheritParams load_package
 #'
 #' @return A list of class `package_coverage` with entries:
@@ -633,7 +634,8 @@ test_package <- function(
   test_dir = "tests/testthat",
   reporter = NULL,
   clean = FALSE,
-  local_install = TRUE
+  local_install = TRUE,
+  show_coverage = TRUE
 ) {
   withr::local_dir(path)
 
@@ -721,7 +723,11 @@ test_package <- function(
   coverage_results_file <- file.path(setup$dir, "last-coverage.rds")
   saveRDS(dev_data$coverage, coverage_results_file, compress = FALSE)
 
-  dev_data
+  if (show_coverage) {
+    dev_data
+  } else {
+    invisible(dev_data)
+  }
 }
 
 trim_test_results <- function(tr) {
@@ -1410,10 +1416,10 @@ format.coverage_table2 <- function(x, filter = NULL, ...) {
 }
 
 format_coverage_table2_filter <- function(x, filter, ...) {
-  mch <- grepl(filter, x$path)
+  mch <- grep(filter, sub("[.][rR]$", "", basename(x$path)))
   if (length(mch) == 0) {
     warning(
-      "No matching code file for '",
+      "\nNo matching code file for '",
       filter,
       "', showing full coverage table"
     )
@@ -1807,7 +1813,7 @@ last_coverage_results <- function(path = ".") {
   setup <- load_package_setup(type = "coverage", path = ".")
   coverage_results_file <- file.path(setup$dir, "last-coverage.rds")
   if (!file.exists(coverage_results_file)) {
-    message("No test coverage yet. Run `test_package()!")
+    cli::cli_alert_info("No test coverage yet. Run `test_package()!")
     return(invisible(NULL))
   }
 
@@ -1816,6 +1822,49 @@ last_coverage_results <- function(path = ".") {
   attr(cr, "test_results") <- suppressMessages(last_test_results("."))
 
   cr
+}
+
+#' Re-run the test files that had failing tests in the last test run
+#'
+#' @inheritParams load_package
+#' @param types Test result types to re-run, a character vector, possible
+#'   elements are `"fail"` (default), `"warning"`, `"skip"`, "`all`".
+#'   `"all"` is equivalent to `c("fail", "warning", "skip")`.
+#' @param show_coverage Whether to show code coverage results.
+#' @param ... Additional arguments are passed to [test_package()].
+#'
+#' @export
+
+rerun_failing_tests <- function(
+  path = ".",
+  types = c("fail", "warning", "skip", "all")[1],
+  show_coverage = FALSE,
+  ...
+) {
+  tr <- last_test_results(path)
+  if (is.null(tr)) {
+    return(invisible(NULL))
+  }
+
+  by_file <- testthat_results_by_file(tr)
+  sel <- rep(FALSE, nrow(by_file))
+  if (any(c("fail", "all") %in% types)) {
+    sel <- sel | by_file$broken > 0
+  }
+  if (any(c("warning", "all") %in% types)) {
+    sel <- sel | by_file$warning > 0
+  }
+  if (any(c("skip", "all") %in% types)) {
+    sel <- sel | by_file$skip > 0
+  }
+  rerun <- by_file$context[sel]
+  if (length(rerun) == 0) {
+    cli::cli_alert_info("Nothing to re-run.")
+    return(invisible(NULL))
+  }
+
+  filter <- paste0("^(", paste(rerun, collapse = "|"), ")$")
+  test_package(filter = filter, path = path, show_coverage = show_coverage, ...)
 }
 
 #' Run roxygen2 to generate the package manual and namespace files
@@ -1918,9 +1967,7 @@ print.testthat_results <- function(x, ...) {
   invisible(x)
 }
 
-#' @export
-
-format.testthat_results <- function(x, ...) {
+testthat_results_by_file <- function(x) {
   # This uses some testthat internals, ideally it would be in testthat
   file <- factor(map_chr(x, "[[", "file"))
   broken <- map_int(x, function(x1) {
@@ -1944,7 +1991,13 @@ format.testthat_results <- function(x, ...) {
   )
   by_file$context <- sub("^test-?", "", sub("[.][rR]$", "", by_file$file))
   by_file <- by_file[order(by_file$context), ]
+  by_file
+}
 
+#' @export
+
+format.testthat_results <- function(x, ...) {
+  by_file <- testthat_results_by_file(x)
   report_by_file <- by_file[
     by_file$broken > 0 | by_file$skip > 0 | by_file$warning > 0,
   ]
