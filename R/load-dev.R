@@ -596,6 +596,9 @@ copy_inst_files <- function(src, tgt) {
 #' @param reporter The testthat reporter to use. Passed to
 #'   [testthat::test_dir()].
 #' @param show_coverage Whether to show code coverage results.
+#' @param coverage_report Whether to generate a HTML test coverage report.
+#' @param show_coverage_report Whether to show the HTML test coverage
+#'   report (if `coverage_report` is `TRUE`).
 #' @inheritParams load_package
 #'
 #' @return A list of class `package_coverage` with entries:
@@ -635,7 +638,9 @@ test_package <- function(
   reporter = NULL,
   clean = FALSE,
   local_install = TRUE,
-  show_coverage = TRUE
+  show_coverage = TRUE,
+  coverage_report = FALSE,
+  show_coverage_report = coverage_report && interactive()
 ) {
   withr::local_dir(path)
 
@@ -724,6 +729,10 @@ test_package <- function(
   quick_save_rds(prepare_test_results(dev_data), test_results_file)
   coverage_results_file <- file.path(setup$dir, "last-coverage.rds")
   quick_save_rds(prepare_coverage_results(dev_data), coverage_results_file)
+
+  if (coverage_report) {
+    coverage_report(show = show_coverage_report)
+  }
 
   if (show_coverage) {
     dev_data

@@ -12,7 +12,9 @@ test_package(
   reporter = NULL,
   clean = FALSE,
   local_install = TRUE,
-  show_coverage = TRUE
+  show_coverage = TRUE,
+  coverage_report = FALSE,
+  show_coverage_report = coverage_report && interactive()
 )
 
 t(
@@ -22,7 +24,9 @@ t(
   reporter = NULL,
   clean = FALSE,
   local_install = TRUE,
-  show_coverage = TRUE
+  show_coverage = TRUE,
+  coverage_report = FALSE,
+  show_coverage_report = coverage_report && interactive()
 )
 }
 \arguments{
@@ -44,6 +48,11 @@ within the package tree.}
 library and add that library to the beginning of the library path.}
 
 \item{show_coverage}{Whether to show code coverage results.}
+
+\item{coverage_report}{Whether to generate a HTML test coverage report.}
+
+\item{show_coverage_report}{Whether to show the HTML test coverage
+report (if `coverage_report` is `TRUE`).}
 }
 \value{
 A list of class `package_coverage` with entries:
