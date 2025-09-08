@@ -1,0 +1,95 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.datatables.net/2.3.3/css/dataTables.dataTables.css" />
+
+    <title>{{ package }} test coverage</title>
+    <style>
+      a {
+        color: rgb(51, 122, 183);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js" integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
+    <script src="https://cdn.datatables.net/2.3.3/js/dataTables.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script>
+      // this is example data, that will be overwritten
+      var data = [
+          [ "R/cache.R",                  13,    4,    4,  0,    1, "100.00%" ],
+          [ "R/checks.R",               2026, 1057, 1056,  1, 54.1,  "99.91%" ],
+          [ "R/class.R",                  15,   10,   10,  0,    1, "100.00%" ],
+          [ "R/cleancall.R",               3,    1,    1,  0,    1, "100.00%" ],
+          [ "R/defaults.R",               34,   10,   10,  0,  2.3, "100.00%" ],
+          [ "R/logger-provider-file.R",   96,   20,   20,  0,   13, "100.00%" ],
+          [ "R/logger-provider-http.R",  120,   39,   19, 20,   32, "48.72%" ],
+          [ "src/collector.cc",          222,  126,  126,  0,    5, "100.00%" ],
+          [ "src/init.c",                233,    7,    5,  2,  1.2, "71.43%" ]
+      ];
+    </script>
+
+    <script>
+      data = {{ data }};
+    </script>
+
+    <script>
+      function color_coverage_cb(td, cellData, rowData, row, col) {
+        var percent = cellData.replace("%", "");
+        if (percent > 90) {
+          var grad = "linear-gradient(90deg, #edfde7 " + cellData + ", white " + cellData + ")";
+        } else if (percent > 75) {
+          var grad = "linear-gradient(90deg, #f9ffe5 " + cellData + ", white " + cellData + ")";
+        } else {
+          var grad = "linear-gradient(90deg, #fcece9 " + cellData + ", white " + cellData + ")";
+        }
+        $(td).css("background", grad);
+      }
+      $(document).ready( function () {
+        data = data.map(function(row) {
+          var enc = encodeURIComponent(encodeURIComponent(row[0]))
+          row[0] = '<a href="file-' + enc + '.html">' + row[0] + '</a>';
+          return row;
+        });
+        $('#coverage').DataTable({
+          data: data,
+          paging: false,
+          searching: false,
+          language: {
+            info: ""
+          },
+          columnDefs: [
+            { targets: [6], createdCell: color_coverage_cb },
+            { targets: [1, 2, 3, 4, 5, 6], className: "dt-right" }
+          ]
+        });
+      } );
+    </script>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-9">
+          <h1>{{ package }} test coverage — {{ total_percent }}</h1>
+          <table id="coverage" class="row-border">
+            <thead>
+              <th>File</th>
+              <th>Lines</th>
+              <th>Relevant</th>
+              <th>Covered</th>
+              <th>Missed</th>
+              <th>Hits/Line</th>
+              <th>Coverage</th>
+            </thead>
+          </table>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

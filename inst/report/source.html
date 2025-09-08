@@ -1,0 +1,201 @@
+<!doctype html>
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/styles/default.min.css">
+
+    <title>{{ pkgname }} test coverage</title>
+
+    <style>
+      a {
+        color: rgb(51, 122, 183);
+        text-decoration: none;
+      }
+      a:hover {
+        text-decoration: underline;
+      }
+      pre code.hljs {
+        padding: 5px;
+      }
+      table.hljs-ln {
+        width: 100%;
+      }
+      .hljs-ln-numbers {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+        text-align: right;
+        color: #bbb;
+        border-right: 1px solid #CCC;
+      }
+      .hljs-ln-coverage {
+        -webkit-touch-callout: none;
+        -webkit-user-select: none;
+        -khtml-user-select: none;
+        -moz-user-select: none;
+        -ms-user-select: none;
+        user-select: none;
+        padding-left: 5px !important;
+        padding-right: 5px !important;
+        text-align: right;
+        border-right: 1px solid #CCC;
+      }
+      .hljs-ln-nocoverage {
+        background: rgba(246, 198, 206, 1);
+      }
+      .hljs-ln-yescoverage {
+        background: rgba(230, 245, 208, 1);
+      }
+      .hljs-ln-nocoveragecode {
+        background: rgba(203, 68, 66, 0.05);
+      }
+      .hljs-ln-nocoveragecode:hover {
+        border-bottom: 2px solid #a30808;
+      }
+      .hljs-ln-yescoveragecode:hover {
+        border-bottom: 2px solid #49d836;
+      }
+      .hljs-ln-code {
+        padding-left: 5px !important;
+      }
+      .rule {
+        height: 10px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+      .rule-good {
+        background: rgba(77, 146, 33, 1);
+      }
+      .rule-ok {
+        background: rgba(0, 0, 255, 1);
+      }
+      .rule-bad {
+        background: rgba(255, 165, 0, 1);
+      }
+      .rule-na {
+        background: #000;
+      }
+    </style>
+  </head>
+  <body>
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js" integrity="sha256-kmHvs0B+OpCW5GVHUNjv9rOmY0IvSIRcf7zGUDTDQM8=" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/r.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/c++.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.11.1/languages/c.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlightjs-line-numbers.js/2.9.0/highlightjs-line-numbers.min.js"></script>
+    <script>
+      // this is example data, that will be overwritten
+      var lines = [
+        "parse_log_record_message <- function(msg) {",
+        "  ccall(otel_parse_log_record, msg)",
+        "}",
+        "",
+        "collector_app <- function() {",
+        "  app <- webfakes::new_app()",
+        "  app$locals$logs <- list()",
+        "  app$locals$traces <- list()",
+        "  app$locals$metrics <- list()",
+        "  app$post(",
+        "    c(\"/v1/traces\", \"/v1/metrics\", \"/v1/logs\"),",
+        "    function(req, res) {",
+        "      if (req$get_header(\"content-type\") != \"application/x-protobuf\") {",
+        "        bd <- encode_response(",
+        "          \"traces\",",
+        "          \"failure\",",
+        "          error_message = \"missing or wrong content-type header\"",
+        "        )",
+        "        res$set_status(400L)",
+        "        res$send(bd)",
+        "        return()",
+        "      }",
+        "      \"next\"",
+        "    }",
+        "  )",
+        "  app$post(\"/v1/traces\", function(req, res) {",
+        "    # TODO",
+        "  })",
+        "  app$post(\"/v1/metrics\", function(req, res) {",
+        "    req <<- req",
+        "    record <- ccall(otel_parse_metrics_record, req$.body)",
+        "    app$locals$metrics <- c(app$locals$metrics, list(record))",
+        "    bd <- encode_response(\"metrics\")",
+        "    res$set_status(200)",
+        "    res$set_type(\"application/x-protobuf\")",
+        "    res$send(bd)",
+        "  })"
+    ];
+    var coverage = [
+      NaN,   0, NaN, NaN, NaN,  10,  10,  10,  10,  10,
+       10,  10,   0,   0,   0,   0,   0, NaN,   0,   0,
+        0, NaN,   0, NaN, NaN,   1, NaN, NaN,   1,   0,
+        0,   0,   0,   0,   0,   0, NaN, NaN,   1,   0
+    ];
+    </script>
+
+    <script>
+      lines = {{ lines }};
+      coverage = {{ coverage }};
+    </script>
+
+    <script>
+      var code = lines.join("\n");
+      $(document).ready( function() {
+        // insert code
+        $('#coverage').text(code);
+        // syntax highlight
+        hljs.highlightAll();
+        // add line numbers
+        $('code.hljs').each(function(i, block) {
+          hljs.lineNumbersBlockSync(block, { singleLine: true });
+        });
+        // add coverage numbers
+        var tds = $('#coverage tr td.hljs-ln-numbers');
+        var tls = $('#coverage tr td.hljs-ln-code');
+        tds.each(function(i) {
+          var m = "", cl = "", clc = "";
+          if (!isNaN(coverage[i])) {
+            if (coverage[i] == 0) {
+              m = "!";
+              cl = "hljs-ln-nocoverage";
+              clc = "hljs-ln-nocoveragecode";
+            } else {
+              m = coverage[i] + "x"
+              cl = "hljs-ln-yescoverage";
+              clc = "hljs-ln-yescoveragecode";
+            }
+          }
+          $('<td class="hljs-ln-line hljs-ln-coverage ' + cl + '">' + m + '</td>')
+            .insertAfter($(this));
+          if (clc != "") {
+            tls[i].className += " " + clc;
+          }
+        });
+      });
+    </script>
+    <div class="container">
+      <div class="row">
+        <div class="col-md-9">
+          <h1>
+            <a href="{{ pkgname }}-report.html">{{ pkgname }} test coverage</a> —
+            {{ total_percent }}
+          </h1>
+          <h2><code>{{ path }}</code> — {{ file_percent }}</h2>
+          <div class="rule rule-{{ file_status }}"></div>
+          <pre><code id="coverage" class="{{ language }}">
+          </code></pre>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

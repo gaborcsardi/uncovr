@@ -684,6 +684,8 @@ test_package <- function(
     dev_data$coverage$lines[[i]]$coverage[] <- counts[[i]][ids]
     dev_data$coverage$lines_covered[i] <-
       sum(dev_data$coverage$lines[[i]]$coverage > 0, na.rm = TRUE)
+    dev_data$coverage$total_hits[i] <-
+      sum(dev_data$coverage$lines[[i]]$coverage, na.rm = TRUE)
     dev_data$coverage$uncovered[[i]] <-
       calculate_uncovered_intervals(dev_data$coverage$lines[[i]])
   }
@@ -719,9 +721,9 @@ test_package <- function(
   class(dev_data) <- c("package_coverage", class(dev_data))
 
   test_results_file <- file.path(setup$dir, "last-tests.rds")
-  quick_save_rds(trim_test_results(dev_data$test_results), test_results_file)
+  quick_save_rds(prepare_test_results(dev_data), test_results_file)
   coverage_results_file <- file.path(setup$dir, "last-coverage.rds")
-  saveRDS(dev_data$coverage, coverage_results_file, compress = FALSE)
+  quick_save_rds(prepare_coverage_results(dev_data), coverage_results_file)
 
   if (show_coverage) {
     dev_data
@@ -730,7 +732,8 @@ test_package <- function(
   }
 }
 
-trim_test_results <- function(tr) {
+prepare_test_results <- function(dd) {
+  tr <- dd$test_results
   for (i in seq_along(tr)) {
     for (j in seq_along(tr[[i]]$results)) {
       if (!is.null(tr[[i]]$results[[j]]$srcref)) {
@@ -740,6 +743,15 @@ trim_test_results <- function(tr) {
   }
   class(tr) <- unique(c("testthat_results", class(tr)))
   tr
+}
+
+prepare_coverage_results <- function(dd) {
+  cr <- dd$coverage
+  meta <- list(
+    setup = dd$setup
+  )
+  attr(cr, "metadata") <- meta
+  cr
 }
 
 trim_srcref <- function(s) {
@@ -809,12 +821,14 @@ add_coverage_summary <- function(coverage) {
   bd_line_count <- tapply(coverage$line_count, dirs, sum)
   bd_code_lines <- tapply(coverage$code_lines, dirs, sum)
   bd_lines_covered <- tapply(coverage$lines_covered, dirs, sum)
+  bd_total_hits <- tapply(coverage$total_hits, dirs, sum)
 
   sm <- data.frame(
     name = c("All files", levels(dirs)),
     line_count = c(sum(coverage$line_count), bd_line_count),
     code_lines = c(sum(coverage$code_lines), bd_code_lines),
-    lines_covered = c(sum(coverage$lines_covered), bd_lines_covered)
+    lines_covered = c(sum(coverage$lines_covered), bd_lines_covered),
+    total_hits = c(sum(coverage$total_hits, bd_total_hits))
   )
 
   sm$percent_covered <- sm$lines_covered / sm$code_lines * 100
@@ -1081,6 +1095,7 @@ cov_instrument_dir <- function(
     line_count = NA_integer_,
     code_lines = NA_integer_,
     lines_covered = 0L,
+    total_hits = 0L,
     percent_covered = 0,
     lines = I(replicate(length(rfiles), NULL, simplify = FALSE)),
     uncovered = I(replicate(length(rfiles), list(), simplify = FALSE))
@@ -1675,6 +1690,9 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
     code_lines = map_int(ccov, function(x) sum(!is.na(x$coverage))),
     lines_covered = map_int(ccov, function(x) {
       sum(x$coverage > 0, na.rm = TRUE)
+    }),
+    total_hits = map_int(ccov, function(x) {
+      sum(x$coverage, na.rm = TRUE)
     }),
     percent_covered = NA_real_,
     lines = I(replicate(length(ccov), NULL, simplify = FALSE)),
