@@ -157,7 +157,7 @@ coverage_report_file_ <- function(
     "good"
   }
 
-  code <- gsub("\"", "\\\"", fixed = TRUE, coverage$lines[[pathidx]][["lines"]])
+  code <- escape_source(coverage$lines[[pathidx]][["lines"]])
   cov <- coverage$lines[[pathidx]][["coverage"]]
 
   vars <- list(
@@ -197,6 +197,12 @@ coverage_report_file_ <- function(
   }
 
   invisible(output)
+}
+
+escape_source <- function(x) {
+  x <- gsub("\\", "\\\\", fixed = TRUE, x)
+  x <- gsub("\"", "\\\"", fixed = TRUE, x)
+  x
 }
 
 get_language_from_path <- function(path) {
