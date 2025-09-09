@@ -1,6 +1,8 @@
 #' Generate a HTML coverage report
 #'
 #' @inheritParams load_package
+#' @param coverage Test coverage results. If `NULL` then the last
+#'   results are used via [last_coverage_results()].
 #' @param output Output file. This is the HTML index file. The rest of
 #'   of the HTML files for the source code files will be placed next
 #'   to it. By default it is generated in the dev directory.
@@ -12,12 +14,13 @@
 
 coverage_report <- function(
   path = ".",
+  coverage = NULL,
   output = NULL,
   show = interactive()
 ) {
   withr::local_dir(path)
   rm(path)
-  coverage <- last_coverage_results(path = ".")
+  coverage <- coverage %||% last_coverage_results(path = ".")
   setup <- load_package_setup("coverage")
 
   index <- file.path(find.package("testthatlabs"), "inst/report/index.html")
