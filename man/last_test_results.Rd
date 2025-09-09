@@ -10,8 +10,8 @@ last_test_results(path = ".")
 \item{path}{Path to the package tree.}
 }
 \value{
-The test results in a list with class testthat_results. If there
-  are no previous results, then a message is shown and `NULL` is
+The test results in a list with class cov_testthat_results. If
+  there are no previous results, then a message is shown and `NULL` is
   returned.
 }
 \description{

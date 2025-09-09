@@ -750,7 +750,7 @@ prepare_test_results <- function(dd) {
       }
     }
   }
-  class(tr) <- unique(c("testthat_results", class(tr)))
+  class(tr) <- unique(c("cov_testthat_results", class(tr)))
   tr
 }
 
@@ -1807,8 +1807,8 @@ dir_size <- function(dirs) {
 #' Find and print the last test results
 #'
 #' @inheritParams load_package
-#' @return The test results in a list with class testthat_results. If there
-#'   are no previous results, then a message is shown and `NULL` is
+#' @return The test results in a list with class cov_testthat_results. If
+#'   there are no previous results, then a message is shown and `NULL` is
 #'   returned.
 #'
 #' @export
@@ -1989,7 +1989,7 @@ i <- install_package
 
 #' @export
 
-print.testthat_results <- function(x, ...) {
+print.cov_testthat_results <- function(x, ...) {
   writeLines(format(x, ...))
   invisible(x)
 }
@@ -2023,7 +2023,7 @@ testthat_results_by_file <- function(x) {
 
 #' @export
 
-format.testthat_results <- function(x, ...) {
+format.cov_testthat_results <- function(x, ...) {
   by_file <- testthat_results_by_file(x)
   report_by_file <- by_file[
     by_file$broken > 0 | by_file$skip > 0 | by_file$warning > 0,
