@@ -70,6 +70,7 @@ load_package_setup <- function(
   setup[["compiler_flags"]] <- makeflags
   setup[["dir"]] <- get_dev_dir(setup)
   setup[["pkgname"]] <- unname(desc::desc_get("Package", "."))
+  setup[["pkgversion"]] <- unname(desc::desc_get("Version", "."))
 
   withr::local_options(structure(list(setup), names = opt_setup))
 
@@ -599,6 +600,8 @@ copy_inst_files <- function(src, tgt) {
 #' @param coverage_report Whether to generate a HTML test coverage report.
 #' @param show_coverage_report Whether to show the HTML test coverage
 #'   report (if `coverage_report` is `TRUE`).
+#' @param lcov_info Whether to create an lcov info file, see
+#'   [write_lcov_info()].
 #' @inheritParams load_package
 #'
 #' @return A list of class `package_coverage` with entries:
@@ -640,7 +643,8 @@ test_package <- function(
   local_install = TRUE,
   show_coverage = TRUE,
   coverage_report = FALSE,
-  show_coverage_report = coverage_report && interactive()
+  show_coverage_report = coverage_report && interactive(),
+  lcov_info = FALSE
 ) {
   withr::local_dir(path)
 
@@ -726,12 +730,18 @@ test_package <- function(
   class(dev_data) <- c("package_coverage", class(dev_data))
 
   test_results_file <- file.path(setup$dir, "last-tests.rds")
-  quick_save_rds(prepare_test_results(dev_data), test_results_file)
+  test_results <- prepare_test_results(dev_data)
+  quick_save_rds(test_results, test_results_file)
   coverage_results_file <- file.path(setup$dir, "last-coverage.rds")
-  quick_save_rds(prepare_coverage_results(dev_data), coverage_results_file)
+  coverage_results <- prepare_coverage_results(dev_data)
+  quick_save_rds(coverage_results, coverage_results_file)
 
   if (coverage_report) {
-    coverage_report(show = show_coverage_report)
+    coverage_report(coverage = coverage_results, show = show_coverage_report)
+  }
+
+  if (lcov_info) {
+    write_lconv_info(coverage = coverage_results)
   }
 
   if (show_coverage) {

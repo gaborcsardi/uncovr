@@ -14,7 +14,8 @@ test_package(
   local_install = TRUE,
   show_coverage = TRUE,
   coverage_report = FALSE,
-  show_coverage_report = coverage_report && interactive()
+  show_coverage_report = coverage_report && interactive(),
+  lcov_info = FALSE
 )
 
 t(
@@ -26,7 +27,8 @@ t(
   local_install = TRUE,
   show_coverage = TRUE,
   coverage_report = FALSE,
-  show_coverage_report = coverage_report && interactive()
+  show_coverage_report = coverage_report && interactive(),
+  lcov_info = FALSE
 )
 }
 \arguments{
@@ -53,6 +55,9 @@ library and add that library to the beginning of the library path.}
 
 \item{show_coverage_report}{Whether to show the HTML test coverage
 report (if `coverage_report` is `TRUE`).}
+
+\item{lcov_info}{Whether to create an lcov info file, see
+[write_lcov_info()].}
 }
 \value{
 A list of class `package_coverage` with entries:
