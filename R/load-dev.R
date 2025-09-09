@@ -167,10 +167,10 @@ load_package <- function(
   if (type == "coverage") {
     fn1 <- code_files[1]
     setup$covxxso <- inject_covxxso(setup$dir)
-    writeLines(
-      c(create_counters_lines(setup, cov_data), readLines(fn1)),
-      fn1
-    )
+    cclines <- create_counters_lines(setup, cov_data)
+    attr(cov_data, "metadata")$ccshift <- length(cclines)
+    attr(cov_data, "metadata")$ccfile <- fn1
+    writeLines(c(cclines, readLines(fn1)), fn1)
   }
 
   if (local_install) {
@@ -199,6 +199,10 @@ load_package <- function(
     update_libpath(lib, setup[["pkgname"]])
   }
 
+  if (type == "coverage") {
+    cov_data <- find_function_names(cov_data, loaded$env, setup)
+  }
+
   invisible(list(
     setup = setup,
     plan = plan,
@@ -213,6 +217,50 @@ load_package <- function(
 #' @export
 
 l <- load_package
+
+find_function_names <- function(cov_data, env, setup) {
+  pkgdir <- paste0(file.path(setup$dir, setup$pkgname), "/")
+  meta <- attr(cov_data, "metadata")
+  ccfile <- rel_path(meta$ccfile, pkgdir)
+  for (on in names(env)) {
+    if (is.function(env[[on]])) {
+      fun <- env[[on]]
+      odr <- rel_path(utils::getSrcDirectory(fun), pkgdir)
+      ofn <- utils::getSrcFilename(fun)
+      oph <- file.path(odr, ofn)
+      fidx <- match(oph, cov_data$path)
+      if (is.na(fidx)) {
+        next
+      }
+      ccshift <- if (oph == ccfile) meta$ccshift else 0L
+      ol1 <- utils::getSrcLocation(fun, "line", first = TRUE) - ccshift
+      ol2 <- utils::getSrcLocation(fun, "line", first = FALSE) - ccshift
+      mch <- which(
+        cov_data$funs[[fidx]]$line1 == ol1 & cov_data$funs[[fidx]]$line2 == ol2
+      )
+      if (length(mch) != 1) {
+        next
+      }
+      if (is.na(cov_data$funs[[fidx]]$name[mch])) {
+        cov_data$funs[[fidx]]$name[mch] <- on
+      } else {
+        cov_data$funs[[fidx]]$aliases[[mch]] <- c(
+          cov_data$funs[[fidx]]$aliases[[mch]],
+          on
+        )
+      }
+    }
+  }
+  cov_data
+}
+
+# relative path from project directory
+rel_path <- function(x, root) {
+  wd <- paste0(getwd(), "/")
+  x <- ifelse(startsWith(x, wd), substr(x, nchar(wd) + 1, nchar(x)), x)
+  x <- ifelse(startsWith(x, root), substr(x, nchar(root) + 1, nchar(x)), x)
+  x
+}
 
 inject_onload_lines <- function(setup, pkg_dir, lib, inject_script, fnx) {
   mkdirp(lib)
@@ -286,7 +334,7 @@ setup_cov_env <- function(cov_data) {
   for (i in seq_len(nrow(cov_data))) {
     assign(
       cov_data$symbol[i],
-      .Call(c_cov_make_counter, cov_data$line_count[i]),
+      .Call(c_cov_make_counter, cov_data$num_markers[i]),
       envir = env
     )
   }
@@ -345,7 +393,7 @@ setup_cov_inject_script <- function(target, cov_data) {
     sprintf(
       "  assign('%s', mycall(mc, %dL), envir = env)",
       cov_data$symbol,
-      cov_data$line_count
+      cov_data$num_markers
     ),
     "  mycall(lb)",
     "  output <- file.path(",
@@ -406,7 +454,7 @@ create_counters_lines <- function(setup, cov_data) {
   subs <- list(
     covxxso_ = normalizePath(setup$covxxso),
     symbols_ = cov_data$symbol,
-    linums_ = cov_data$line_count,
+    nmarkers_ = cov_data$num_markers,
     outdir_ = normalizePath(outdir)
   )
   deparse(
@@ -417,12 +465,12 @@ create_counters_lines <- function(setup, cov_data) {
         lb <- base::getNativeSymbolInfo("cov_lock_base", dl)
         ulb <- base::getNativeSymbolInfo("cov_unlock_base", dl)
         symbols <- symbols_
-        linums <- linums_
+        nmarkers <- nmarkers_
         mycall <- base::.Call
         env <- if (mycall(ulb)) baseenv() else globalenv()
         for (i in base::seq_along(symbols)) {
           if (base::is.null(env[[symbols[i]]])) {
-            base::assign(symbols[i], mycall(mc, linums[i]), envir = env)
+            base::assign(symbols[i], mycall(mc, nmarkers[i]), envir = env)
           }
         }
         output <- base::file.path(outdir_, paste0(Sys.getpid(), '.rda'))
@@ -769,7 +817,7 @@ prepare_coverage_results <- function(dd) {
   meta <- list(
     setup = dd$setup
   )
-  attr(cr, "metadata") <- meta
+  attr(cr, "metadata") <- c(attr(cr, "metadata"), meta)
   cr
 }
 
@@ -1111,18 +1159,26 @@ cov_instrument_dir <- function(
   fls <- data.frame(
     path = rfiles,
     symbol = symbol,
+    num_markers = 0L,
     line_count = NA_integer_,
     code_lines = NA_integer_,
     lines_covered = 0L,
     total_hits = 0L,
     percent_covered = 0,
+    function_count = 0L,
+    functions_hit = 0L,
     lines = I(replicate(length(rfiles), NULL, simplify = FALSE)),
+    funs = I(replicate(length(rfiles), NULL, simplify = FALSE)),
     uncovered = I(replicate(length(rfiles), list(), simplify = FALSE))
   )
   for (i in seq_along(rfiles)) {
-    fls$lines[[i]] <- cov_instrument_file(fls$path[i], fls$symbol[i])
+    cifile <- cov_instrument_file(fls$path[i], fls$symbol[i])
+    fls$lines[[i]] <- cifile$lines
     fls$line_count[i] <- nrow(fls$lines[[i]])
     fls$code_lines[i] <- sum(fls$lines[[i]]$status == "instrumented")
+    fls$funs[[i]] <- cifile$funs
+    fls$function_count[i] <- nrow(cifile$funs)
+    fls$num_markers[i] <- nrow(cifile$lines) + nrow(cifile$funs)
   }
 
   fls
@@ -1212,7 +1268,23 @@ cov_instrument_file <- function(path, cov_symbol) {
     res$coverage[drop] <- NA_integer_
   }
 
-  res
+  # now do the functions as well
+  # TODO: \()
+  fun_poss <- which(psd$token == "FUNCTION")
+  par_poss <- match(psd$parent[fun_poss], psd$id)
+  funres <- data.frame(
+    name = rep(NA_character_, length(fun_poss)),
+    aliases = I(replicate(length(fun_poss), NULL, simplify = FALSE)),
+    line1 = psd$line1[fun_poss],
+    col1 = psd$col1[fun_poss],
+    line2 = psd$line2[par_poss],
+    col2 = psd$col2[par_poss],
+    status = rep("noncode", length(fun_poss)),
+    id = seq_along(fun_poss) + length(lns0),
+    coverage = rep(NA_integer_, length(fun_poss))
+  )
+
+  list(lines = res, funs = funres)
 }
 
 # `getParseData()` gives te wrong coordinates for lines with TAB characters,
@@ -1705,6 +1777,7 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
     stringsAsFactors = FALSE,
     path = sub("^[.]/", "", map_chr(ccov, function(x) x$file[1])),
     symbol = NA_character_,
+    num_markers = NA_integer_,
     line_count = map_int(ccov, nrow),
     code_lines = map_int(ccov, function(x) sum(!is.na(x$coverage))),
     lines_covered = map_int(ccov, function(x) {
@@ -1714,7 +1787,10 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
       sum(x$coverage, na.rm = TRUE)
     }),
     percent_covered = NA_real_,
+    function_count = NA_integer_,
+    functions_hit = NA_integer_,
     lines = I(replicate(length(ccov), NULL, simplify = FALSE)),
+    funs = I(replicate(length(ccov), NULL, simplify = FALSE)),
     uncovered = I(replicate(length(ccov), NULL, simplify = FALSE))
   )
   res$percent_covered <- ifelse(
