@@ -893,13 +893,23 @@ add_coverage_summary <- function(coverage) {
   bd_code_lines <- tapply(coverage$code_lines, dirs, sum)
   bd_lines_covered <- tapply(coverage$lines_covered, dirs, sum)
   bd_total_hits <- tapply(coverage$total_hits, dirs, sum)
+  bd_function_count <- tapply(coverage$function_count, dirs, sum, na.rm = TRUE)
+  bd_functions_hit <- tapply(coverage$functions_hit, dirs, sum, na.rm = TRUE)
 
   sm <- data.frame(
     name = c("All files", levels(dirs)),
     line_count = c(sum(coverage$line_count), bd_line_count),
     code_lines = c(sum(coverage$code_lines), bd_code_lines),
     lines_covered = c(sum(coverage$lines_covered), bd_lines_covered),
-    total_hits = c(sum(coverage$total_hits, bd_total_hits))
+    total_hits = c(sum(coverage$total_hits, bd_total_hits)),
+    function_count = c(
+      sum(coverage$function_count, na.rm = TRUE),
+      bd_function_count
+    ),
+    functions_hit = c(
+      sum(coverage$functions_hit, na.rm = TRUE),
+      bd_functions_hit
+    )
   )
 
   sm$percent_covered <- sm$lines_covered / sm$code_lines * 100
@@ -1611,16 +1621,25 @@ format_coverage_table2_full <- function(x, ...) {
   fn0 <- c(sm$name[1], paste0(sm$name[-1], "/"), x$path)
   fn <- c(sm$name[1], paste0(sm$name[-1], "/"), paste0(" ", x$path))
   rl <- c(sm$percent_covered, x$percent_covered)
+  fc <- c(sm$function_count, x$function_count)
+  fh <- c(sm$functions_hit, x$functions_hit)
   bl <- format_pct(rl)
+  fmiss <- is.na(fc) | is.na(fh)
+  fs <- ifelse(fmiss, "", paste0(fh, "/", fc))
 
   cffn <- ffn <- format(c("code coverage", "", fn, "", "total"))
   cfbl <- fbl <- format(c("% lines", "", bl, "", bl[1]), justify = "right")
+  cffs <- ffs <- format(c("funs", "", fs, "", fs[1]), justify = "right")
 
   mid <- 3:(length(ffn) - 2)
   cffn[mid] <- cov_col(ffn[mid], rl)
   cfbl[mid] <- cov_col(fbl[mid], rl)
+  cffs[mid] <- cov_col(
+    ffs[mid],
+    ifelse(fmiss | fc == 0, 100, ifelse(fh < fc, 0, 100))
+  )
 
-  lines <- paste0(cffn, " \u2502 ", cfbl, " \u2502 ")
+  lines <- paste0(cffn, " \u2502 ", cfbl, " \u2502 ", cffs, " \u2502 ")
   maxw <- max(cli::ansi_nchar(lines, type = "width"))
   cw <- cli::console_width()
 
