@@ -35,7 +35,7 @@ SEXP c__read_file_raw(const char *cpath) {
 
   /* TODO: should use cleancall to close the file if allocVector fails */
 
-  result = PROTECT(Rf_allocVector(RAWSXP, len));
+  result = PROTECT(Rf_allocVector(RAWSXP, len + 1));
 
   ssize_t ret = read(fd, RAW(result), len);
   if (ret == -1) {
@@ -44,6 +44,7 @@ SEXP c__read_file_raw(const char *cpath) {
     UNPROTECT(1);                                                      // __NO_COVERAGE__
     return R_FORMAT_SYSTEM_ERROR_CODE(err, "Cannot read `%s`", cpath); // __NO_COVERAGE__
   }
+  RAW(result)[len] = 0;
 
   close(fd);
 
@@ -181,7 +182,7 @@ SEXP c_find_last_line(SEXP bytes) {
 static size_t count_functions(char *beg, char *end) {
   size_t count = 0;
   while (beg < end) {
-    beg = memmem(beg, end - beg, "\nfunction ", 10);
+    beg = strstr(beg, "\nfunction ");
     if (!beg) {
       return count;
     }
@@ -335,7 +336,10 @@ SEXP cov_parse_gcov(SEXP path, SEXP displayname) {
     if (!eol) break;
 
     // called
-    char *called = memmem(line, eol - line, " called ", 8);
+    int bak = *eol;
+    *eol = 0;
+    char *called = strstr(line, " called ");
+    *eol = bak;
     if (!called) {
       continue;
     }
