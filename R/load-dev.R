@@ -1777,7 +1777,11 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
 
   pxs <- lapply(dirs, function(d) {
     fnms <- dir(d, recursive = TRUE, pattern = "[.]gcno$")
-    processx::process$new("gcov", c("-p", "-b", fnms), wd = d)
+    processx::process$new(
+      "gcov",
+      c("-p", "--demangled-names", "-b", fnms),
+      wd = d
+    )
   })
 
   while (length(pxs) > 0) {
@@ -1795,14 +1799,20 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
     pxs <- pxs[!dn]
   }
 
+  # TODO: do not parse coverage for excluded files
   ccov <- parse_gcov(".")
-  ccov <- ccov[map_int(ccov, nrow) > 0]
+  ccov_funs <- lapply(ccov, "[[", "functions")
+  ccov <- lapply(ccov, "[[", "lines")
+  keep <- map_int(ccov, nrow) > 0
+  ccov <- ccov[keep]
+  ccov_funs <- ccov_funs[keep]
 
   # need to apply exclusions again, because dependent and potentially
   # excluded .h files were still picked up
   paths <- sub("^[.]/", "", map_chr(ccov, function(x) x$file[1]))
   keep <- paths %in% apply_covrignore(paths, exclusion_file)
   ccov <- ccov[keep]
+  ccov_funs <- ccov_funs[keep]
 
   # line exclusions
   for (i in seq_along(ccov)) {
@@ -1818,6 +1828,8 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
     }
   }
 
+  # TODO: exclude functions whole lines were completely excluded?
+
   res <- data.frame(
     stringsAsFactors = FALSE,
     path = sub("^[.]/", "", map_chr(ccov, function(x) x$file[1])),
@@ -1832,8 +1844,10 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
       sum(x$coverage, na.rm = TRUE)
     }),
     percent_covered = NA_real_,
-    function_count = NA_integer_,
-    functions_hit = NA_integer_,
+    function_count = map_int(ccov_funs, nrow),
+    functions_hit = map_int(ccov_funs, function(x) {
+      sum(x$coverage > 0, na.rm = TRUE)
+    }),
     lines = I(replicate(length(ccov), NULL, simplify = FALSE)),
     funs = I(replicate(length(ccov), NULL, simplify = FALSE)),
     uncovered = I(replicate(length(ccov), NULL, simplify = FALSE))
@@ -1852,6 +1866,20 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
     )
     res$uncovered[[i]] <-
       calculate_uncovered_intervals(res$lines[[i]])
+    nacol <- rep(NA_integer_, nrow(ccov_funs[[i]]))
+    res$funs[[i]] <- data.frame(
+      name = ccov_funs[[i]]$name,
+      aliases = I(replicate(nrow(ccov_funs[[i]]), NULL, simplify = FALSE)),
+      line1 = ccov_funs[[i]]$line,
+      col1 = nacol,
+      line2 = nacol,
+      col2 = nacol,
+      brace_line = nacol,
+      brace_col = nacol,
+      status = rep("instrumented", nrow(ccov_funs[[i]])),
+      id = nacol,
+      coverage = ccov_funs[[i]]$coverage
+    )
   }
 
   res
@@ -1874,10 +1902,14 @@ parse_gcov <- function(root = ".") {
 
 parse_gcov_file <- function(path) {
   disp <- display_name(path)
-  df <- .Call(c_cov_parse_gcov, path, disp)
-  class(df) <- c("tbl", "data.frame")
-  attr(df, "row.names") <- seq_len(length(df[[1]]))
-  df
+  gcov <- .Call(c_cov_parse_gcov, path, disp)
+  class(gcov$lines) <- c("tbl", "data.frame")
+  attr(gcov$lines, "row.names") <- seq_len(length(gcov$lines[[1]]))
+  class(gcov$functions) <- c("tbl", "data.frame")
+  # drop functions that we could not parse
+  gcov$functions <- gcov$functions[!is.na(gcov$functions$line), ]
+  attr(gcov$functions, "row.names") <- seq_len(length(gcov$functions[[1]]))
+  gcov
 }
 
 display_name <- function(x) {

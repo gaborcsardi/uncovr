@@ -1,6 +1,7 @@
 #include <fcntl.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <string.h>
 
 #define R_NO_REMAP
 #include <R.h>
@@ -177,6 +178,19 @@ SEXP c_find_last_line(SEXP bytes) {
   return Rf_ScalarInteger((int) last);
 }
 
+static size_t count_functions(char *beg, char *end) {
+  size_t count = 0;
+  while (beg < end) {
+    beg = memmem(beg, end - beg, "\nfunction ", 10);
+    if (!beg) {
+      return count;
+    }
+    beg += 9;
+    count++;
+  }
+  return count;
+}
+
 SEXP cov_parse_gcov(SEXP path, SEXP displayname) {
   SEXP bytes = PROTECT(cov_read_file_raw(path));
   size_t nlines = find_last_line((char*) RAW(bytes), XLENGTH(bytes));
@@ -197,6 +211,23 @@ SEXP cov_parse_gcov(SEXP path, SEXP displayname) {
     SET_STRING_ELT(rfil, i, file);
   }
 
+  // A gcov file typically contains (much) less functions than the
+  // number of code lines in the file, but this is not always true, because
+  // C++ templates and/or macros may generate lots of functions from the
+  // same code lines. So we pre-allocate space for 10000 functions, but if
+  // this is not enough, then we'll go over the file and actually count the
+  // functions first.
+
+  int numfuncprealloc = 10000;
+  int funpos0[numfuncprealloc];
+  int *pfunpos = funpos0;
+  int numfuns = 0;
+  int funline0[numfuncprealloc];
+  int *pfunline = funline0;
+  int funlinemiss = 0;
+  SEXP funpos = PROTECT(R_NilValue);
+  SEXP funline = PROTECT(R_NilValue);
+
   char *beg = (char*) RAW(bytes);
   char *end = beg + XLENGTH(bytes);
   char *ptr = beg;
@@ -204,6 +235,21 @@ SEXP cov_parse_gcov(SEXP path, SEXP displayname) {
   size_t lastcov, lastline;
 
   while (ptr < end) {
+    // mark functions
+    if (*ptr == 'f' && !strncmp("function ", ptr, 9)) {
+      if (numfuns >= numfuncprealloc) {
+        size_t extrafuns = count_functions(ptr, end) + 1;
+        UNPROTECT(2);
+        funpos = PROTECT(Rf_allocVector(INTSXP, numfuncprealloc + extrafuns));
+        funline = PROTECT(Rf_allocVector(INTSXP, numfuncprealloc + extrafuns));
+        pfunpos = INTEGER(funpos);
+        pfunline = INTEGER(funline);
+        memcpy(pfunpos, funpos0, sizeof(int) * numfuncprealloc);
+        memcpy(pfunline, funline0, sizeof(int) * numfuncprealloc);
+        numfuncprealloc = numfuncprealloc + extrafuns;
+      }
+      pfunpos[numfuns++] = (int) (ptr - beg);
+    }
     // if not a regular line, skip line
     if (*ptr != ' ' && (*ptr < '0' || *ptr > '9')) {
       while (ptr < end && *ptr != '\n') ++ptr;
@@ -244,6 +290,10 @@ SEXP cov_parse_gcov(SEXP path, SEXP displayname) {
     if (lastline > 0 && lastline <= nlines) {
       INTEGER(rlin)[lastline-1] = lastline;
       INTEGER(rcov)[lastline-1] = lastcov;
+      // note beginning of functions
+      while (funlinemiss < numfuns) {
+        pfunline[funlinemiss++] = lastline;
+      }
     }
 
     // go to next line
@@ -255,6 +305,79 @@ SEXP cov_parse_gcov(SEXP path, SEXP displayname) {
     while (ptr < end && (*ptr == '\n' || *ptr == '\r')) ++ptr;
   }
 
-  UNPROTECT(2);
-  return res;
+  // parse functions as well
+  const char *funres_names[] = {
+    "line", "name", "coverage", "returned", "blocks", ""
+  };
+  SEXP funres = PROTECT(Rf_mkNamed(VECSXP, funres_names));
+  SET_VECTOR_ELT(funres, 0, Rf_allocVector(INTSXP, numfuns));
+  SET_VECTOR_ELT(funres, 1, Rf_allocVector(STRSXP, numfuns));
+  SET_VECTOR_ELT(funres, 2, Rf_allocVector(INTSXP, numfuns));
+  SET_VECTOR_ELT(funres, 3, Rf_allocVector(INTSXP, numfuns));
+  SET_VECTOR_ELT(funres, 4, Rf_allocVector(INTSXP, numfuns));
+
+  SEXP name = VECTOR_ELT(funres, 1);
+  int *pline = INTEGER(VECTOR_ELT(funres, 0));
+  int *pcoverage = INTEGER(VECTOR_ELT(funres, 2));
+  int *preturned = INTEGER(VECTOR_ELT(funres, 3));
+  int *pblocks = INTEGER(VECTOR_ELT(funres, 4));
+
+  for (size_t i = 0; i < numfuns; i++) {
+    pline[i] = pcoverage[i] = preturned[i] = pblocks[i] = NA_INTEGER;
+  }
+
+  for (size_t i = 0; i < numfuns; i++) {
+    pline[i] = pcoverage[i] = preturned[i] = pblocks[i] = NA_INTEGER;
+    // search for end of line
+    line = beg + pfunpos[i] + 9;
+    char *eol = memchr(line, '\n', (size_t) (end - pfunpos[i]));
+    // if no \n then give up
+    if (!eol) break;
+
+    // called
+    char *called = memmem(line, eol - line, " called ", 8);
+    if (!called) {
+      continue;
+    }
+    SET_STRING_ELT(name, i, Rf_mkCharLenCE(line, called - line, CE_UTF8));
+    called += 8;
+    char *ce = memchr(called, ' ', eol - called);
+    size_t cov;
+    if (!ce || parse_num(called, ce, &cov)) {
+      // if failed to parse then return line == NA for this function
+      continue;
+    }
+    pcoverage[i] = (int) cov;
+    pline[i] = pfunline[i];
+
+    // returned
+    if (memcmp(" returned ", ce, 10)) {
+      continue;
+    }
+    called = ce + 10;
+    ce = memchr(called, '%', eol - called);
+    if (!ce || parse_num(called, ce, &cov)) {
+      continue;
+    }
+    preturned[i] = cov;
+
+    // blocks
+    if (memcmp("% blocks executed ", ce, 18)) {
+      continue;
+    }
+    called = ce + 18;
+    ce = memchr(called, '%', eol - called);
+    if (!ce || parse_num(called, ce, &cov)) {
+      continue;
+    }
+    pblocks[i] = cov;
+  }
+
+  const char *res2_names[] = { "lines", "functions", "" };
+  SEXP res2 = PROTECT(Rf_mkNamed(VECSXP, res2_names));
+  SET_VECTOR_ELT(res2, 0, res);
+  SET_VECTOR_ELT(res2, 1, funres);
+
+  UNPROTECT(6);
+  return res2;
 }
