@@ -1297,7 +1297,7 @@ cov_instrument_file <- function(path, cov_symbol) {
   }
 
   res$status[instrumented_lines] <- "instrumented"
-  res$id[inj$line1] <- inj$line1
+  res$id[instrumented_lines] <- instrumented_lines
 
   # Handle multi-line expressions. We need to do this backwards, so nested
   # braces work out correctly.
