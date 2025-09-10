@@ -23,7 +23,13 @@ coverage_report <- function(
   coverage <- coverage %||% last_coverage_results(path = ".")
   setup <- load_package_setup("coverage")
 
-  index <- file.path(find.package("testthatlabs"), "inst/report/index.html")
+  # our pkgload::system.file() monkey-patch is buggy, so use find.package()
+  # need to try the load_all path as well
+  ttl <- find.package(utils::packageName())
+  index <- file.path(ttl, "report/index.html")
+  if (!file.exists(index)) {
+    index <- file.path(ttl, "inst/report/index.html")
+  }
   lns0 <- readLines(index)
 
   metadata <- attr(coverage, "metadata")
@@ -178,7 +184,13 @@ coverage_report_file_ <- function(
     file_status = file_status
   )
 
-  srcpath <- file.path(find.package("testthatlabs"), "inst/report/source.html")
+  # our pkgload::system.file() monkey-patch is buggy, so use find.package()
+  # need to try the load_all path as well
+  ttl <- find.package(utils::packageName())
+  srcpath <- file.path(ttl, "report/source.html")
+  if (!file.exists(srcpath)) {
+    srcpath <- file.path(ttl, "inst/report/source.html")
+  }
   lns0 <- readLines(srcpath)
 
   lns <- glue::glue_data(
