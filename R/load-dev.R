@@ -1782,7 +1782,7 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
     fnms <- dir(d, recursive = TRUE, pattern = "[.]gcno$")
     processx::process$new(
       "gcov",
-      c("-p", "--demangled-names", "-b", fnms),
+      c("-p", "--demangled-names", "-b", "-r", "-s", ".", fnms),
       wd = d
     )
   })
