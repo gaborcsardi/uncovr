@@ -1228,6 +1228,9 @@ cov_instrument_file <- function(path, cov_symbol) {
   # Drop duplicate lines, only the first expression is counted.
   # TODO: improve this and count every expression individually
   inj <- injx[!duplicated(injx$line1), , drop = FALSE]
+  # we note this before adding the function coverage markers, because
+  # those typically go into non-instrumented lines
+  instrumented_lines <- inj$line1
 
   lns0 <- lns <- untabify(readLines(path))
 
@@ -1293,7 +1296,7 @@ cov_instrument_file <- function(path, cov_symbol) {
     res$status[psd$line1[str]:psd$line2[str]] <- NA_character_
   }
 
-  res$status[inj$line1] <- "instrumented"
+  res$status[instrumented_lines] <- "instrumented"
   res$id[inj$line1] <- inj$line1
 
   # Handle multi-line expressions. We need to do this backwards, so nested
