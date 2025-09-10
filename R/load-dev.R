@@ -1235,7 +1235,7 @@ cov_instrument_file <- function(path, cov_symbol) {
   lns0 <- lns <- untabify(readLines(path))
 
   # now do the functions as well
-  # TODO: \()
+  # TODO: \()? Or maybe not?
   fun_poss <- which(psd$token == "FUNCTION")
   par_poss <- match(psd$parent[fun_poss], psd$id)
   # need an opening brace, whose grandparent's position is par_poss
@@ -1802,8 +1802,7 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
     pxs <- pxs[!dn]
   }
 
-  # TODO: do not parse coverage for excluded files
-  ccov <- parse_gcov(".")
+  ccov <- parse_gcov(".", exclusion_file)
   ccov_funs <- lapply(ccov, "[[", "functions")
   ccov <- lapply(ccov, "[[", "lines")
   keep <- map_int(ccov, nrow) > 0
@@ -1888,9 +1887,11 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
   res
 }
 
-parse_gcov <- function(root = ".") {
+parse_gcov <- function(root = ".", exclusion_file = NULL) {
+  exclusion_file <- exclusion_file %&&% normalizePath(exclusion_file)
+  withr::local_dir(root)
   gcov <- dir(
-    root,
+    "src",
     recursive = TRUE,
     pattern = "[.]gcov$",
     full.names = TRUE
@@ -1899,8 +1900,24 @@ parse_gcov <- function(root = ".") {
   # drop files that have an absolute path, typically system headers
   gcov <- gcov[!startsWith(basename(gcov), "#")]
 
+  # drop gcov files for ignored files
+  if (!is.null(exclusion_file)) {
+    sf <- file.path("src", map_chr(gcov, get_gcov_source_file))
+    sfx <- apply_covrignore(sf, exclusion_file)
+    gcov <- gcov[sf %in% sfx]
+  }
   ps <- lapply(gcov, parse_gcov_file)
   ps
+}
+
+get_gcov_source_file <- function(path) {
+  head <- readLines(path, n = 10)
+  src <- grep(" 0:Source:", head, value = TRUE)[1]
+  if (is.na(src)) {
+    # this should not happen, but returning the path itself is harmless, anyway
+    return(path)
+  }
+  sub("^.* 0:Source:", "", src)
 }
 
 parse_gcov_file <- function(path) {
