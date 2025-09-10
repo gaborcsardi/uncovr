@@ -745,6 +745,10 @@ test_package <- function(
       sum(dev_data$coverage$lines[[i]]$coverage, na.rm = TRUE)
     dev_data$coverage$uncovered[[i]] <-
       calculate_uncovered_intervals(dev_data$coverage$lines[[i]])
+    funids <- dev_data$coverage$funs[[i]]$id
+    dev_data$coverage$funs[[i]]$coverage[] <- counts[[i]][funids]
+    dev_data$coverage$functions_hit[i] <-
+      sum(dev_data$coverage$funs[[i]]$coverage > 0, na.rm = TRUE)
   }
 
   if (file.exists("src")) {
@@ -1215,9 +1219,47 @@ cov_instrument_file <- function(path, cov_symbol) {
   # TODO: improve this and count every expression individually
   inj <- injx[!duplicated(injx$line1), , drop = FALSE]
 
+  lns0 <- lns <- untabify(readLines(path))
+
+  # now do the functions as well
+  # TODO: \()
+  fun_poss <- which(psd$token == "FUNCTION")
+  par_poss <- match(psd$parent[fun_poss], psd$id)
+  # need an opening brace, whose grandparent's position is par_poss
+  par_brc_poss <- match(psd$parent[brc_poss], psd$id)
+  ppar_brc_poss <- match(psd$parent[par_brc_poss], psd$id)
+  obr_poss <- brc_poss[match(par_poss, ppar_brc_poss)]
+  bad <- is.na(obr_poss)
+  fun_poss <- fun_poss[!bad]
+  par_poss <- par_poss[!bad]
+  obr_poss <- obr_poss[!bad]
+  funres <- data.frame(
+    name = rep(NA_character_, length(fun_poss)),
+    aliases = I(replicate(length(fun_poss), NULL, simplify = FALSE)),
+    line1 = psd$line1[fun_poss],
+    col1 = psd$col1[fun_poss],
+    line2 = psd$line2[par_poss],
+    col2 = psd$col2[par_poss],
+    brace_line = psd$line1[obr_poss],
+    brace_col = psd$col1[obr_poss],
+    status = rep("instrumented", length(fun_poss)),
+    id = seq_along(fun_poss) + length(lns0),
+    coverage = rep(NA_integer_, length(fun_poss))
+  )
+
+  if (nrow(funres)) {
+    injf <- data.frame(
+      line1 = funres$brace_line,
+      col1 = funres$brace_col + 1L,
+      line2 = funres$brace_line,
+      col2 = funres$brace_col + 1L,
+      code = paste0("`", cov_symbol, "`[", funres$id, "]; ")
+    )
+    inj <- rbind(inj, injf)
+  }
+
   # need to insert code concurrently to the same line, for future
   # multi-expression per line support
-  lns0 <- lns <- untabify(readLines(path))
   inj_lines <- unique(inj$line1)
   for (il in inj_lines) {
     inj1 <- inj[inj$line1 == il, ]
@@ -1267,22 +1309,6 @@ cov_instrument_file <- function(path, cov_symbol) {
     res$id[drop] <- NA_integer_
     res$coverage[drop] <- NA_integer_
   }
-
-  # now do the functions as well
-  # TODO: \()
-  fun_poss <- which(psd$token == "FUNCTION")
-  par_poss <- match(psd$parent[fun_poss], psd$id)
-  funres <- data.frame(
-    name = rep(NA_character_, length(fun_poss)),
-    aliases = I(replicate(length(fun_poss), NULL, simplify = FALSE)),
-    line1 = psd$line1[fun_poss],
-    col1 = psd$col1[fun_poss],
-    line2 = psd$line2[par_poss],
-    col2 = psd$col2[par_poss],
-    status = rep("noncode", length(fun_poss)),
-    id = seq_along(fun_poss) + length(lns0),
-    coverage = rep(NA_integer_, length(fun_poss))
-  )
 
   list(lines = res, funs = funres)
 }
