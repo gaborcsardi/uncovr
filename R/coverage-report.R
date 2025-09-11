@@ -64,9 +64,29 @@ coverage_report <- function(
     sum(coverage$lines_covered) / sum(coverage$code_lines)
   )
 
+  total_funcs_percent <- format_percent(
+    sum(coverage$functions_hit) / sum(coverage$function_count)
+  )
+
+  status <- if (is.na(total_percent)) {
+    "na"
+  } else if (total_percent < 0.75) {
+    "bad"
+  } else if (total_percent < 0.95) {
+    "ok"
+  } else {
+    "good"
+  }
+
   vars = list(
     package = pkgname,
     total_percent = total_percent,
+    total_lines_covered = sum(coverage$lines_covered),
+    total_lines = sum(coverage$code_lines),
+    total_funcs_percent = total_funcs_percent,
+    total_funcs_hit = sum(coverage$functions_hit),
+    total_funcs = sum(coverage$function_count),
+    status = status,
     data = data
   )
 
@@ -189,7 +209,14 @@ coverage_report_file_ <- function(
   vars <- list(
     pkgname = pkgname,
     total_percent = total_percent,
+    file_lines = coverage$code_lines[pathidx],
+    file_lines_covered = coverage$lines_covered[pathidx],
     file_percent = format_percent(file_percent),
+    file_funcs = nrow(funtab),
+    file_funcs_hit = sum(funtab$coverage > 0, na.rm = TRUE),
+    file_funcs_percent = format_percent(
+      sum(funtab$coverage > 0, na.rm = TRUE) / nrow(funtab)
+    ),
     path = code_file,
     lines = paste0("[", paste0("\"", code, "\"", collapse = ",\n"), "]"),
     coverage = paste0(

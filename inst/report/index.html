@@ -9,7 +9,7 @@
 
     <title>{{ package }} test coverage</title>
     <style>
-      h1 {
+      h2 {
         margin-top: 20px;
         margin-bottom: 10px;
       }
@@ -23,6 +23,35 @@
       table tr:hover td {
         font-weight: bold;
         text-decoration: none;
+      }
+      span.cov-summary-cont {
+        margin-right: 30px;
+      }
+      code.cov-summary {
+        color: black;
+        background: #ddd;
+        padding: 4px 5px;
+        border-radius: 3px;
+      }
+      span.bold {
+        font-weight: bold;
+      }
+      .rule {
+        height: 10px;
+        margin-top: 10px;
+        margin-bottom: 10px;
+      }
+      .rule-good {
+        background: rgba(77, 146, 33, 1);
+      }
+      .rule-ok {
+        background: rgba(0, 0, 255, 1);
+      }
+      .rule-bad {
+        background: rgba(255, 165, 0, 1);
+      }
+      .rule-na {
+        background: #000;
       }
     </style>
   </head>
@@ -83,8 +112,17 @@
     </script>
     <div class="container">
       <div class="row">
-        <div class="col-md-9">
-          <h1>{{ package }} test coverage — {{ total_percent }}</h1>
+        <div class="col-md-10">
+          <h2>{{ package }} test coverage</h2>
+          <span class="cov-summary-cont">
+            <span class="bold">{{ total_percent }}</span> lines
+            <code class="cov-summary">{{ total_lines_covered }}/{{ total_lines }}</code>
+          </span>
+          <span class="cov-summary-cont">
+            <span class="bold">{{ total_funcs_percent }}</span> functions
+            <code class="cov-summary">{{ total_funcs_hit }}/{{ total_funcs }}</code>
+          </span>
+          <div class="rule rule-{{ status }}"></div>
           <table id="coverage" class="row-border">
             <thead>
               <th>File</th>

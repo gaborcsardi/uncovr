@@ -12,7 +12,7 @@
     <title>{{ pkgname }} test coverage</title>
 
     <style>
-      h1 {
+      h2 {
         margin-top: 20px;
         margin-bottom: 10px;
       }
@@ -98,6 +98,18 @@
       table tr:hover td {
         font-weight: bold;
         text-decoration: none;
+      }
+      span.cov-summary-cont {
+        margin-right: 30px;
+      }
+      code.cov-summary {
+        color: black;
+        background: #ddd;
+        padding: 4px 5px;
+        border-radius: 3px;
+      }
+      span.bold {
+        font-weight: bold;
       }
     </style>
   </head>
@@ -246,11 +258,18 @@
     <div class="container">
       <div class="row">
         <div class="col-md-12">
-          <h1>
-            <a href="{{ pkgname }}-report.html">{{ pkgname }} test coverage</a> —
-            {{ total_percent }}
-          </h1>
-          <h2><code>{{ path }}</code> — {{ file_percent }}</h2>
+          <h2>
+            <a href="{{ pkgname }}-report.html">{{ pkgname }} test coverage</a>
+          </h2>
+          <h3><code>{{ path }}</code></h3>
+          <span class="cov-summary-cont">
+            <span class="bold">{{ file_percent }}</span> lines
+            <code class="cov-summary">{{ file_lines_covered }}/{{ file_lines }}</code>
+          </span>
+          <span class="cov-summary-cont">
+            <span class="bold">{{ file_funcs_percent }}</span> functions
+            <code class="cov-summary">{{ file_funcs_hit }}/{{ file_funcs }}</code>
+          </span>
           <div class="rule rule-{{ file_status }}"></div>
         </div>
         <div class="col-md-9">
