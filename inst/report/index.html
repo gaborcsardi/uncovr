@@ -62,15 +62,16 @@
     <script>
       // this is example data, that will be overwritten
       var data = [
-          [ "R/cache.R",                  13,    4,    4,  0,    1, "100.00%" ],
-          [ "R/checks.R",               2026, 1057, 1056,  1, 54.1,  "99.91%" ],
-          [ "R/class.R",                  15,   10,   10,  0,    1, "100.00%" ],
-          [ "R/cleancall.R",               3,    1,    1,  0,    1, "100.00%" ],
-          [ "R/defaults.R",               34,   10,   10,  0,  2.3, "100.00%" ],
-          [ "R/logger-provider-file.R",   96,   20,   20,  0,   13, "100.00%" ],
-          [ "R/logger-provider-http.R",  120,   39,   19, 20,   32, "48.72%" ],
-          [ "src/collector.cc",          222,  126,  126,  0,    5, "100.00%" ],
-          [ "src/init.c",                233,    7,    5,  2,  1.2, "71.43%" ]
+          [ "R/cache.R",                  13,    4,    4,  0,    1,   "2/2", "100.00%" ],
+          [ "R/checks.R",               2026, 1057, 1056,  1, 54.1, "84/84",  "99.91%" ],
+          [ "R/class.R",                  15,   10,   10,  0,    1,   "1/1", "100.00%" ],
+          [ "R/cleancall.R",               3,    1,    1,  0,    1,   "1/1", "100.00%" ],
+          [ "R/defaults.R",               34,   10,   10,  0,  2.3,   "1/1", "100.00%" ],
+          [ "R/logger-provider-file.R",   96,   20,   20,  0,   13,   "4/4", "100.00%" ],
+          [ "R/logger-provider-http.R",  120,   39,   19, 20,   32,   "5/5",  "48.72%" ],
+          [ "src/collector.cc",          222,  126,  126,  0,    5,   "3/3", "100.00%" ],
+          [ "src/init.c",                233,    7,    5,  2,  1.2,   "2/2",  "71.43%" ],
+          [ "src/tracer-api.cc",         482,  306,  214, 92, 23.7, "30/34",  "69.93%" ]
       ];
     </script>
 
@@ -104,8 +105,8 @@
             info: ""
           },
           columnDefs: [
-            { targets: [6], createdCell: color_coverage_cb },
-            { targets: [1, 2, 3, 4, 5, 6], className: "dt-right" }
+            { targets: [7], createdCell: color_coverage_cb },
+            { targets: [1, 2, 3, 4, 5, 6, 7], className: "dt-right" }
           ]
         });
       } );
@@ -131,6 +132,7 @@
               <th>Covered</th>
               <th>Missed</th>
               <th>Hits/Line</th>
+              <th>Functions</th>
               <th>Coverage</th>
             </thead>
           </table>

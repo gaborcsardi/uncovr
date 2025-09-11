@@ -52,6 +52,10 @@ coverage_report <- function(
         ", ",
         round(total_hits / code_lines, 2),
         ", \"",
+        functions_hit,
+        "/",
+        function_count,
+        "\", \"",
         format_percent(percent_covered / 100),
         "\" ]",
         collapse = ",\n"
