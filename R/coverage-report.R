@@ -168,6 +168,23 @@ coverage_report_file_ <- function(
 
   code <- escape_source(coverage$lines[[pathidx]][["lines"]])
   cov <- coverage$lines[[pathidx]][["coverage"]]
+  funtab <- coverage$funs[[pathidx]]
+  funcs <- if (nrow(funtab) > 0) {
+    paste0(
+      "[",
+      paste0(
+        "[ ",
+        funtab$line1,
+        ", ",
+        funtab$coverage,
+        ", ",
+        ifelse(is.na(funtab$name), "NaN", paste0("\"", funtab$name, "\"")),
+        "]",
+        collapse = ",\n"
+      ),
+      "]"
+    )
+  }
 
   vars <- list(
     pkgname = pkgname,
@@ -181,7 +198,8 @@ coverage_report_file_ <- function(
       "]"
     ),
     language = get_language_from_path(code_file),
-    file_status = file_status
+    file_status = file_status,
+    funcs = funcs %||% "[]"
   )
 
   # our pkgload::system.file() monkey-patch is buggy, so use find.package()
