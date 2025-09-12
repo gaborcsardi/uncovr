@@ -111,6 +111,13 @@
       span.bold {
         font-weight: bold;
       }
+      tr.marker, td.marker {
+        background: rgba(122, 186, 196, 0.5);
+      }
+      tr.marker .hljs-ln-n {
+        font-weight: bold;
+        color:rgb(14, 23, 78)
+      }
     </style>
   </head>
   <body>
@@ -186,6 +193,13 @@
 
     <script>
       var code = lines.join("\n");
+      function funclick(row) {
+        $('.marker').removeClass('marker');
+        var td = $('#L' + row);
+        td.addClass("marker");
+        td.parent().addClass('marker');
+        return true;
+      }
       $(document).ready( function() {
         // insert code
         $('#coverage').text(code);
@@ -211,7 +225,7 @@
               clc = "hljs-ln-yescoveragecode";
             }
           }
-          $('<td class="hljs-ln-line hljs-ln-coverage ' + cl + '">' + m + '</td>')
+          $('<td id="L' + (i+1) + '" class="hljs-ln-line hljs-ln-coverage ' + cl + '">' + m + '</td>')
             .insertAfter($(this));
           if (clc != "") {
             tls[i].className += " " + clc;
@@ -234,6 +248,9 @@
               .css('color', '#ccc');
           }
         }
+        function linum_cb(td, cellData, rowData, row, col) {
+          $(td).text("").append("<a href=\"#L" + cellData + "\" onClick=\"return funclick(" + cellData + ");\">" + cellData + "</a>")
+        }
         if (funcs.length == 0) {
           $('#functions').hide()
         } else {
@@ -245,7 +262,7 @@
               info: "",
             },
             columnDefs: [
-              { targets: [0], className: 'linenumber' },
+              { targets: [0], className: 'linenumber', createdCell: linum_cb },
               { targets: [0, 1], className: "dt-right mono" },
               { targets: [1], createdCell: color_coverage_cb },
               { targets: [2], createdCell: fun_name_cb },
