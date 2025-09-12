@@ -1,4 +1,4 @@
-opt_setup <- "testthatlabs.setup"
+opt_setup <- "uncovr.setup"
 plan_file_name <- "_plan.rds"
 setup_file_name <- "_setup.rds"
 last_tests_file_name <- "_last-tests.rds"

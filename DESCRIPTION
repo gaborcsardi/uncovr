@@ -1,12 +1,12 @@
-Package: testthatlabs
+Package: uncovr
 Title: Experimental add-ons for testthat
 Version: 0.0.0.9000
 Author: Gábor Csárdi
 Maintainer: Gábor Csárdi <csardi.gabor@gmail.com>
 Description: Experimental extensions for testthat.
 License: MIT + file LICENSE
-URL: https://github.com/gaborcsardi/testthatlabs
-BugReports: https://github.com/gaborcsardi/testthatlabs/issues
+URL: https://github.com/gaborcsardi/uncovr
+BugReports: https://github.com/gaborcsardi/uncovr/issues
 RoxygenNote: 7.3.3
 Depends: R (>= 3.5)
 Imports:

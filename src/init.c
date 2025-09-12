@@ -89,7 +89,7 @@ void R_init_cov_xx(DllInfo *dll) {
   R_forceSymbols(dll, TRUE);
 }
 
-void R_init_testthatlabs(DllInfo *dll) {
+void R_init_uncovr(DllInfo *dll) {
   cov_init_altrep(dll);
   R_registerRoutines(dll, NULL, callMethods, NULL, NULL);
   R_useDynamicSymbols(dll, FALSE);

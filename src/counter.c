@@ -34,7 +34,7 @@ SEXP cov_get_counts(SEXP counter) {
 }
 
 void cov_init_altrep(DllInfo *dll) {
-  cov_counter_t = R_make_altinteger_class("cov_counter_t", "testthatlabs", dll);
+  cov_counter_t = R_make_altinteger_class("cov_counter_t", "uncovr", dll);
   R_set_altrep_Length_method(cov_counter_t, cov_counter_Length);
   R_set_altvec_Dataptr_method(cov_counter_t, cov_counter_DataPtr);
   R_set_altinteger_Elt_method(cov_counter_t, cov_counter_Elt);

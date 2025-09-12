@@ -1,4 +1,4 @@
 library(testthat)
-library(testthatlabs)
+library(uncovr)
 
-test_check("testthatlabs")
+test_check("uncovr")

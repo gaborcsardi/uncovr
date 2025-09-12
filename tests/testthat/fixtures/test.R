@@ -1,6 +1,6 @@
-context("testthatlabs")
+context("uncovr")
 
-test_that("testthatlabs works", {
+test_that("uncovr works", {
   for (i in 1:10) {
     expect_true(TRUE)
   }

@@ -305,7 +305,7 @@ inject_onload_lines <- function(setup, pkg_dir, lib, inject_script, fnx) {
             dll = ns$.__NAMESPACE__.$DLLs,
             env = ns
           )
-          base::asNamespace("testthatlabs")$quick_install_loaded(
+          base::asNamespace("uncovr")$quick_install_loaded(
             pkgname_,
             pkg_dir_,
             lib_,
@@ -371,8 +371,8 @@ find_code <- function(path = ".", quiet = FALSE) {
 
 setup_cov_inject_script <- function(target, cov_data) {
   script <- file.path(target, "R", "inject.R")
-  ttlsoname <- paste0("testthatlabs", .Platform$dynlib.ext)
-  ttlpkg <- find.package("testthatlabs")
+  ttlsoname <- paste0("uncovr", .Platform$dynlib.ext)
+  ttlpkg <- find.package("uncovr")
   ttlso <- file.path(ttlpkg, "libs", ttlsoname)
   if (!file.exists(ttlso)) {
     ttlso <- file.path(ttlpkg, "src", ttlsoname)
@@ -383,7 +383,7 @@ setup_cov_inject_script <- function(target, cov_data) {
   file.copy(ttlso, file.path(target, "libs", tgtsoname))
 
   lns <- c(
-    "# coverage counter injection by testthatlabs",
+    "# coverage counter injection by uncovr",
     "local({",
     "  info <- loadingNamespaceInfo()",
     "  pkg <- info$pkgname",
@@ -426,13 +426,13 @@ setup_cov_inject_script <- function(target, cov_data) {
   script
 }
 
-# Copy testthatlabs.so into the build directory, so we can read it
+# Copy uncovr.so into the build directory, so we can read it
 # from there
 inject_covxxso <- function(build_dir) {
-  soname <- paste0("testthatlabs", .Platform$dynlib.ext)
-  covxxso <- system.file(package = "testthatlabs", "libs", soname)
+  soname <- paste0("uncovr", .Platform$dynlib.ext)
+  covxxso <- system.file(package = "uncovr", "libs", soname)
   if (covxxso == "") {
-    covxxso <- system.file(package = "testthatlabs", "src", soname)
+    covxxso <- system.file(package = "uncovr", "src", soname)
   }
   if (covxxso == "") {
     stop("Could not find ", soname, " for test coverage counter injection")
