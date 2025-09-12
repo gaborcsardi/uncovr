@@ -1,5 +1,3 @@
-opt_setup <- "testthatlabs.setup"
-
 get_makeflags <- function(type = c("debug", "release", "coverage")) {
   type <- match.arg(type)
   if (type == "debug") {
@@ -381,7 +379,7 @@ setup_cov_inject_script <- function(target, cov_data) {
   }
   stopifnot(file.exists(ttlso))
   mkdirp(file.path(target, "libs"))
-  tgtsoname <- paste0("covxx", .Platform$dynlib.ext)
+  tgtsoname <- paste0("cov_xx", .Platform$dynlib.ext)
   file.copy(ttlso, file.path(target, "libs", tgtsoname))
 
   lns <- c(
@@ -389,7 +387,7 @@ setup_cov_inject_script <- function(target, cov_data) {
     "local({",
     "  info <- loadingNamespaceInfo()",
     "  pkg <- info$pkgname",
-    "  tgtsoname <- paste0('covxx', .Platform$dynlib.ext)",
+    "  tgtsoname <- paste0('cov_xx', .Platform$dynlib.ext)",
     "  dl <- dyn.load(file.path(info$libname, pkg, 'libs', tgtsoname))",
     "  lb <- getNativeSymbolInfo('cov_lock_base', dl)",
     "  ulb <- getNativeSymbolInfo('cov_unlock_base', dl)",
@@ -404,7 +402,7 @@ setup_cov_inject_script <- function(target, cov_data) {
     "  mycall(lb)",
     "  output <- file.path(",
     "    dirname(info$libname), ",
-    "    'cov',",
+    "    '_cov',",
     "    paste0(Sys.getpid(), '.rda')",
     "  )",
     "  dir.create(dirname(output), showWarnings = FALSE, recursive = TRUE)",
@@ -439,7 +437,7 @@ inject_covxxso <- function(build_dir) {
   if (covxxso == "") {
     stop("Could not find ", soname, " for test coverage counter injection")
   }
-  soname2 <- paste0("covxx", .Platform$dynlib.ext)
+  soname2 <- paste0("cov_xx", .Platform$dynlib.ext)
   target <- file.path(build_dir, soname2)
   file.copy(covxxso, target)
   target
@@ -455,7 +453,7 @@ inject_covxxso <- function(build_dir) {
 # the counters.
 
 create_counters_lines <- function(setup, cov_data) {
-  outdir <- file.path(setup$dir, "cov")
+  outdir <- file.path(setup$dir, cov_dir_name)
   mkdirp(outdir)
   subs <- list(
     covxxso_ = normalizePath(setup$covxxso),
@@ -723,7 +721,7 @@ test_package <- function(
   on.exit(clean_libpath(dev_data$setup$pkgname), add = TRUE)
 
   # clean up files from subprocesses
-  subprocdir <- file.path(setup$dir, "cov")
+  subprocdir <- file.path(setup$dir, cov_dir_name)
   unlink(subprocdir, recursive = TRUE)
   dir.create(subprocdir)
   subprocdir <- normalizePath(subprocdir)
@@ -787,10 +785,10 @@ test_package <- function(
   class(dev_data$coverage) <- c("coverage_table2", class(dev_data$coverage))
   class(dev_data) <- c("package_coverage", class(dev_data))
 
-  test_results_file <- file.path(setup$dir, "last-tests.rds")
+  test_results_file <- file.path(setup$dir, last_tests_file_name)
   test_results <- prepare_test_results(dev_data)
   quick_save_rds(test_results, test_results_file)
-  coverage_results_file <- file.path(setup$dir, "last-coverage.rds")
+  coverage_results_file <- file.path(setup$dir, last_coverage_file_name)
   coverage_results <- prepare_coverage_results(dev_data)
   quick_save_rds(coverage_results, coverage_results_file)
 
@@ -1056,7 +1054,7 @@ create_update_plan <- function(
     add = character(),
     update = character()
   )
-  plan_file <- file.path(dst, "plan.rds")
+  plan_file <- file.path(dst, plan_file_name)
   if (file.exists(plan_file)) {
     oldplan <- readRDS(plan_file)
     # delete paths that are not in the new plan
@@ -1129,9 +1127,9 @@ update_package_tree <- function(
     }
   }
 
-  plan_file <- file.path(dst, "plan.rds")
+  plan_file <- file.path(dst, plan_file_name)
   saveRDS(plan, plan_file)
-  setup_file <- file.path(dst, "setup.rds")
+  setup_file <- file.path(dst, setup_file_name)
   saveRDS(getOption(opt_setup), setup_file)
 
   invisible(plan)
@@ -1960,7 +1958,7 @@ parse_gcov_file <- function(path) {
 list_builds <- function(path = ".") {
   withr::local_dir(path)
   dirs <- dir(get_dev_dir(), full.names = TRUE, include.dirs = TRUE)
-  setup_paths <- file.path(dirs, "setup.rds")
+  setup_paths <- file.path(dirs, setup_file_name)
   setups <- lapply(setup_paths, readRDS)
   builds <- data.frame(
     stringsAsFactors = FALSE,
@@ -2000,7 +1998,7 @@ dir_size <- function(dirs) {
 last_test_results <- function(path = ".") {
   withr::local_dir(path)
   setup <- load_package_setup(type = "coverage", path = ".")
-  test_results_file <- file.path(setup$dir, "last-tests.rds")
+  test_results_file <- file.path(setup$dir, last_tests_file_name)
   if (!file.exists(test_results_file)) {
     message("No test results yet. Run `test_package()!")
     return(invisible(NULL))
@@ -2022,7 +2020,7 @@ last_test_results <- function(path = ".") {
 last_coverage_results <- function(path = ".") {
   withr::local_dir(path)
   setup <- load_package_setup(type = "coverage", path = ".")
-  coverage_results_file <- file.path(setup$dir, "last-coverage.rds")
+  coverage_results_file <- file.path(setup$dir, last_coverage_file_name)
   if (!file.exists(coverage_results_file)) {
     cli::cli_alert_info("No test coverage yet. Run `test_package()!")
     return(invisible(NULL))

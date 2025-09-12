@@ -1,0 +1,7 @@
+opt_setup <- "testthatlabs.setup"
+plan_file_name <- "_plan.rds"
+setup_file_name <- "_setup.rds"
+last_tests_file_name <- "_last-tests.rds"
+last_coverage_file_name <- "_last-coverage.rds"
+coverage_report_dir_name <- "_coverage-report"
+cov_dir_name <- "_cov"

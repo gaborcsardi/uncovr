@@ -7,7 +7,7 @@
 #' @param coverage Test coverage results. If `NULL` then the last
 #'   results are used via [last_coverage_results()].
 #' @param output Path of the output file. If `NULL`, then it is
-#'   `lcov.info` inside the build directory.
+#'   `_lcov/lcov.info` inside the build directory.
 #' @return The path of the output file, invisibly.
 #'
 #' @export
@@ -20,7 +20,7 @@ write_lconv_info <- function(path = ".", coverage = NULL, output = NULL) {
 
   metadata <- attr(coverage, "metadata")
 
-  output <- output %||% file.path(setup$dir, "lcov.info")
+  output <- output %||% file.path(setup$dir, "_lcov", "lcov.info")
 
   mkdirp(dirname(output))
   clean_exit <- FALSE

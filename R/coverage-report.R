@@ -102,7 +102,11 @@ coverage_report <- function(
   )
 
   output <- output %||%
-    file.path(setup$dir, "coverage-report", paste0(pkgname, "-report.html"))
+    file.path(
+      setup$dir,
+      coverage_report_dir_name,
+      paste0(pkgname, "-report.html")
+    )
 
   mkdirp(dirname(output))
   writeLines(lns, output)
@@ -250,7 +254,7 @@ coverage_report_file_ <- function(
   )
 
   fn <- paste0("file-", utils::URLencode(code_file, reserved = TRUE), ".html")
-  output_dir <- output_dir %||% file.path(setup$dir, "coverage-report")
+  output_dir <- output_dir %||% file.path(setup$dir, coverage_report_dir_name)
   output <- file.path(output_dir, fn)
 
   mkdirp(dirname(output))
