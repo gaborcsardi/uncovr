@@ -1845,7 +1845,7 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
     }
   }
 
-  # TODO: exclude functions whole lines were completely excluded?
+  # TODO: exclude functions whose lines were completely excluded
 
   res <- data.frame(
     stringsAsFactors = FALSE,
