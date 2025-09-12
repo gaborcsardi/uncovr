@@ -118,6 +118,10 @@
         font-weight: bold;
         color:rgb(14, 23, 78)
       }
+      div#col-left, div#col-right {
+        max-height: 100vh;
+        overflow-y: scroll;
+      }
     </style>
   </head>
   <body>
@@ -289,11 +293,11 @@
           </span>
           <div class="rule rule-{{ file_status }}"></div>
         </div>
-        <div class="col-md-9">
+        <div class="col-md-9" id="col-left">
           <pre><code id="coverage" class="{{ language }}">
           </code></pre>
         </div>
-        <div class="col-md-3">
+        <div class="col-md-3" id="col-right">
           <table id="functions" class="row-border">
             <thead>
               <th>#</th>
