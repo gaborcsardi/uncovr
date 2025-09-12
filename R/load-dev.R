@@ -223,7 +223,7 @@ find_function_names <- function(cov_data, env, setup) {
   for (on in names(env)) {
     if (is.function(env[[on]]) && !is.primitive(env[[on]])) {
       fun <- env[[on]]
-      if (is.null(getSrcref(fun))) {
+      if (is.null(utils::getSrcref(fun))) {
         next
       }
       if (!identical(environmentName(environment(fun)), setup$pkgname)) {
