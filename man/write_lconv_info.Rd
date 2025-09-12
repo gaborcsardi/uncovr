@@ -13,7 +13,7 @@ write_lconv_info(path = ".", coverage = NULL, output = NULL)
 results are used via [last_coverage_results()].}
 
 \item{output}{Path of the output file. If `NULL`, then it is
-`lcov.info` inside the build directory.}
+`_lcov/lcov.info` inside the build directory.}
 }
 \value{
 The path of the output file, invisibly.
