@@ -223,8 +223,14 @@ find_function_names <- function(cov_data, env, setup) {
   meta <- attr(cov_data, "metadata")
   ccfile <- rel_path(meta$ccfile, pkgdir)
   for (on in names(env)) {
-    if (is.function(env[[on]])) {
+    if (is.function(env[[on]]) && !is.primitive(env[[on]])) {
       fun <- env[[on]]
+      if (is.null(getSrcref(fun))) {
+        next
+      }
+      if (!identical(environmentName(environment(fun)), setup$pkgname)) {
+        next
+      }
       odr <- rel_path(utils::getSrcDirectory(fun), pkgdir)
       ofn <- utils::getSrcFilename(fun)
       oph <- file.path(odr, ofn)
