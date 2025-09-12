@@ -192,25 +192,18 @@ static size_t count_functions(char *beg, char *end) {
   return count;
 }
 
-SEXP cov_parse_gcov(SEXP path, SEXP displayname) {
+SEXP cov_parse_gcov(SEXP path) {
   SEXP bytes = PROTECT(cov_read_file_raw(path));
   size_t nlines = find_last_line((char*) RAW(bytes), XLENGTH(bytes));
-  const char *res_names[] = { "file", "line", "coverage", "code", "" };
+  const char *res_names[] = { "line", "coverage", "code", "" };
   SEXP res = PROTECT(Rf_mkNamed(VECSXP, res_names));
-  SET_VECTOR_ELT(res, 0, Rf_allocVector(STRSXP, nlines));
+  SET_VECTOR_ELT(res, 0, Rf_allocVector(INTSXP, nlines));
   SET_VECTOR_ELT(res, 1, Rf_allocVector(INTSXP, nlines));
-  SET_VECTOR_ELT(res, 2, Rf_allocVector(INTSXP, nlines));
-  SET_VECTOR_ELT(res, 3, Rf_allocVector(STRSXP, nlines));
+  SET_VECTOR_ELT(res, 2, Rf_allocVector(STRSXP, nlines));
 
-  SEXP rfil = VECTOR_ELT(res, 0);
-  SEXP rlin = VECTOR_ELT(res, 1);
-  SEXP rcov = VECTOR_ELT(res, 2);
-  SEXP code = VECTOR_ELT(res, 3);
-
-  SEXP file = STRING_ELT(displayname, 0);
-  for (size_t i = 0; i < nlines; i++) {
-    SET_STRING_ELT(rfil, i, file);
-  }
+  SEXP rlin = VECTOR_ELT(res, 0);
+  SEXP rcov = VECTOR_ELT(res, 1);
+  SEXP code = VECTOR_ELT(res, 2);
 
   // A gcov file typically contains (much) less functions than the
   // number of code lines in the file, but this is not always true, because

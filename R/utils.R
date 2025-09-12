@@ -104,3 +104,7 @@ is_windows <- function() {
 zero <- function(x) {
   ifelse(x == 0, "", x)
 }
+
+order_df <- function(df, col) {
+  df[order(df[[col]]), ]
+}

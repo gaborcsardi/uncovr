@@ -1772,47 +1772,58 @@ gcov_cleanup <- function(path) {
 
 load_c_coverage <- function(path, exclusion_file = NULL) {
   withr::local_dir(path)
-  gcno <- dir("src", pattern = "[.]gcno$", full.names = TRUE, recursive = TRUE)
-  gcno <- apply_covrignore(gcno, exclusion_file)
-
-  # Need to run gcov separately for each subdirectory that has gcno files
-  dirs <- unique(dirname(gcno))
-
-  pxs <- lapply(dirs, function(d) {
-    fnms <- dir(d, recursive = TRUE, pattern = "[.]gcno$")
-    processx::process$new(
-      "gcov",
-      c("-p", "--demangled-names", "-b", "-r", "-s", ".", fnms),
-      wd = d
-    )
-  })
-
-  while (length(pxs) > 0) {
-    pr <- processx::poll(pxs, 1000)
-    pr <- vapply(pr, "[[", "", "process")
-    dn <- pr == "ready"
-    st <- vapply(pxs[dn], function(p) p$get_exit_status(), 1L)
-    oh <- pxs[dn][st != 0]
-    if (length(oh)) {
-      warning(
-        "gcov failed for directories: ",
-        paste(names(pxs)[oh], collapse = ", ")
-      )
-    }
-    pxs <- pxs[!dn]
-  }
+  fnms <- dir("src", recursive = TRUE, pattern = "[.]gcno$")
+  processx::run(
+    "gcov",
+    c("-m", "-l", "-b", "-r", "-s", ".", fnms),
+    wd = "src"
+  )
 
   ccov <- parse_gcov(".", exclusion_file)
+  # header files might appear multiple times (maybe others as well)
+  # we need to merge these. Functions are sometimes missing from them,
+  # and they may mark code lines as unreachable.
+  if (anyDuplicated(names(ccov))) {
+    dup <- duplicated(names(ccov))
+    for (d1 in which(dup)) {
+      pri <- which(names(ccov) == names(ccov)[d1])[1]
+      # if both are NA, then keep NA, not code, as far as we know it until now
+      cpri <- ccov[[pri]]$lines$coverage
+      cd1 <- ccov[[d1]]$lines$coverage
+      ccov[[pri]]$lines$coverage <- ifelse(
+        is.na(cpri),
+        ifelse(is.na(cd1), cpri, cd1),
+        ifelse(is.na(cd1), cpri, cpri + cd1)
+      )
+      # functions are sometimes missing
+      fm <- setdiff(ccov[[d1]]$functions$name, ccov[[pri]]$functions$name)
+      if (length(fm) > 0) {
+        ccov[[pri]]$functions <- rbind(
+          ccov[[pri]]$functions,
+          ccov[[d1]]$functions[ccov[[d1]]$functions$name %in% fm, ]
+        )
+        ccov[[pri]]$functions <- order_df(ccov[[pri]]$functions, "line")
+      }
+      # sum up functions
+      fmap <- match(ccov[[d1]]$functions$name, ccov[[pri]]$functions$name)
+      wpri <- ccov[[pri]]$functions$coverage[fmap]
+      wd1 <- ccov[[d1]]$functions$coverage
+      factpri <- wpri / (wpri + wd1)
+      factd1 <- wd1 / (wpri + wd1)
+      rpri <- ccov[[pri]]$functions$returned[fmap]
+      rd1 <- wd1 * ccov[[d1]]$functions$returned
+      bpri <- ccov[[pri]]$functions$blocks[fmap]
+      bd1 <- wd1 * ccov[[d1]]$functions$blocks
+      ccov[[pri]]$functions$returned[fmap] <- (factpri * rpri + factd1 * rd1)
+      ccov[[pri]]$functions$blocks[fmap] <- (factpri * bpri + factd1 * bd1)
+      ccov[[pri]]$functions$coverage[fmap] <- wpri + wd1
+    }
+    ccov <- ccov[!dup]
+  }
+
   ccov_funs <- lapply(ccov, "[[", "functions")
   ccov <- lapply(ccov, "[[", "lines")
   keep <- map_int(ccov, nrow) > 0
-  ccov <- ccov[keep]
-  ccov_funs <- ccov_funs[keep]
-
-  # need to apply exclusions again, because dependent and potentially
-  # excluded .h files were still picked up
-  paths <- sub("^[.]/", "", map_chr(ccov, function(x) x$file[1]))
-  keep <- paths %in% apply_covrignore(paths, exclusion_file)
   ccov <- ccov[keep]
   ccov_funs <- ccov_funs[keep]
 
@@ -1834,7 +1845,7 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
 
   res <- data.frame(
     stringsAsFactors = FALSE,
-    path = sub("^[.]/", "", map_chr(ccov, function(x) x$file[1])),
+    path = names(ccov),
     symbol = NA_character_,
     num_markers = NA_integer_,
     line_count = map_int(ccov, nrow),
@@ -1898,50 +1909,34 @@ parse_gcov <- function(root = ".", exclusion_file = NULL) {
   )
 
   # drop files that have an absolute path, typically system headers
-  gcov <- gcov[!startsWith(basename(gcov), "#")]
+  gcov <- gcov[!grepl("###", gcov, fixed = TRUE)]
+  codepaths <- file.path(
+    "src",
+    sub("^.* 0:Source:", "", map_chr(gcov, readLines, n = 1))
+  )
 
   # drop gcov files for ignored files
   if (!is.null(exclusion_file)) {
-    sf <- file.path("src", map_chr(gcov, get_gcov_source_file))
-    sfx <- apply_covrignore(sf, exclusion_file)
-    gcov <- gcov[sf %in% sfx]
+    cpinc <- apply_covrignore(codepaths, exclusion_file)
+    keep <- codepaths %in% cpinc
+    gcov <- gcov[keep]
+    codepaths <- codepaths[keep]
   }
-  ps <- lapply(gcov, parse_gcov_file)
+  ps <- structure(lapply(gcov, parse_gcov_file), names = codepaths)
   ps
 }
 
-get_gcov_source_file <- function(path) {
-  head <- readLines(path, n = 10)
-  src <- grep(" 0:Source:", head, value = TRUE)[1]
-  if (is.na(src)) {
-    # this should not happen, but returning the path itself is harmless, anyway
-    return(path)
-  }
-  sub("^.* 0:Source:", "", src)
-}
-
 parse_gcov_file <- function(path) {
-  disp <- display_name(path)
-  gcov <- .Call(c_cov_parse_gcov, path, disp)
+  gcov <- .Call(c_cov_parse_gcov, path)
   class(gcov$lines) <- c("tbl", "data.frame")
   attr(gcov$lines, "row.names") <- seq_len(length(gcov$lines[[1]]))
   class(gcov$functions) <- c("tbl", "data.frame")
   # drop functions that we could not parse
   gcov$functions <- gcov$functions[!is.na(gcov$functions$line), ]
+  # drop duplicated functions
+  gcov$functions <- gcov$functions[!duplicated(gcov$functions$name), ]
   attr(gcov$functions, "row.names") <- seq_len(length(gcov$functions[[1]]))
   gcov
-}
-
-display_name <- function(x) {
-  x <- sub("[.]gcov", "", x)
-  if (startsWith(basename(x), "^")) {
-    x <- gsub("^", "..", fixed = TRUE, x)
-    x <- gsub("#", "/", fixed = TRUE, x)
-    x
-  } else {
-    b <- gsub("#", "/", basename(x))
-    paste0(dirname(x), "/", b)
-  }
 }
 
 #' List development builds
