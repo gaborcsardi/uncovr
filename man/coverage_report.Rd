@@ -14,8 +14,8 @@ coverage_report(
 \arguments{
 \item{path}{Path to the package tree.}
 
-\item{coverage}{Test coverage results. If `NULL` then the last
-results are used via [last_coverage_results()].}
+\item{coverage}{Test coverage results. If \code{NULL} then the last
+results are used via \code{\link[=last_coverage_results]{last_coverage_results()}}.}
 
 \item{output}{Output file. This is the HTML index file. The rest of
 of the HTML files for the source code files will be placed next

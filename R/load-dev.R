@@ -653,7 +653,10 @@ copy_inst_files <- function(src, tgt) {
 #' @param show_coverage_report Whether to show the HTML test coverage
 #'   report (if `coverage_report` is `TRUE`).
 #' @param lcov_info Whether to create an lcov info file, see
-#'   [write_lcov_info()].
+#'   [write_lcov_info()]. Defaults to the value of the
+#'   `r opt_option_name("lcov_info")` option, then the
+#'   `r opt_envvar_name("lcov_info")` environment variable, or if neither
+#'   are set, then `r opt_default[["lcov_info"]]`.
 #' @inheritParams load_package
 #'
 #' @return A list of class `package_coverage` with entries:
@@ -696,8 +699,9 @@ test_package <- function(
   show_coverage = TRUE,
   coverage_report = FALSE,
   show_coverage_report = coverage_report && interactive(),
-  lcov_info = FALSE
+  lcov_info = NULL
 ) {
+  lcov_info <- lcov_info %||% get_option("lcov_info", "flag")
   withr::local_dir(path)
 
   if (Sys.getenv("NOT_CRAN") == "") {
@@ -796,7 +800,7 @@ test_package <- function(
   }
 
   if (lcov_info) {
-    write_lconv_info(coverage = coverage_results)
+    write_lcov_info(coverage = coverage_results)
   }
 
   if (show_coverage) {

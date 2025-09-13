@@ -18,12 +18,12 @@ d(path = ".", clean = FALSE, local_install = TRUE)
 library and add that library to the beginning of the library path.}
 }
 \value{
-The same as [load_package()], with an additional field `roxy`,
-  that contains the return value of [roxygen2::roxygenize()].
+The same as \code{\link[=load_package]{load_package()}}, with an additional field \code{roxy},
+that contains the return value of \code{\link[roxygen2:roxygenize]{roxygen2::roxygenize()}}.
 }
 \description{
-Loads the debug build, and calls [roxygen2::roxygenize()].
+Loads the debug build, and calls \code{\link[roxygen2:roxygenize]{roxygen2::roxygenize()}}.
 }
 \details{
-`d()` is an alias of `document_package()`.
+\code{d()} is an alias of \code{document_package()}.
 }

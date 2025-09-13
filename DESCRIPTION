@@ -24,3 +24,4 @@ Imports:
 Suggests:
     pillar
 Encoding: UTF-8
+Roxygen: list(markdown = TRUE)

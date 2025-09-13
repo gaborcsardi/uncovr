@@ -11,12 +11,14 @@ list_builds(path = ".")
 }
 \value{
 Data frame with columns:
-  - `type`: Build type, character.
-  - `r_version`: R version, first two digits only, character.
-  - `platform`: Build platform triplet, character.
-  - `last_built`: Time stamp of the last build, [POSIXct].
-  - `dist_size`: Size of the build directory in bytes, double.
-  - `id`: Name of the build directory.
+\itemize{
+\item \code{type}: Build type, character.
+\item \code{r_version}: R version, first two digits only, character.
+\item \code{platform}: Build platform triplet, character.
+\item \code{last_built}: Time stamp of the last build, \link{POSIXct}.
+\item \code{dist_size}: Size of the build directory in bytes, double.
+\item \code{id}: Name of the build directory.
+}
 }
 \description{
 List development builds

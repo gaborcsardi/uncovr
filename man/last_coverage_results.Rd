@@ -11,7 +11,7 @@ last_coverage_results(path = ".")
 }
 \value{
 A package_coverage object. If there are no previous results,
-  then a message is shown and `NULL` is returned.
+then a message is shown and \code{NULL} is returned.
 }
 \description{
 Find and print the last test coverage results

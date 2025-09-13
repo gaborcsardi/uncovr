@@ -23,11 +23,13 @@ l(
 }
 \arguments{
 \item{type}{Build type. One of:
-- `"debug"`: Compiled with debug flags. (Passes `debug = TRUE` to
-  [pkgbuild::compiler_flags()].)
-- `"release"`: Compiled without debug flags. (Passes `debug = FALSE` to
-  [pkgbuild::compiler_flags()].)
-- `"coverage"`: Compiled with debug flags and code coverage support.}
+\itemize{
+\item \code{"debug"}: Compiled with debug flags. (Passes \code{debug = TRUE} to
+\code{\link[pkgbuild:compiler_flags]{pkgbuild::compiler_flags()}}.)
+\item \code{"release"}: Compiled without debug flags. (Passes \code{debug = FALSE} to
+\code{\link[pkgbuild:compiler_flags]{pkgbuild::compiler_flags()}}.)
+\item \code{"coverage"}: Compiled with debug flags and code coverage support.
+}}
 
 \item{path}{Path to the package tree.}
 
@@ -40,34 +42,40 @@ library and add that library to the beginning of the library path.}
 }
 \value{
 A list with entries:
-- `setup`: List of the build setup. Entries:
-  - `version`: Version of format of the build directory.
-  - `rver`: R version. (First two digits only.)
-  - `platform`: Build platform triplet.
-  - `type`: The build type.
-  - `hash`: The hash of the setup that is used as the build directory
-    name.
-  - `compiler_flags`: Nemed character vector of extra `Makevars` flags
-    to use.
-  - `dir`: The build directory.
-  - `pkgname`: The name of the package.
-- `plan`: Data frame of the plan to create the build directory. Columns:
-  - `path`: Relative path of the file.
-  - `isdir`: Whether it is a directory.
-  - `action`: How to create the path in the build directory: `"link"` or
-    `"copy"`.
-  - `target`: Relative path of the file or directory in the build
-    directory.
-  - `hash`: Hash of the file for files, it is `NA` for directories.
-- `load`: The return value of [pkgload::load_all()].
-- `coverage`: For `type = "coverage"` builds a data frame with the
-  code coverage instrumentation data for R files. See
-  [test_package()] for the structure.
+\itemize{
+\item \code{setup}: List of the build setup. Entries:
+\itemize{
+\item \code{version}: Version of format of the build directory.
+\item \code{rver}: R version. (First two digits only.)
+\item \code{platform}: Build platform triplet.
+\item \code{type}: The build type.
+\item \code{hash}: The hash of the setup that is used as the build directory
+name.
+\item \code{compiler_flags}: Nemed character vector of extra \code{Makevars} flags
+to use.
+\item \code{dir}: The build directory.
+\item \code{pkgname}: The name of the package.
+}
+\item \code{plan}: Data frame of the plan to create the build directory. Columns:
+\itemize{
+\item \code{path}: Relative path of the file.
+\item \code{isdir}: Whether it is a directory.
+\item \code{action}: How to create the path in the build directory: \code{"link"} or
+\code{"copy"}.
+\item \code{target}: Relative path of the file or directory in the build
+directory.
+\item \code{hash}: Hash of the file for files, it is \code{NA} for directories.
+}
+\item \code{load}: The return value of \code{\link[pkgload:load_all]{pkgload::load_all()}}.
+\item \code{coverage}: For \code{type = "coverage"} builds a data frame with the
+code coverage instrumentation data for R files. See
+\code{\link[=test_package]{test_package()}} for the structure.
+}
 }
 \description{
-A wrapper on [pkgload::load_all()] to load a package tree from a
+A wrapper on \code{\link[pkgload:load_all]{pkgload::load_all()}} to load a package tree from a
 dev build.
 }
 \details{
-`l()` is an alias of `load_package()`.
+\code{l()} is an alias of \code{load_package()}.
 }

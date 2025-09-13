@@ -11,8 +11,8 @@ last_test_results(path = ".")
 }
 \value{
 The test results in a list with class cov_testthat_results. If
-  there are no previous results, then a message is shown and `NULL` is
-  returned.
+there are no previous results, then a message is shown and \code{NULL} is
+returned.
 }
 \description{
 Find and print the last test results

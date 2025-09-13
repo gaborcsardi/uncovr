@@ -15,7 +15,7 @@ test_package(
   show_coverage = TRUE,
   coverage_report = FALSE,
   show_coverage_report = coverage_report && interactive(),
-  lcov_info = FALSE
+  lcov_info = NULL
 )
 
 t(
@@ -28,21 +28,21 @@ t(
   show_coverage = TRUE,
   coverage_report = FALSE,
   show_coverage_report = coverage_report && interactive(),
-  lcov_info = FALSE
+  lcov_info = NULL
 )
 }
 \arguments{
 \item{filter}{Regular expression to filter both the test files (via the
-`filter` argument of [testthat::test_dir()]), and the source files
+\code{filter} argument of \code{\link[testthat:test_dir]{testthat::test_dir()}}), and the source files
 in the coverage results.}
 
 \item{path}{Path to the package tree.}
 
-\item{test_dir}{Test directory to use. Defaults to `tests/testthat`
+\item{test_dir}{Test directory to use. Defaults to \code{tests/testthat}
 within the package tree.}
 
 \item{reporter}{The testthat reporter to use. Passed to
-[testthat::test_dir()].}
+\code{\link[testthat:test_dir]{testthat::test_dir()}}.}
 
 \item{clean}{Whether to delete the build directory before the build.}
 
@@ -54,51 +54,62 @@ library and add that library to the beginning of the library path.}
 \item{coverage_report}{Whether to generate a HTML test coverage report.}
 
 \item{show_coverage_report}{Whether to show the HTML test coverage
-report (if `coverage_report` is `TRUE`).}
+report (if \code{coverage_report} is \code{TRUE}).}
 
 \item{lcov_info}{Whether to create an lcov info file, see
-[write_lcov_info()].}
+\code{\link[=write_lcov_info]{write_lcov_info()}}. Defaults to the value of the
+uncovr_lcov_info option, then the
+R_UNCOVR_LCOV_INFO environment variable, or if neither
+are set, then FALSE.}
 }
 \value{
-A list of class `package_coverage` with entries:
-  - `setup`: Build setup, see [load_package()].
-  - `plan`: Build plan, see [load_package()].
-  - `load`: Return value of [pkgload::load_all()].
-  - `coverage`: Code coverage results. Columns:
-    - `path`: Relative path to the R code file.
-    - `symbol`: The R variable that is used to collect the coverage for
-      this file.
-    - `line_count`: Total number of lines in the file.
-    - `code_lines`: Number of code lines (that are not excluded).
-    - `lines_covered`: The number of covered lines will be stored here
-      after a test coverage run. For `load_package()` it is all zero.
-    - `percent_covered`: The test coverage percentage of the file will
-      be stored here after a test coverage run. For `load_package()` it is
-      all zero.
-    - `lines`: A list column with a data frame for each file. The data
-      frame has columns:
-      - `lines`: The code line.
-      - `status`: Whether this line is `"instrumented"`, `"noncode"` or
-        `"excluded"`.
-      - `id` The id of the counter that applies to this line. Often the
-        same as the line number, but not always, e.g. for multi-line
-        expressions. `NA` for lines that are not `"instrumented"`.
-      - `coverage`: The number of times the line was covered will be filled
-        in here after a test coverage run. For `load_package()` it is zero,
-        but `NA` for lines that are not `"instrumented"`.
-  - `test_results`: Return value of [testthat::test_dir()].
+A list of class \code{package_coverage} with entries:
+\itemize{
+\item \code{setup}: Build setup, see \code{\link[=load_package]{load_package()}}.
+\item \code{plan}: Build plan, see \code{\link[=load_package]{load_package()}}.
+\item \code{load}: Return value of \code{\link[pkgload:load_all]{pkgload::load_all()}}.
+\item \code{coverage}: Code coverage results. Columns:
+\itemize{
+\item \code{path}: Relative path to the R code file.
+\item \code{symbol}: The R variable that is used to collect the coverage for
+this file.
+\item \code{line_count}: Total number of lines in the file.
+\item \code{code_lines}: Number of code lines (that are not excluded).
+\item \code{lines_covered}: The number of covered lines will be stored here
+after a test coverage run. For \code{load_package()} it is all zero.
+\item \code{percent_covered}: The test coverage percentage of the file will
+be stored here after a test coverage run. For \code{load_package()} it is
+all zero.
+\item \code{lines}: A list column with a data frame for each file. The data
+frame has columns:
+\itemize{
+\item \code{lines}: The code line.
+\item \code{status}: Whether this line is \code{"instrumented"}, \code{"noncode"} or
+\code{"excluded"}.
+\item \code{id} The id of the counter that applies to this line. Often the
+same as the line number, but not always, e.g. for multi-line
+expressions. \code{NA} for lines that are not \code{"instrumented"}.
+\item \code{coverage}: The number of times the line was covered will be filled
+in here after a test coverage run. For \code{load_package()} it is zero,
+but \code{NA} for lines that are not \code{"instrumented"}.
+}
+}
+\item \code{test_results}: Return value of \code{\link[testthat:test_dir]{testthat::test_dir()}}.
+}
 }
 \description{
 Run package tests and show test coverage results
 }
 \details{
 Performs the following steps:
-- Builds the package in a build directory, or updates the most recent
-  build, if there is one.
-- Loads the package from the build directory using [pkgload::load_all()].
-- Installs the package into a local library (by default).
-- Runs the package tests.
-- Calculates and shows the test coverage of the package's source files.
+\itemize{
+\item Builds the package in a build directory, or updates the most recent
+build, if there is one.
+\item Loads the package from the build directory using \code{\link[pkgload:load_all]{pkgload::load_all()}}.
+\item Installs the package into a local library (by default).
+\item Runs the package tests.
+\item Calculates and shows the test coverage of the package's source files.
+}
 
-`t()` is an alias of `test_package()`.
+\code{t()} is an alias of \code{test_package()}.
 }

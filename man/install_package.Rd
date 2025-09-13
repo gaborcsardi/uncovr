@@ -27,11 +27,13 @@ i(
 }
 \arguments{
 \item{type}{Build type. One of:
-- `"debug"`: Compiled with debug flags. (Passes `debug = TRUE` to
-  [pkgbuild::compiler_flags()].)
-- `"release"`: Compiled without debug flags. (Passes `debug = FALSE` to
-  [pkgbuild::compiler_flags()].)
-- `"coverage"`: Compiled with debug flags and code coverage support.}
+\itemize{
+\item \code{"debug"}: Compiled with debug flags. (Passes \code{debug = TRUE} to
+\code{\link[pkgbuild:compiler_flags]{pkgbuild::compiler_flags()}}.)
+\item \code{"release"}: Compiled without debug flags. (Passes \code{debug = FALSE} to
+\code{\link[pkgbuild:compiler_flags]{pkgbuild::compiler_flags()}}.)
+\item \code{"coverage"}: Compiled with debug flags and code coverage support.
+}}
 
 \item{path}{Path to the package tree.}
 
@@ -40,11 +42,11 @@ i(
 \item{clean}{Whether to delete the build directory before the build.}
 
 \item{lib, INSTALL_opts, ...}{Additional arguments are passed to
-[utils::install.packages()].}
+\code{\link[utils:install.packages]{utils::install.packages()}}.}
 }
 \description{
 Install local package tree
 }
 \details{
-`i()` is an alias of `install_package()`.
+\code{i()} is an alias of \code{install_package()}.
 }

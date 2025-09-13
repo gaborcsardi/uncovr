@@ -16,7 +16,7 @@ coverage_report_file(
 \item{code_file}{Relative path to the code file to show.}
 
 \item{coverage}{A coverage object, optionally.
-If not present, the output of [last_coverage_results()] is used.}
+If not present, the output of \code{\link[=last_coverage_results]{last_coverage_results()}} is used.}
 
 \item{path}{Path to the package tree.}
 
@@ -26,6 +26,6 @@ If not present, the output of [last_coverage_results()] is used.}
 report.}
 }
 \description{
-[coverage_report()] calls this function for all source files, so
+\code{\link[=coverage_report]{coverage_report()}} calls this function for all source files, so
 you only need this if you want a report for a single file.
 }

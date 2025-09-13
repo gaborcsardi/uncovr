@@ -15,12 +15,12 @@ rerun_failing_tests(
 \item{path}{Path to the package tree.}
 
 \item{types}{Test result types to re-run, a character vector, possible
-elements are `"fail"` (default), `"warning"`, `"skip"`, "`all`".
-`"all"` is equivalent to `c("fail", "warning", "skip")`.}
+elements are \code{"fail"} (default), \code{"warning"}, \code{"skip"}, "\code{all}".
+\code{"all"} is equivalent to \code{c("fail", "warning", "skip")}.}
 
 \item{show_coverage}{Whether to show code coverage results.}
 
-\item{...}{Additional arguments are passed to [test_package()].}
+\item{...}{Additional arguments are passed to \code{\link[=test_package]{test_package()}}.}
 }
 \description{
 Re-run the test files that had failing tests in the last test run

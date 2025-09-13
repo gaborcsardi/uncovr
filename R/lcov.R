@@ -12,7 +12,7 @@
 #'
 #' @export
 
-write_lconv_info <- function(path = ".", coverage = NULL, output = NULL) {
+write_lcov_info <- function(path = ".", coverage = NULL, output = NULL) {
   withr::local_dir(path)
   rm(path)
   coverage <- coverage %||% last_coverage_results(path = ".")
