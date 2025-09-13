@@ -48,7 +48,7 @@ paste_named <- function(orig, new) {
   orig
 }
 
-load_package_setup <- function(
+reload_setup <- function(
   type = c("debug", "release", "coverage"),
   path = ".",
   makeflags = NULL
@@ -116,10 +116,10 @@ load_package_setup <- function(
 #' - `load`: The return value of [pkgload::load_all()].
 #' - `coverage`: For `type = "coverage"` builds a data frame with the
 #'   code coverage instrumentation data for R files. See
-#'   [test_package()] for the structure.
+#'   [test()] for the structure.
 #' @export
 
-load_package <- function(
+reload <- function(
   type = c("debug", "release", "coverage"),
   path = ".",
   makeflags = NULL,
@@ -128,7 +128,7 @@ load_package <- function(
 ) {
   withr::local_dir(path)
   type <- match.arg(type)
-  setup <- load_package_setup(type, ".", makeflags)
+  setup <- reload_setup(type, ".", makeflags)
   withr::local_options(structure(list(setup), names = opt_setup))
 
   if (clean) {
@@ -213,11 +213,11 @@ load_package <- function(
 }
 
 #' @details
-#' `l()` is an alias of `load_package()`.
-#' @rdname load_package
+#' `l()` is an alias of `reload()`.
+#' @rdname reload
 #' @export
 
-l <- load_package
+l <- reload
 
 find_function_names <- function(cov_data, env, setup) {
   pkgdir <- paste0(file.path(setup$dir, setup$pkgname), "/")
@@ -347,7 +347,7 @@ fix_src_refs <- function(ns) {
   }
   for (pf in parsed) {
     for (i in seq_along(pf)) {
-      sr <- getSrcref(pf)[[i]]
+      sr <- utils::getSrcref(pf)[[i]]
       if (is.null(sr)) {
         next
       }
@@ -360,7 +360,7 @@ fix_src_refs <- function(ns) {
         nm <- as.character(pf[[i]][[2]])
         if (nm %in% names(ns)) {
           fn <- ns[[nm]]
-          if (is.null(getSrcref(fn))) {
+          if (is.null(utils::getSrcref(fn))) {
             next
           }
           set_attr(ns[[nm]], "srcref", sr)
@@ -687,19 +687,19 @@ copy_inst_files <- function(src, tgt) {
 #' @param reporter The testthat reporter to use. Passed to
 #'   [testthat::test_dir()].
 #' @param show_coverage Whether to show code coverage results.
-#' @param coverage_report Whether to generate a HTML test coverage report.
-#' @param show_coverage_report Whether to show the HTML test coverage
-#'   report (if `coverage_report` is `TRUE`).
+#' @param report Whether to generate a HTML test coverage report.
+#' @param show_report Whether to show the HTML test coverage
+#'   report (if `report` is `TRUE`).
 #' @param lcov_info Whether to create an lcov info file, see
-#'   [write_lcov_info()]. Defaults to the value of the
+#'   [lcov()]. Defaults to the value of the
 #'   `r opt_option_name("lcov_info")` option, then the
 #'   `r opt_envvar_name("lcov_info")` environment variable, or if neither
 #'   are set, then `r opt_default[["lcov_info"]]`.
-#' @inheritParams load_package
+#' @inheritParams reload
 #'
 #' @return A list of class `package_coverage` with entries:
-#'   - `setup`: Build setup, see [load_package()].
-#'   - `plan`: Build plan, see [load_package()].
+#'   - `setup`: Build setup, see [reload()].
+#'   - `plan`: Build plan, see [reload()].
 #'   - `load`: Return value of [pkgload::load_all()].
 #'   - `coverage`: Code coverage results. Columns:
 #'     - `path`: Relative path to the R code file.
@@ -708,9 +708,9 @@ copy_inst_files <- function(src, tgt) {
 #'     - `line_count`: Total number of lines in the file.
 #'     - `code_lines`: Number of code lines (that are not excluded).
 #'     - `lines_covered`: The number of covered lines will be stored here
-#'       after a test coverage run. For `load_package()` it is all zero.
+#'       after a test coverage run. For `reload()` it is all zero.
 #'     - `percent_covered`: The test coverage percentage of the file will
-#'       be stored here after a test coverage run. For `load_package()` it is
+#'       be stored here after a test coverage run. For `reload()` it is
 #'       all zero.
 #'     - `lines`: A list column with a data frame for each file. The data
 #'       frame has columns:
@@ -721,13 +721,13 @@ copy_inst_files <- function(src, tgt) {
 #'         same as the line number, but not always, e.g. for multi-line
 #'         expressions. `NA` for lines that are not `"instrumented"`.
 #'       - `coverage`: The number of times the line was covered will be filled
-#'         in here after a test coverage run. For `load_package()` it is zero,
+#'         in here after a test coverage run. For `reload()` it is zero,
 #'         but `NA` for lines that are not `"instrumented"`.
 #'   - `test_results`: Return value of [testthat::test_dir()].
 #'
 #' @export
 
-test_package <- function(
+test <- function(
   filter = NULL,
   path = ".",
   test_dir = "tests/testthat",
@@ -735,8 +735,8 @@ test_package <- function(
   clean = FALSE,
   local_install = TRUE,
   show_coverage = TRUE,
-  coverage_report = FALSE,
-  show_coverage_report = coverage_report && interactive(),
+  report = FALSE,
+  show_report = report && interactive(),
   lcov_info = NULL
 ) {
   lcov_info <- lcov_info %||% get_option("lcov_info", "flag")
@@ -748,13 +748,13 @@ test_package <- function(
 
   # clean up .gcda files, because pkgbuild wrongly considers them as source
   # files and thinks that the dll is out of data, because they are newer
-  setup <- load_package_setup(type = "coverage", path = ".")
+  setup <- reload_setup(type = "coverage", path = ".")
   pkg_path <- file.path(setup$dir, setup$pkgname)
   if (!clean) {
     gcov_cleanup(pkg_path)
   }
 
-  dev_data <- load_package(
+  dev_data <- reload(
     type = "coverage",
     path = ".",
     clean = clean,
@@ -771,7 +771,7 @@ test_package <- function(
     dev_data$test_results <- testthat::test_dir(
       test_dir,
       package = setup[["pkgname"]],
-      load_package = "installed",
+      reload = "installed",
       stop_on_failure = FALSE,
       filter = filter,
       reporter = reporter
@@ -833,12 +833,12 @@ test_package <- function(
   coverage_results <- prepare_coverage_results(dev_data)
   quick_save_rds(coverage_results, coverage_results_file)
 
-  if (coverage_report) {
-    coverage_report(coverage = coverage_results, show = show_coverage_report)
+  if (report) {
+    report(coverage = coverage_results, show = show_report)
   }
 
   if (lcov_info) {
-    write_lcov_info(coverage = coverage_results)
+    lcov(coverage = coverage_results)
   }
 
   if (show_coverage) {
@@ -889,13 +889,13 @@ quick_save_rds <- function(obj, path) {
   writeBin(ser, path)
 }
 
-#' @rdname test_package
+#' @rdname test
 #' @details
 #'
-#' `t()` is an alias of `test_package()`.
+#' `t()` is an alias of `test()`.
 #' @export
 
-t <- test_package
+t <- test
 
 add_subprocess_coverage <- function(counts, subprocdir) {
   fls <- list.files(subprocdir, full.names = TRUE)
@@ -1999,7 +1999,7 @@ parse_gcov_file <- function(path) {
 
 #' List development builds
 #'
-#' @inheritParams load_package
+#' @inheritParams reload
 #' @return Data frame with columns:
 #'   - `type`: Build type, character.
 #'   - `r_version`: R version, first two digits only, character.
@@ -2009,7 +2009,7 @@ parse_gcov_file <- function(path) {
 #'   - `id`: Name of the build directory.
 #' @export
 
-list_builds <- function(path = ".") {
+builds <- function(path = ".") {
   withr::local_dir(path)
   dirs <- dir(get_dev_dir(), full.names = TRUE, include.dirs = TRUE)
   setup_paths <- file.path(dirs, setup_file_name)
@@ -2040,21 +2040,12 @@ dir_size <- function(dirs) {
   })
 }
 
-#' Find and print the last test results
-#'
-#' @inheritParams load_package
-#' @return The test results in a list with class cov_testthat_results. If
-#'   there are no previous results, then a message is shown and `NULL` is
-#'   returned.
-#'
-#' @export
-
 last_test_results <- function(path = ".") {
   withr::local_dir(path)
-  setup <- load_package_setup(type = "coverage", path = ".")
+  setup <- reload_setup(type = "coverage", path = ".")
   test_results_file <- file.path(setup$dir, last_tests_file_name)
   if (!file.exists(test_results_file)) {
-    message("No test results yet. Run `test_package()!")
+    message("No test results yet. Run `test()!")
     return(invisible(NULL))
   }
 
@@ -2065,18 +2056,18 @@ last_test_results <- function(path = ".") {
 
 #' Find and print the last test coverage results
 #'
-#' @inheritParams load_package
+#' @inheritParams reload
 #' @return A package_coverage object. If there are no previous results,
 #'   then a message is shown and `NULL` is returned.
 #'
 #' @export
 
-last_coverage_results <- function(path = ".") {
+last <- function(path = ".") {
   withr::local_dir(path)
-  setup <- load_package_setup(type = "coverage", path = ".")
+  setup <- reload_setup(type = "coverage", path = ".")
   coverage_results_file <- file.path(setup$dir, last_coverage_file_name)
   if (!file.exists(coverage_results_file)) {
-    cli::cli_alert_info("No test coverage yet. Run `test_package()!")
+    cli::cli_alert_info("No test coverage yet. Run `test()!")
     return(invisible(NULL))
   }
 
@@ -2089,16 +2080,16 @@ last_coverage_results <- function(path = ".") {
 
 #' Re-run the test files that had failing tests in the last test run
 #'
-#' @inheritParams load_package
+#' @inheritParams reload
 #' @param types Test result types to re-run, a character vector, possible
 #'   elements are `"fail"` (default), `"warning"`, `"skip"`, "`all`".
 #'   `"all"` is equivalent to `c("fail", "warning", "skip")`.
 #' @param show_coverage Whether to show code coverage results.
-#' @param ... Additional arguments are passed to [test_package()].
+#' @param ... Additional arguments are passed to [test()].
 #'
 #' @export
 
-rerun_failing_tests <- function(
+retest <- function(
   path = ".",
   types = c("fail", "warning", "skip", "all")[1],
   show_coverage = FALSE,
@@ -2127,22 +2118,22 @@ rerun_failing_tests <- function(
   }
 
   filter <- paste0("^(", paste(rerun, collapse = "|"), ")$")
-  test_package(filter = filter, path = path, show_coverage = show_coverage, ...)
+  test(filter = filter, path = path, show_coverage = show_coverage, ...)
 }
 
 #' Run roxygen2 to generate the package manual and namespace files
 #'
 #' Loads the debug build, and calls [roxygen2::roxygenize()].
 #'
-#' @inheritParams load_package
-#' @return The same as [load_package()], with an additional field `roxy`,
+#' @inheritParams reload
+#' @return The same as [reload()], with an additional field `roxy`,
 #'   that contains the return value of [roxygen2::roxygenize()].
 #'
 #' @export
 
-document_package <- function(path = ".", clean = FALSE, local_install = TRUE) {
+document <- function(path = ".", clean = FALSE, local_install = TRUE) {
   withr::local_dir(path)
-  dev_data <- load_package(
+  dev_data <- reload(
     type = "debug",
     path = ".",
     clean = clean,
@@ -2157,21 +2148,21 @@ document_package <- function(path = ".", clean = FALSE, local_install = TRUE) {
 }
 
 #' @details
-#' `d()` is an alias of `document_package()`.
-#' @rdname document_package
+#' `d()` is an alias of `document()`.
+#' @rdname document
 #' @export
 
-d <- document_package
+d <- document
 
 #' Install local package tree
 #'
 #' @param lib,INSTALL_opts,... Additional arguments are passed to
 #'   [utils::install.packages()].
-#' @inheritParams load_package
+#' @inheritParams reload
 #'
 #' @export
 
-install_package <- function(
+install <- function(
   type = c("release", "debug", "coverage"),
   path = ".",
   makeflags = NULL,
@@ -2184,7 +2175,7 @@ install_package <- function(
     grep("__dev_lib__", .libPaths(), value = TRUE, invert = TRUE)[1]
   withr::local_dir(path)
   type <- match.arg(type)
-  setup <- load_package_setup(type, ".", makeflags)
+  setup <- reload_setup(type, ".", makeflags)
   withr::local_options(structure(list(setup), names = opt_setup))
 
   if (clean) {
@@ -2217,11 +2208,11 @@ install_package <- function(
 }
 
 #' @details
-#' `i()` is an alias of `install_package()`.
-#' @rdname install_package
+#' `i()` is an alias of `install()`.
+#' @rdname install
 #' @export
 
-i <- install_package
+i <- install
 
 #' @export
 

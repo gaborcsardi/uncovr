@@ -1,8 +1,8 @@
 #' Generate a HTML coverage report
 #'
-#' @inheritParams load_package
+#' @inheritParams reload
 #' @param coverage Test coverage results. If `NULL` then the last
-#'   results are used via [last_coverage_results()].
+#'   results are used via [last()].
 #' @param output Output file. This is the HTML index file. The rest of
 #'   of the HTML files for the source code files will be placed next
 #'   to it. By default it is generated in the dev directory.
@@ -12,7 +12,7 @@
 #'
 #' @export
 
-coverage_report <- function(
+report <- function(
   path = ".",
   coverage = NULL,
   output = NULL,
@@ -20,8 +20,8 @@ coverage_report <- function(
 ) {
   withr::local_dir(path)
   rm(path)
-  coverage <- coverage %||% last_coverage_results(path = ".")
-  setup <- load_package_setup("coverage")
+  coverage <- coverage %||% last(path = ".")
+  setup <- reload_setup("coverage")
 
   # our pkgload::system.file() monkey-patch is buggy, so use find.package()
   # need to try the load_all path as well
@@ -102,17 +102,13 @@ coverage_report <- function(
   )
 
   output <- output %||%
-    file.path(
-      setup$dir,
-      coverage_report_dir_name,
-      paste0(pkgname, "-report.html")
-    )
+    file.path(setup$dir, report_dir_name, paste0(pkgname, "-report.html"))
 
   mkdirp(dirname(output))
   writeLines(lns, output)
 
   for (path in coverage$path) {
-    coverage_report_file_(
+    report_file_(
       path,
       coverage = coverage,
       path = ".",
@@ -134,32 +130,17 @@ format_percent <- function(x) {
   sprintf("%0.2f%%", x * 100)
 }
 
-#' Generate a HTML coverage report for a source file
-#'
-#' [coverage_report()] calls this function for all source files, so
-#' you only need this if you want a report for a single file.
-#'
-#' @param code_file Relative path to the code file to show.
-#' @param coverage A coverage object, optionally.
-#'   If not present, the output of [last_coverage_results()] is used.
-#' @param output_dir Output directory to put the HTML report into.
-#' @param show Whether to open a browser window to show the HTML
-#'   report.
-#' @inheritParams load_package
-#'
-#' @export
-
-coverage_report_file <- function(
+report_file <- function(
   code_file = NULL,
   coverage = NULL,
   path = ".",
   output_dir = NULL,
   show = interactive()
 ) {
-  coverage_report_file_(code_file, coverage, path, output_dir, show)
+  report_file_(code_file, coverage, path, output_dir, show)
 }
 
-coverage_report_file_ <- function(
+report_file_ <- function(
   code_file = NULL,
   coverage = NULL,
   path = ".",
@@ -169,8 +150,8 @@ coverage_report_file_ <- function(
 ) {
   withr::local_dir(path)
   rm(path)
-  coverage <- coverage %||% last_coverage_results(path = ".")
-  setup <- setup %||% load_package_setup("coverage")
+  coverage <- coverage %||% last(path = ".")
+  setup <- setup %||% reload_setup("coverage")
 
   pathidx <- match(code_file, coverage$path)
   if (is.na(pathidx)) {
@@ -254,7 +235,7 @@ coverage_report_file_ <- function(
   )
 
   fn <- paste0("file-", utils::URLencode(code_file, reserved = TRUE), ".html")
-  output_dir <- output_dir %||% file.path(setup$dir, coverage_report_dir_name)
+  output_dir <- output_dir %||% file.path(setup$dir, report_dir_name)
   output <- file.path(output_dir, fn)
 
   mkdirp(dirname(output))

@@ -3,20 +3,20 @@
 #' An LCOV coverage report contains information about the code coverage
 #' of all files in a project.
 #'
-#' @inheritParams load_package
+#' @inheritParams reload
 #' @param coverage Test coverage results. If `NULL` then the last
-#'   results are used via [last_coverage_results()].
+#'   results are used via [last()].
 #' @param output Path of the output file. If `NULL`, then it is
 #'   `_lcov/lcov.info` inside the build directory.
 #' @return The path of the output file, invisibly.
 #'
 #' @export
 
-write_lcov_info <- function(path = ".", coverage = NULL, output = NULL) {
+lcov <- function(path = ".", coverage = NULL, output = NULL) {
   withr::local_dir(path)
   rm(path)
-  coverage <- coverage %||% last_coverage_results(path = ".")
-  setup <- load_package_setup("coverage")
+  coverage <- coverage %||% last(path = ".")
+  setup <- reload_setup("coverage")
 
   metadata <- attr(coverage, "metadata")
 
