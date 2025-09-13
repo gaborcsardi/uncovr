@@ -718,7 +718,6 @@ test_package <- function(
     clean = clean,
     local_install = local_install
   )
-  on.exit(clean_libpath(dev_data$setup$pkgname), add = TRUE)
 
   # clean up files from subprocesses
   subprocdir <- file.path(setup$dir, cov_dir_name)
