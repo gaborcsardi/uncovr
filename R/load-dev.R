@@ -1259,7 +1259,12 @@ cov_instrument_file <- function(path, ps, cov_symbol) {
   }
 
   # calculcate insertion position for each subexpression of every '{'
-  inj_posl <- lapply(brc_poss, get_inject_positions, psd)
+  # plus prepend the top level exprssions
+  toplevel <- psd[
+    which(psd$parent == 0 & psd$token != "COMMENT"),
+    c("line1", "col1", "line2", "col2")
+  ]
+  inj_posl <- c(list(toplevel), lapply(brc_poss, get_inject_positions, psd))
   injx <- data.frame(
     line1 = unlist(lapply(inj_posl, "[[", "line1")),
     col1 = unlist(lapply(inj_posl, "[[", "col1")),
@@ -1349,9 +1354,14 @@ cov_instrument_file <- function(path, ps, cov_symbol) {
 
   # Handle multi-line expressions. We need to do this backwards, so nested
   # braces work out correctly.
+  comment_lines <- setdiff(
+    psd$line1[psd$token == "COMMENT"],
+    psd$line1[psd$token != "COMMENT"]
+  )
   for (i in rev(seq_len(nrow(inj)))) {
     inji <- inj[i, , drop = FALSE]
     li <- inji$line1:inji$line2
+    li <- setdiff(li, comment_lines)
     if (length(li) == 1) {
       next
     }
