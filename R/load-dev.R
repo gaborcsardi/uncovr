@@ -145,7 +145,7 @@ load_package <- function(
 
   pkg_dir <- file.path(setup$dir, setup$pkgname)
 
-  cov_data <- NULL
+  cov_data <- parsed <- NULL
   if (type == "coverage") {
     # It is probably ignored by R CMD build, so need to use the master file
     exc <- if (file.exists(".covrignore")) {
@@ -153,6 +153,8 @@ load_package <- function(
     }
     withr::with_dir(pkg_dir, {
       cov_data <- cov_instrument_dir("R", setup$pkgname, exclusion_file = exc)
+      parsed <- cov_data$parsed
+      cov_data <- cov_data$files
       setup_cov_env(cov_data)
     })
   }
@@ -188,6 +190,7 @@ load_package <- function(
       ),
       fnx
     )
+    withr::local_options("uncovr_parsed_data" = parsed)
     setup$dev_lib <- lib
   }
 
@@ -269,6 +272,7 @@ rel_path <- function(x, root) {
 inject_onload_lines <- function(setup, pkg_dir, lib, inject_script, fnx) {
   mkdirp(lib)
   subs <- list(
+    type_ = setup$type,
     pkgname_ = setup$pkgname,
     pkg_dir_ = normalizePath(pkg_dir),
     lib_ = normalizePath(lib),
@@ -300,6 +304,10 @@ inject_onload_lines <- function(setup, pkg_dir, lib, inject_script, fnx) {
           }
           base::rm(list = ".__cov_has_onload", envir = ns)
 
+          if (type_ == "coverage") {
+            base::asNamespace("uncovr")$fix_src_refs(ns)
+          }
+
           # install the package
           loaded <- base::list(
             dll = ns$.__NAMESPACE__.$DLLs,
@@ -330,6 +338,36 @@ inject_onload_lines <- function(setup, pkg_dir, lib, inject_script, fnx) {
       subs
     )
   )
+}
+
+fix_src_refs <- function(ns) {
+  parsed <- getOption("uncovr_parsed_data")
+  if (is.null(parsed)) {
+    return()
+  }
+  for (pf in parsed) {
+    for (i in seq_along(pf)) {
+      sr <- getSrcref(pf)[[i]]
+      if (is.null(sr)) {
+        next
+      }
+      if (
+        length(pf[[i]]) == 3 &&
+          (identical(pf[[i]][[1]], quote(`<-`)) ||
+            identical(pf[[i]][[1]], quote(`=`))) &&
+          typeof(pf[[i]][[2]]) == "symbol"
+      ) {
+        nm <- as.character(pf[[i]][[2]])
+        if (nm %in% names(ns)) {
+          fn <- ns[[nm]]
+          if (is.null(getSrcref(fn))) {
+            next
+          }
+          set_attr(ns[[nm]], "srcref", sr)
+        }
+      }
+    }
+  }
 }
 
 setup_cov_env <- function(cov_data) {
@@ -1192,8 +1230,12 @@ cov_instrument_dir <- function(
     funs = I(replicate(length(rfiles), NULL, simplify = FALSE)),
     uncovered = I(replicate(length(rfiles), list(), simplify = FALSE))
   )
+  parsed <- structure(
+    lapply(fls$path, parse, keep.source = TRUE),
+    names = fls$path
+  )
   for (i in seq_along(rfiles)) {
-    cifile <- cov_instrument_file(fls$path[i], fls$symbol[i])
+    cifile <- cov_instrument_file(fls$path[i], parsed[[i]], fls$symbol[i])
     fls$lines[[i]] <- cifile$lines
     fls$line_count[i] <- nrow(fls$lines[[i]])
     fls$code_lines[i] <- sum(fls$lines[[i]]$status == "instrumented")
@@ -1202,11 +1244,10 @@ cov_instrument_dir <- function(
     fls$num_markers[i] <- nrow(cifile$lines) + nrow(cifile$funs)
   }
 
-  fls
+  list(files = fls, parsed = parsed)
 }
 
-cov_instrument_file <- function(path, cov_symbol) {
-  ps <- parse(path, keep.source = TRUE)
+cov_instrument_file <- function(path, ps, cov_symbol) {
   psd <- utils::getParseData(ps)
   brc_poss <- which(psd$token == "'{'")
 

@@ -16,6 +16,11 @@ SEXP cov_read_file_raw(SEXP path);
 SEXP cov_read_lines(SEXP path);
 SEXP cov_parse_gcov(SEXP path);
 
+SEXP cov_set_attr(SEXP x, SEXP name, SEXP value) {
+  Rf_setAttrib(x, name, value);
+  return R_NilValue;
+}
+
 SEXP cov_gcov_flush_package(SEXP dllhandle) {
   void *cdllhandle = (void *) R_ExternalPtrAddr(dllhandle);
 
@@ -79,6 +84,7 @@ static const R_CallMethodDef callMethods[]  = {
   CALLDEF(cov_gcov_flush_package, 1),
   CALLDEF(cov_lock_base, 0),
   CALLDEF(cov_unlock_base, 0),
+  CALLDEF(cov_set_attr, 3),
   { NULL, NULL, 0 }
 };
 
