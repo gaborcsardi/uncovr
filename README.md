@@ -1,26 +1,72 @@
 
+<!-- README.md is generated from README.Rmd. Please edit that file -->
+
 # uncovr
 
-> Experimental add-ons for testthat
+> Test coverage tool for R.
 
 [![](http://www.r-pkg.org/badges/version/uncovr)](http://www.r-pkg.org/pkg/uncovr)
-[![CRAN RStudio mirror downloads](http://cranlogs.r-pkg.org/badges/uncovr)](http://www.r-pkg.org/pkg/uncovr)
+[![CRAN RStudio mirror
+downloads](http://cranlogs.r-pkg.org/badges/uncovr)](http://www.r-pkg.org/pkg/uncovr)
 
+## Features
 
-Experimental add-ons for testthat
+### Compatibility
+
+- Integrates with [testthat](https://testthat.r-lib.org/).
+- Supports parallel testthat runs out of the box.
+- Measures code in R (or other) subprocesses. Suprocesses use a locally
+  installed version of the instrumented package.
+- Independent release, debug and coverage builds. Independent builds for
+  R versions, different platforms, with Independent caches. Switch
+  between builds quickly and efficiently.
+- Supports covr’s exclusion file and exclusion markers.
+- Supports all of R’s class systems.
+- Supports lcov output.
+
+### Instrumentation
+
+- Function coverage. Counts how many times R (and C, C++, etc.)
+  functions were called.
+- Measures R code in top-level expressions, that run at install time,
+  measures R code in `.onLoad()`, etc. functions.
+
+### Reporting
+
+- Terminal report, with line and function coverage, and a list of
+  hyperlinked uncovered line intervals.
+- Summaries for (sub)directories.
+
+### Performance
+
+- Fast instrumentation and caching.
+- Fast coverage counters. The instrumentation has minimal overhead for
+  most test suites.
+- Fast gcov parser.
+- Fast HTML report generator.
+- Stores last test results and last coverage results.
+- Can rerun failing tests.
+- Can filter test files and output files.
 
 ## Installation
 
-```r
-devtools::install_github("gaborcsardi/uncovr")
+``` r
+pak::pkg_install("gaborcsardi/uncovr")
 ```
 
 ## Usage
 
-```r
+``` r
 library(uncovr)
 ```
 
+    #> 
+    #> Attaching package: 'uncovr'
+
+    #> The following object is masked from 'package:base':
+    #> 
+    #>     t
+
 ## License
 
-MIT + file LICENSE © 
+MIT @ Posit, PBC
