@@ -564,7 +564,10 @@ quick_install_loaded <- function(
   # relative path, so do it first
   tgt <- file.path(lib, pkgname)
   mkdirp(tgt)
+  lib <- normalizePath(lib)
   tgt <- normalizePath(tgt)
+  Sys.chmod(lib, mode = "0755", use_umask = FALSE)
+  on.exit(Sys.chmod(lib, mode = "0555", use_umask = FALSE))
 
   # detto
   if (!is.null(inject_script)) {
