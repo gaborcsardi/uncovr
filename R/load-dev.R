@@ -1230,12 +1230,10 @@ cov_instrument_dir <- function(
     funs = I(replicate(length(rfiles), NULL, simplify = FALSE)),
     uncovered = I(replicate(length(rfiles), list(), simplify = FALSE))
   )
-  parsed <- structure(
-    lapply(fls$path, parse, keep.source = TRUE),
-    names = fls$path
-  )
+  parsed <- structure(vector("list", nrow(fls)), names = fls$path)
   for (i in seq_along(rfiles)) {
-    cifile <- cov_instrument_file(fls$path[i], parsed[[i]], fls$symbol[i])
+    cifile <- cov_instrument_file(fls$path[i], fls$symbol[i])
+    parsed[[i]] <- cifile$parsed
     fls$lines[[i]] <- cifile$lines
     fls$line_count[i] <- nrow(fls$lines[[i]])
     fls$code_lines[i] <- sum(fls$lines[[i]]$status == "instrumented")
@@ -1247,7 +1245,14 @@ cov_instrument_dir <- function(
   list(files = fls, parsed = parsed)
 }
 
-cov_instrument_file <- function(path, ps, cov_symbol) {
+cov_instrument_file <- function(path, cov_symbol) {
+  hash <- cli::hash_file_xxhash(path)
+  cached <- get_cached_file(hash)
+  if (!is.null(cached)) {
+    base::writeLines(cached$code, path)
+    return(cached)
+  }
+  ps <- parse(path, keep.source = TRUE)
   psd <- utils::getParseData(ps)
   brc_poss <- which(psd$token == "'{'")
 
@@ -1326,10 +1331,11 @@ cov_instrument_file <- function(path, ps, cov_symbol) {
 
   # need to insert code concurrently to the same line, for future
   # multi-expression per line support
-  inj_lines <- unique(inj$line1)
-  for (il in inj_lines) {
-    inj1 <- inj[inj$line1 == il, ]
-    lns[il] <- str_insert_parallel(lns[il], inj1$col1, inj1$code)
+  injs <- split(inj, inj$line1, drop = TRUE)
+  ils <- as.integer(names(injs))
+  for (i in seq_along(injs)) {
+    il <- ils[i]
+    lns[il] <- str_insert_parallel(lns[il], injs[[i]]$col1, injs[[i]]$code)
   }
   base::writeLines(lns, path)
 
@@ -1354,21 +1360,21 @@ cov_instrument_file <- function(path, ps, cov_symbol) {
 
   # Handle multi-line expressions. We need to do this backwards, so nested
   # braces work out correctly.
-  comment_lines <- setdiff(
-    psd$line1[psd$token == "COMMENT"],
-    psd$line1[psd$token != "COMMENT"]
-  )
   for (i in rev(seq_len(nrow(inj)))) {
-    inji <- inj[i, , drop = FALSE]
-    li <- inji$line1:inji$line2
-    li <- setdiff(li, comment_lines)
+    li <- inj$line1[i]:inj$line2[i]
     if (length(li) == 1) {
       next
     }
     cnt <- li[is.na(res$status[li])]
     res$status[cnt] <- "instrumented"
-    res$id[cnt] <- inji$line1
+    res$id[cnt] <- inj$line1[i]
   }
+  comment_lines <- setdiff(
+    psd$line1[psd$token == "COMMENT"],
+    psd$line1[psd$token != "COMMENT"]
+  )
+  res$status[comment_lines] <- "noncode"
+  res$id[comment_lines] <- NA_integer_
   res$coverage[res$status == "instrumented"] <- 0L
   res$status[is.na(res$status)] <- "noncode"
 
@@ -1381,7 +1387,9 @@ cov_instrument_file <- function(path, ps, cov_symbol) {
     res$coverage[drop] <- NA_integer_
   }
 
-  list(lines = res, funs = funres)
+  res <- list(lines = res, funs = funres, parsed = ps, code = lns)
+  set_cached_file(hash, res)
+  res
 }
 
 # `getParseData()` gives te wrong coordinates for lines with TAB characters,
