@@ -771,7 +771,7 @@ test <- function(
     dev_data$test_results <- testthat::test_dir(
       test_dir,
       package = setup[["pkgname"]],
-      reload = "installed",
+      load_package = "installed",
       stop_on_failure = FALSE,
       filter = filter,
       reporter = reporter
