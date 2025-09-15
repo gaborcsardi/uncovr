@@ -2,12 +2,9 @@
 % Please edit documentation in R/load-dev.R
 \name{document}
 \alias{document}
-\alias{d}
 \title{Run roxygen2 to generate the package manual and namespace files}
 \usage{
 document(path = ".", clean = FALSE, local_install = TRUE)
-
-d(path = ".", clean = FALSE, local_install = TRUE)
 }
 \arguments{
 \item{path}{Path to the package tree.}
@@ -23,7 +20,4 @@ that contains the return value of \code{\link[roxygen2:roxygenize]{roxygen2::rox
 }
 \description{
 Loads the debug build, and calls \code{\link[roxygen2:roxygenize]{roxygen2::roxygenize()}}.
-}
-\details{
-\code{d()} is an alias of \code{document()}.
 }

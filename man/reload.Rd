@@ -2,18 +2,9 @@
 % Please edit documentation in R/load-dev.R
 \name{reload}
 \alias{reload}
-\alias{l}
 \title{Load a package tree for development}
 \usage{
 reload(
-  type = c("debug", "release", "coverage"),
-  path = ".",
-  makeflags = NULL,
-  clean = FALSE,
-  local_install = TRUE
-)
-
-l(
   type = c("debug", "release", "coverage"),
   path = ".",
   makeflags = NULL,
@@ -75,7 +66,4 @@ code coverage instrumentation data for R files. See
 \description{
 A wrapper on \code{\link[pkgload:load_all]{pkgload::load_all()}} to load a package tree from a
 dev build.
-}
-\details{
-\code{l()} is an alias of \code{reload()}.
 }

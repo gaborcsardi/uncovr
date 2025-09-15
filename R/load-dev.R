@@ -212,13 +212,6 @@ reload <- function(
   ))
 }
 
-#' @details
-#' `l()` is an alias of `reload()`.
-#' @rdname reload
-#' @export
-
-l <- reload
-
 find_function_names <- function(cov_data, env, setup) {
   pkgdir <- paste0(file.path(setup$dir, setup$pkgname), "/")
   meta <- attr(cov_data, "metadata")
@@ -891,14 +884,6 @@ quick_save_rds <- function(obj, path) {
   ser <- serialize(obj, NULL, xdr = FALSE)
   writeBin(ser, path)
 }
-
-#' @rdname test
-#' @details
-#'
-#' `t()` is an alias of `test()`.
-#' @export
-
-t <- test
 
 add_subprocess_coverage <- function(counts, subprocdir) {
   fls <- list.files(subprocdir, full.names = TRUE)
@@ -2158,13 +2143,6 @@ document <- function(path = ".", clean = FALSE, local_install = TRUE) {
   invisible(dev_data)
 }
 
-#' @details
-#' `d()` is an alias of `document()`.
-#' @rdname document
-#' @export
-
-d <- document
-
 #' Install local package tree
 #'
 #' @param lib,INSTALL_opts,... Additional arguments are passed to
@@ -2217,13 +2195,6 @@ install <- function(
     inst = inst
   ))
 }
-
-#' @details
-#' `i()` is an alias of `install()`.
-#' @rdname install
-#' @export
-
-i <- install
 
 #' @export
 

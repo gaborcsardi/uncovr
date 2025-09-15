@@ -2,20 +2,9 @@
 % Please edit documentation in R/load-dev.R
 \name{install}
 \alias{install}
-\alias{i}
 \title{Install local package tree}
 \usage{
 install(
-  type = c("release", "debug", "coverage"),
-  path = ".",
-  makeflags = NULL,
-  clean = FALSE,
-  lib = NULL,
-  INSTALL_opts = c("--no-staged-install", "--no-test-load"),
-  ...
-)
-
-i(
   type = c("release", "debug", "coverage"),
   path = ".",
   makeflags = NULL,
@@ -46,7 +35,4 @@ i(
 }
 \description{
 Install local package tree
-}
-\details{
-\code{i()} is an alias of \code{install()}.
 }

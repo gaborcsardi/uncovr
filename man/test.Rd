@@ -2,23 +2,9 @@
 % Please edit documentation in R/load-dev.R
 \name{test}
 \alias{test}
-\alias{t}
 \title{Run package tests and show test coverage results}
 \usage{
 test(
-  filter = NULL,
-  path = ".",
-  test_dir = "tests/testthat",
-  reporter = NULL,
-  clean = FALSE,
-  local_install = TRUE,
-  show_coverage = TRUE,
-  report = FALSE,
-  show_report = report && interactive(),
-  lcov_info = NULL
-)
-
-t(
   filter = NULL,
   path = ".",
   test_dir = "tests/testthat",
@@ -110,6 +96,4 @@ build, if there is one.
 \item Runs the package tests.
 \item Calculates and shows the test coverage of the package's source files.
 }
-
-\code{t()} is an alias of \code{test()}.
 }
