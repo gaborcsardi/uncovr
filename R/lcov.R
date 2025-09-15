@@ -18,8 +18,6 @@ lcov <- function(path = ".", coverage = NULL, output = NULL) {
   coverage <- coverage %||% last(path = ".")
   setup <- reload_setup("coverage")
 
-  metadata <- attr(coverage, "metadata")
-
   output <- output %||% file.path(setup$dir, "_lcov", "lcov.info")
 
   mkdirp(dirname(output))
