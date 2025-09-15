@@ -1671,7 +1671,7 @@ format_coverage_table2_filter <- function(x, filter, ...) {
 format_coverage_table2_full <- function(x, ...) {
   sm <- attr(x, "summary")
   fn0 <- c(sm$name[1], sm$name[-1], x$path)
-  fn <- c(sm$name[1], sm$name[-1], paste0(" ", x$path))
+  fn <- c(sm$name[1], dir_ind(sm$name[-1]), dir_ind(x$path))
   rl <- c(sm$percent_covered, x$percent_covered)
   fc <- c(sm$function_count, x$function_count)
   fh <- c(sm$functions_hit, x$functions_hit)
@@ -1720,7 +1720,7 @@ format_coverage_table2_full <- function(x, ...) {
   lines[length(lines)] <- cli::style_bold(lines[length(lines)])
 
   # directory summaries at the right place
-  lines[mid] <- lines[mid][c(1, order(fn0[-1]) + 1)]
+  lines[mid] <- lines[mid][c(1, path_order(fn0[-1]) + 1)]
 
   test_results <- attr(x, "test_results")
   if (!is.null(test_results)) {

@@ -196,3 +196,25 @@ str_count <- function(x, chr) {
   chr <- charToRaw(chr)
   map_int(x, function(xx) sum(charToRaw(xx) == chr))
 }
+
+dir_ind <- function(x) {
+  x0 <- ifelse(endsWith(x, "/"), substr(x, 1, nchar(x) - 1), x)
+  level <- str_count(x0, "/")
+  paste0(strrep(" ", level), x)
+}
+
+path_order <- function(x) {
+  x <- gsub("\\", "/", fixed = TRUE, x)
+  dirs <- endsWith(x, "/")
+  x[dirs] <- paste0(x[dirs], ".")
+  cmps <- strsplit(x, "/", fixed = TRUE)
+  maxlevel <- max(lengths(cmps))
+  dirs <- vector("list", maxlevel)
+  for (i in 1:maxlevel) {
+    dirs[[i]] <- map_chr(cmps, "[", i)
+  }
+  for (i in seq_len(maxlevel - 1)) {
+    dirs[[i]] <- paste0(ifelse(is.na(dirs[[i + 1]]), "", "/"), dirs[[i]])
+  }
+  do.call(order, c(dirs, list(na.last = FALSE)))
+}
