@@ -788,7 +788,7 @@ test <- function(
     dev_data$coverage$lines_covered[i] <-
       sum(dev_data$coverage$lines[[i]]$coverage > 0, na.rm = TRUE)
     dev_data$coverage$total_hits[i] <-
-      sum(dev_data$coverage$lines[[i]]$coverage, na.rm = TRUE)
+      sum(as.double(dev_data$coverage$lines[[i]]$coverage), na.rm = TRUE)
     dev_data$coverage$uncovered[[i]] <-
       calculate_uncovered_intervals(dev_data$coverage$lines[[i]])
     funids <- dev_data$coverage$funs[[i]]$id
@@ -935,7 +935,7 @@ add_coverage_summary <- function(coverage) {
     line_count = map_int(dirs, sumdir, x = coverage$line_count),
     code_lines = map_int(dirs, sumdir, x = coverage$code_lines),
     lines_covered = map_int(dirs, sumdir, x = coverage$lines_covered),
-    total_hits = map_int(dirs, sumdir, x = coverage$total_hits),
+    total_hits = map_dbl(dirs, sumdir, x = as.double(coverage$total_hits)),
     function_count = map_int(dirs, sumdir, x = coverage$function_count),
     functions_hit = map_int(dirs, sumdir, x = coverage$functions_hit)
   )
@@ -1205,7 +1205,7 @@ cov_instrument_dir <- function(
     line_count = NA_integer_,
     code_lines = NA_integer_,
     lines_covered = 0L,
-    total_hits = 0L,
+    total_hits = 0,
     percent_covered = 0,
     function_count = 0L,
     functions_hit = 0L,
@@ -1855,8 +1855,8 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
       }
       # sum up functions
       fmap <- match(ccov[[d1]]$functions$name, ccov[[pri]]$functions$name)
-      wpri <- ccov[[pri]]$functions$coverage[fmap]
-      wd1 <- ccov[[d1]]$functions$coverage
+      wpri <- as.double(ccov[[pri]]$functions$coverage[fmap])
+      wd1 <- as.double(ccov[[d1]]$functions$coverage)
       factpri <- wpri / (wpri + wd1)
       factd1 <- wd1 / (wpri + wd1)
       rpri <- ccov[[pri]]$functions$returned[fmap]
@@ -1902,8 +1902,8 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
     lines_covered = map_int(ccov, function(x) {
       sum(x$coverage > 0, na.rm = TRUE)
     }),
-    total_hits = map_int(ccov, function(x) {
-      sum(x$coverage, na.rm = TRUE)
+    total_hits = map_dbl(ccov, function(x) {
+      sum(as.double(x$coverage), na.rm = TRUE)
     }),
     percent_covered = NA_real_,
     function_count = map_int(ccov_funs, nrow),
