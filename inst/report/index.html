@@ -81,8 +81,16 @@
 
     <script>
       function color_coverage_cb(td, cellData, rowData, row, col) {
-        var percent = cellData.replace("%", "");
-        if (percent > 90) {
+        var percent;
+        if (cellData.includes("%")) {
+          percent = cellData.replace("%", "");
+        } else {
+          var nms = cellData.split('/');
+          percent = Number(nms[0]) / Number(nms[1]) * 100;
+          if (percent > 95) { return; }
+          cellData = percent + '%';
+        }
+        if (percent > 95) {
           var grad = "linear-gradient(90deg, #edfde7 " + cellData + ", white " + cellData + ")";
         } else if (percent > 75) {
           var grad = "linear-gradient(90deg, #f9ffe5 " + cellData + ", white " + cellData + ")";
@@ -105,7 +113,7 @@
             info: ""
           },
           columnDefs: [
-            { targets: [7], createdCell: color_coverage_cb },
+            { targets: [6, 7], createdCell: color_coverage_cb },
             { targets: [1, 2, 3, 4, 5, 6, 7], className: "dt-right" }
           ]
         });
