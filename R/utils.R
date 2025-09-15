@@ -177,3 +177,22 @@ format_type <- function(type) {
     warning = style_bg_orange(cli::col_white("WARN"))
   )
 }
+
+all_leading_dirs <- function(paths) {
+  dirs <- character()
+  newdirs <- dirname(paths)
+  todo <- newdirs[newdirs != "."]
+  dirs <- c(dirs, todo)
+  while (length(todo)) {
+    newdirs <- dirname(todo)
+    todo <- newdirs[newdirs != "."]
+    dirs <- c(dirs, todo)
+  }
+  c("", paste0(sort(unique(dirs)), "/"))
+}
+
+str_count <- function(x, chr) {
+  stopifnot(nchar(chr) == 1)
+  chr <- charToRaw(chr)
+  map_int(x, function(xx) sum(charToRaw(xx) == chr))
+}

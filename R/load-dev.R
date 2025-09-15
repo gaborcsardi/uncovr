@@ -926,28 +926,18 @@ gcov_flush_package <- function(package) {
 
 add_coverage_summary <- function(coverage) {
   # by directory
-  dirs <- as.factor(dirname(coverage$path))
-  bd_line_count <- tapply(coverage$line_count, dirs, sum)
-  bd_code_lines <- tapply(coverage$code_lines, dirs, sum)
-  bd_lines_covered <- tapply(coverage$lines_covered, dirs, sum)
-  bd_total_hits <- tapply(coverage$total_hits, dirs, sum)
-  bd_function_count <- tapply(coverage$function_count, dirs, sum, na.rm = TRUE)
-  bd_functions_hit <- tapply(coverage$functions_hit, dirs, sum, na.rm = TRUE)
-
+  dirs <- all_leading_dirs(coverage$path)
+  sumdir <- function(x, dir) {
+    sum(x[startsWith(coverage$path, dir)], na.rm = TRUE)
+  }
   sm <- data.frame(
-    name = c("All files", levels(dirs)),
-    line_count = c(sum(coverage$line_count), bd_line_count),
-    code_lines = c(sum(coverage$code_lines), bd_code_lines),
-    lines_covered = c(sum(coverage$lines_covered), bd_lines_covered),
-    total_hits = c(sum(coverage$total_hits, bd_total_hits)),
-    function_count = c(
-      sum(coverage$function_count, na.rm = TRUE),
-      bd_function_count
-    ),
-    functions_hit = c(
-      sum(coverage$functions_hit, na.rm = TRUE),
-      bd_functions_hit
-    )
+    name = c("All files", dirs[-1]),
+    line_count = map_int(dirs, sumdir, x = coverage$line_count),
+    code_lines = map_int(dirs, sumdir, x = coverage$code_lines),
+    lines_covered = map_int(dirs, sumdir, x = coverage$lines_covered),
+    total_hits = map_int(dirs, sumdir, x = coverage$total_hits),
+    function_count = map_int(dirs, sumdir, x = coverage$function_count),
+    functions_hit = map_int(dirs, sumdir, x = coverage$functions_hit)
   )
 
   sm$percent_covered <- sm$lines_covered / sm$code_lines * 100
@@ -1680,8 +1670,8 @@ format_coverage_table2_filter <- function(x, filter, ...) {
 
 format_coverage_table2_full <- function(x, ...) {
   sm <- attr(x, "summary")
-  fn0 <- c(sm$name[1], paste0(sm$name[-1], "/"), x$path)
-  fn <- c(sm$name[1], paste0(sm$name[-1], "/"), paste0(" ", x$path))
+  fn0 <- c(sm$name[1], sm$name[-1], x$path)
+  fn <- c(sm$name[1], sm$name[-1], paste0(" ", x$path))
   rl <- c(sm$percent_covered, x$percent_covered)
   fc <- c(sm$function_count, x$function_count)
   fh <- c(sm$functions_hit, x$functions_hit)
