@@ -63,12 +63,18 @@ pak::pkg_install("gaborcsardi/uncovr")
 library(uncovr)
 ```
 
-    #> 
-    #> Attaching package: 'uncovr'
-
-    #> The following object is masked from 'package:base':
-    #> 
-    #>     t
+| Function     | Description                                                      |
+|:-------------|:-----------------------------------------------------------------|
+| `builds()`   | List all builds.                                                 |
+| `reload()`   | (Re)load local package tree.                                     |
+| `test()`     | Run package tests.                                               |
+| `report()`   | Generate HTML coverage report.                                   |
+| `last()`     | Print last test and coverage results.                            |
+| `retest()`   | Rerun failing tests.                                             |
+| `lcov()`     | Create LCOV coverage report.                                     |
+| `codecov()`  | Upload test coverage results to [codecov.io](https://codecov.io) |
+| `document()` | Use roxygen2 to (re)generated package manual.                    |
+| `install()`  | Install local package tree.                                      |
 
 ## License
 
