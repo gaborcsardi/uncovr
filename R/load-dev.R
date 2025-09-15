@@ -334,6 +334,11 @@ inject_onload_lines <- function(setup, pkg_dir, lib, inject_script, fnx) {
 }
 
 fix_src_refs <- function(ns) {
+  # this functions intentionally does not care about reference counting!
+  set_attr <- function(x, name, value) {
+    .Call(c_cov_set_attr, x, name, value)
+  }
+
   parsed <- getOption("uncovr_parsed_data")
   if (is.null(parsed)) {
     return()

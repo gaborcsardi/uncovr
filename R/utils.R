@@ -177,7 +177,3 @@ format_type <- function(type) {
     warning = style_bg_orange(cli::col_white("WARN"))
   )
 }
-
-set_attr <- function(x, name, value) {
-  .Call(c_cov_set_attr, x, name, value)
-}
