@@ -439,6 +439,7 @@ setup_cov_inject_script <- function(target, cov_data) {
     "  output <- file.path(",
     "    dirname(info$libname), ",
     "    '_cov',",
+    "    'sub',",
     "    paste0(Sys.getpid(), '.rda')",
     "  )",
     "  dir.create(dirname(output), showWarnings = FALSE, recursive = TRUE)",
