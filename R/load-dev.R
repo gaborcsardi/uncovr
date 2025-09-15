@@ -489,7 +489,7 @@ inject_covxxso <- function(build_dir) {
 # the counters.
 
 create_counters_lines <- function(setup, cov_data) {
-  outdir <- file.path(setup$dir, cov_dir_name)
+  outdir <- file.path(setup$dir, cov_sub_dir_name)
   mkdirp(outdir)
   subs <- list(
     covxxso_ = normalizePath(setup$covxxso),
@@ -763,7 +763,7 @@ test <- function(
   )
 
   # clean up files from subprocesses
-  subprocdir <- file.path(setup$dir, cov_dir_name)
+  subprocdir <- file.path(setup$dir, cov_sub_dir_name)
   unlink(subprocdir, recursive = TRUE)
   dir.create(subprocdir)
   subprocdir <- normalizePath(subprocdir)
@@ -1230,7 +1230,7 @@ cov_instrument_dir <- function(
 
 cov_instrument_file <- function(path, cov_symbol) {
   hash <- cli::hash_file_xxhash(path)
-  cached <- get_cached_file(hash)
+  cached <- get_cached_file(path, hash)
   if (!is.null(cached)) {
     base::writeLines(cached$code, path)
     return(cached)
@@ -1371,7 +1371,7 @@ cov_instrument_file <- function(path, cov_symbol) {
   }
 
   res <- list(lines = res, funs = funres, parsed = ps, code = lns)
-  set_cached_file(hash, res)
+  set_cached_file(path, hash, res)
   res
 }
 
