@@ -1371,6 +1371,20 @@ cov_instrument_file <- function(path, cov_symbol) {
     res$coverage[drop] <- NA_integer_
   }
 
+  # drop functions that are completely excluded
+  firstlineex <- which(res$status[funres$line1] == "excluded")
+  for (fex in firstlineex) {
+    l1 <- funres$line1[fex]
+    l2 <- funres$line2[fex]
+    if (!any(res$status[l1:l2] == "instrumented")) {
+      funres$status[fex] <- "excluded"
+    }
+  }
+  if (any(funres$status == "excluded")) {
+    funres <- funres[funres$status != "excluded", ]
+    funres$id <- seq_len(nrow(funres)) + length(lns0)
+  }
+
   res <- list(lines = res, funs = funres, parsed = ps, code = lns)
   set_cached_file(path, hash, res)
   res
@@ -1891,7 +1905,13 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
     }
   }
 
-  # TODO: exclude functions whose lines were completely excluded
+  # exclude functions whose first line was excluded
+  for (i in seq_along(ccov)) {
+    flex <- which(ccov[[i]]$status[ccov_funs[[i]]$line] == "excluded")
+    if (length(flex) > 0) {
+      ccov_funs[[i]] <- ccov_funs[[i]][-flex, ]
+    }
+  }
 
   res <- data.frame(
     stringsAsFactors = FALSE,
