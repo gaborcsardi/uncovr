@@ -36,6 +36,9 @@ downloads](http://cranlogs.r-pkg.org/badges/uncovr)](http://www.r-pkg.org/pkg/un
 - Terminal report, with line and function coverage, and a list of
   hyperlinked uncovered line intervals.
 - Summaries for (sub)directories.
+- HTML report including a summary table and details report for each
+  file.
+- Upload test coverage results to <https://codecov.io>.
 
 ### Performance
 
