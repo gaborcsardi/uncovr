@@ -2129,6 +2129,8 @@ retest <- function(
     return(invisible(NULL))
   }
 
+  # TODO: do a better job than this regex
+  rerun <- gsub(".", "[.]", fixed = TRUE, rerun)
   filter <- paste0("^(", paste(rerun, collapse = "|"), ")$")
   test(filter = filter, path = path, show_coverage = show_coverage, ...)
 }

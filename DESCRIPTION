@@ -23,6 +23,7 @@ Imports:
     utils,
     withr
 Suggests:
-    pillar
+    pillar,
+    rstudioapi
 Encoding: UTF-8
 Roxygen: list(markdown = TRUE)

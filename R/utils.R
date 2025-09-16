@@ -218,3 +218,7 @@ path_order <- function(x) {
   }
   do.call(order, c(dirs, list(na.last = FALSE)))
 }
+
+is_string <- function(x) {
+  is.character(x) && length(x) == 1 && !is.na(x)
+}
