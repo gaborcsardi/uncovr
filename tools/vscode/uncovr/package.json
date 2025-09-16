@@ -1,0 +1,86 @@
+{
+  "name": "uncovr",
+  "displayName": "uncovr",
+  "description": "R package development tools.",
+  "version": "0.0.1",
+  "repository": "https://github.com/gaborcsardi/uncovr",  
+  "engines": {
+    "vscode": "^1.104.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "title": "(Re)load R package",
+        "category": "Uncovr",
+        "command": "uncovr.reload"
+      },
+      {
+        "title": "Test R package",
+        "category": "Uncovr",
+        "command": "uncovr.test"
+      },
+      {
+        "title": "Document R package",
+        "category": "Uncovr",
+        "command": "uncovr.document"
+      },
+      {
+        "title": "Re-run failing R package tests",
+        "category": "Uncovr",
+        "command": "uncovr.retest"
+      },
+      {
+        "title": "R package test coverage report",
+        "category": "Uncovr",
+        "command": "uncovr.report"
+      },
+      {
+        "title": "List R package builds",
+        "category": "Uncovr",
+        "command": "uncovr.builds"
+      },
+      {
+        "title": "Show last R package tests results",
+        "category": "Uncovr",
+        "command": "uncovr.last"
+      },
+      {
+        "title": "Test active file in R package",
+        "category": "Uncovr",
+        "command": "uncovr.testActive"
+      },
+      {
+        "title": "Create LCOV coverage report for R package",
+        "category": "Uncovr",
+        "command": "uncovr.lcov"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test"
+  },
+  "extensionDependencies": [
+    "reditorsupport.r"
+  ],
+  "devDependencies": {
+    "@types/vscode": "^1.104.0",
+    "@types/mocha": "^10.0.10",
+    "@types/node": "22.x",
+    "@typescript-eslint/eslint-plugin": "^8.42.0",
+    "@typescript-eslint/parser": "^8.42.0",
+    "eslint": "^9.34.0",
+    "typescript": "^5.9.2",
+    "@vscode/test-cli": "^0.0.11",
+    "@vscode/test-electron": "^2.5.2"
+  }
+}

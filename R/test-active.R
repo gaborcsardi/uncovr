@@ -20,7 +20,7 @@ test_active <- function(file = NULL, ...) {
     }
   } else {
     file <- get_active_file()
-    if (!is.null(file) || !file.exists(file)) {
+    if (is.null(file) || !file.exists(file)) {
       stop("Could not find the currently active file.")
     }
   }

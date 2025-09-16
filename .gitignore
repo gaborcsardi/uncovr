@@ -1,4 +1,6 @@
+/.dev
 .Rproj.user
 .Rhistory
 .RData
-/.dev
+node_modules
+tools/vscode/uncovr/out
