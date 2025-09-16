@@ -32,10 +32,19 @@ report <- function(
   }
   lns0 <- readLines(index)
 
+  sm <- attr(coverage, "summary")
+  # only add directories if there are more than just R/
+  if (nrow(sm) == 2) {
+    sm <- sm[1, ]
+  }
+  names(sm)[1] <- "path"
+  coveragex <- coverage[, names(sm)]
+  coveragex <- rbind(sm, coveragex)
+
   metadata <- attr(coverage, "metadata")
   pkgname <- metadata$setup$pkgname
   data <- with(
-    coverage[],
+    coveragex,
     paste0(
       "[",
       paste0(
