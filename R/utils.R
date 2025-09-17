@@ -64,6 +64,10 @@ is_windows <- function() {
   .Platform$OS.type == "windows"
 }
 
+is_linux <- function() {
+  tolower(Sys.info()[["sysname"]]) == "linux"
+}
+
 zero <- function(x) {
   as.character(ifelse(x == 0, "", x))
 }
