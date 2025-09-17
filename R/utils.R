@@ -18,13 +18,6 @@ mkdirp <- function(path) {
   dir.create(path, recursive = TRUE, showWarnings = FALSE)
 }
 
-context_name <- function(filename) {
-  # Remove test- prefix
-  filename <- sub("^test[-_]", "", filename)
-  # Remove terminal extension
-  filename <- sub("[.][Rr]$", "", filename)
-  filename
-}
 
 `%||%` <- function(l, r) {
   if (is.null(l)) {
@@ -40,36 +33,6 @@ context_name <- function(filename) {
   } else {
     r
   }
-}
-
-get_test_file_call <- function(test_file) {
-  calls <- sys.calls()
-  fns <- map_chr(calls, function(x) {
-    c(utils::getSrcFilename(x), NA_character_)[1]
-  })
-  wch <- rev(which(!is.na(fns) & basename(fns) == basename(test_file)))[1]
-  if (is.na(wch)) NULL else calls[[wch]]
-}
-
-get_test_file_position <- function(test_file) {
-  cll <- get_test_file_call(test_file)
-  utils::getSrcLocation(cll) %||% NA_integer_
-}
-
-strpad <- function(
-  x,
-  width = cli::console_width(),
-  chr = " ",
-  align = c("left", "right")
-) {
-  align <- match.arg(align)
-  n <- pmax(0, width - cli::ansi_nchar(x, type = "width"))
-  spc <- strrep(chr, n)
-  paste0(
-    if (align == "right") spc,
-    x,
-    if (align == "left") spc
-  )
 }
 
 # key is ordered
@@ -102,7 +65,7 @@ is_windows <- function() {
 }
 
 zero <- function(x) {
-  ifelse(x == 0, "", x)
+  as.character(ifelse(x == 0, "", x))
 }
 
 order_df <- function(df, col) {
