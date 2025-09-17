@@ -109,6 +109,18 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 	context.subscriptions.push(lcov);
+
+	const install = vscode.commands.registerCommand('uncovr.install', () => {
+	if (inPositron()) {
+			vscode.commands.executeCommand(
+				'workbench.action.executeCode.console',
+				'uncovr::install()'
+			);
+		} else {
+			vscode.commands.executeCommand('r.runCommand', 'uncovr::install()');
+		}
+	});
+	context.subscriptions.push(install);
 }
 
 export function deactivate() {}

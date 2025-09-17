@@ -58,6 +58,11 @@
         "title": "Create LCOV coverage report for R package",
         "category": "Uncovr",
         "command": "uncovr.lcov"
+      },
+      {
+        "title": "Build and install R package",
+        "category": "Uncovr",
+        "command": "uncovr.install"
       }
     ]
   },
