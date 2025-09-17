@@ -14,7 +14,8 @@ test(
   show_coverage = TRUE,
   report = FALSE,
   show_report = report && interactive(),
-  lcov_info = NULL
+  lcov_info = NULL,
+  github_summary = NULL
 )
 }
 \arguments{
@@ -46,7 +47,11 @@ report (if \code{report} is \code{TRUE}).}
 \code{\link[=lcov]{lcov()}}. Defaults to the value of the
 uncovr_lcov_info option, then the
 R_UNCOVR_LCOV_INFO environment variable, or if neither
-are set, then FALSE.}
+are set, then TRUE.}
+
+\item{github_summary}{Whether to generate a markdown summary in
+\verb{$GITHUB_STEP_SUMMARY}. It defaults to \code{FALSE}, except if running on
+GitHub Actions.}
 }
 \value{
 A list of class \code{package_coverage} with entries:

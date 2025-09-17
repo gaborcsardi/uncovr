@@ -700,7 +700,11 @@ copy_inst_files <- function(src, tgt) {
 #'   [lcov()]. Defaults to the value of the
 #'   `r opt_option_name("lcov_info")` option, then the
 #'   `r opt_envvar_name("lcov_info")` environment variable, or if neither
-#'   are set, then `r opt_default[["lcov_info"]]`.
+#'   are set, then `r get_option_default("lcov_info")`.
+#' @param github_summary Whether to generate a markdown summary in
+#'   `$GITHUB_STEP_SUMMARY`. It defaults to `FALSE`, except if running on
+#'   GitHub Actions.
+#'
 #' @inheritParams reload
 #'
 #' @return A list of class `package_coverage` with entries:
@@ -743,9 +747,12 @@ test <- function(
   show_coverage = TRUE,
   report = FALSE,
   show_report = report && interactive(),
-  lcov_info = NULL
+  lcov_info = NULL,
+  github_summary = NULL
 ) {
   lcov_info <- lcov_info %||% get_option("lcov_info", "flag")
+  github_summary <- github_summary %||% Sys.getenv("GITHUB_ACTIONS") != ""
+
   withr::local_dir(path)
 
   if (Sys.getenv("NOT_CRAN") == "") {
@@ -845,6 +852,16 @@ test <- function(
 
   if (lcov_info) {
     lcov(coverage = coverage_results)
+  }
+
+  if (github_summary && Sys.getenv("GITHUB_STEP_SUMMARY") != "") {
+    ghout <- markdown(coverage = coverage_results)
+    cat(
+      readLines(ghout),
+      file = Sys.getenv("GITHUB_STEP_SUMMARY"),
+      sep = "\n",
+      append = TRUE
+    )
   }
 
   if (show_coverage) {
