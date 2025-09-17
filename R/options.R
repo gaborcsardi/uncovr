@@ -1,8 +1,19 @@
 opt_default <- list(
-  lcov_info = FALSE
+  lcov_info = function() {
+    is_vscode() || is_positron()
+  }
 )
 
-get_option <- function(opt, type = "flag", default = opt_default[[opt]]) {
+get_option_default <- function(opt) {
+  def <- opt_default[[opt]]
+  if (is.function(def)) {
+    def()
+  } else {
+    def
+  }
+}
+
+get_option <- function(opt, type = "flag", default = get_option_default(opt)) {
   type <- match.arg(type)
   attr(default, "source") <- "default"
 
