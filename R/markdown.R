@@ -24,7 +24,21 @@ markdown <- function(path = ".", coverage = NULL, output = NULL) {
   metadata <- attr(coverage, "metadata")
   pkgname <- metadata$setup$pkgname
 
+  # correct order
   coveragex <- coveragex[c(1, path_order(coveragex$path[-1]) + 1), ]
+
+  # indent according to directory structure
+  coveragex$path <- paste0(
+    strrep("&nbsp;", str_count(sub("/$", "", coveragex$path), "/")),
+    coveragex$path
+  )
+
+  # summaries bold
+  coveragex$path <- ifelse(
+    coveragex$path == "All files" | endsWith(coveragex$path, "/"),
+    paste0("**", coveragex$path, "**"),
+    coveragex$path
+  )
 
   data <- with(
     coveragex,
@@ -36,23 +50,23 @@ markdown <- function(path = ".", coverage = NULL, output = NULL) {
       "/",
       code_lines,
       "|",
-      functions_hit,
-      "/",
-      function_count,
+      format_funcs(functions_hit, function_count),
       "|",
       format_percent(percent_covered / 100),
+      " ",
+      format_emoji(percent_covered),
       "|",
       collapse = "\n"
     )
   )
 
-  total_percent <- format_percent(
-    sum(coverage$lines_covered) / sum(coverage$code_lines)
-  )
+  total <- sum(coverage$lines_covered) / sum(coverage$code_lines)
+  total_percent <- format_percent(total)
+  total_emoji <- format_emoji(total)
 
-  total_funcs_percent <- format_percent(
-    sum(coverage$functions_hit) / sum(coverage$function_count)
-  )
+  total_funcs <- sum(coverage$functions_hit) / sum(coverage$function_count)
+  total_funcs_percent <- format_percent(total_funcs)
+  total_funcs_emoji <- format_emoji(total_funcs)
 
   vars = list(
     package = pkgname,
@@ -62,7 +76,9 @@ markdown <- function(path = ".", coverage = NULL, output = NULL) {
     total_funcs_percent = total_funcs_percent,
     total_funcs_hit = sum(coverage$functions_hit),
     total_funcs = sum(coverage$function_count),
-    data = data
+    data = data,
+    total_emoji = total_emoji,
+    total_funcs_emoji = total_funcs_emoji
   )
 
   lns <- glue::glue_data(
@@ -79,4 +95,13 @@ markdown <- function(path = ".", coverage = NULL, output = NULL) {
   writeLines(lns, output)
 
   invisible(output)
+}
+
+format_funcs <- function(hit, count) {
+  percent <- ifelse(count == 0, 100, hit / count * 100)
+  paste0(hit, "/", count, " ", format_emoji(percent))
+}
+
+format_emoji <- function(x) {
+  ifelse(x == 100, "⭐", ifelse(x >= 95, "✅", ifelse(x >= 75, "🛠️", "❌")))
 }
