@@ -25,7 +25,11 @@ covr_flags <- function() {
 
     # LDFLAGS is ignored on windows and visa versa
     LDFLAGS = if (!is_windows()) {
-      "--coverage"
+      if (is_linux()) {
+        "--coverage -Wl,--whole-archive -lgcov -Wl,--no-whole-archive"
+      } else {
+        "--coverage"
+      }
     } else {
       NULL
     },
