@@ -105,6 +105,9 @@ codecov <- function(
     "x-reduced-redundancy" = "false"
   )
 
+  print(params)
+  print(Sys.getenv())
+
   cli::cli_bullets(c(
     "i" = "Codecov upload ({params['service']})",
     "*" = "Repository: {.code {params['slug']}}",
