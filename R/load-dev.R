@@ -139,6 +139,7 @@ reload <- function(
     unlink(setup[["dir"]], recursive = TRUE)
   }
 
+  cli::cli_alert_info("Updating dev tree ({type})")
   copy <- c("src", if (type == "coverage" || local_install) "R")
   plan <- update_package_tree(
     ".",
@@ -1213,6 +1214,7 @@ cov_instrument_dir <- function(
   pkgname = desc::desc_get("Package", dirname(path)),
   exclusion_file = ".covrignore"
 ) {
+  cli::cli_alert_info("Instrumenting {pkgname}")
   rfiles <- apply_covrignore(
     dir(path, pattern = "[.][rR]$", full.names = TRUE),
     exclusion_file

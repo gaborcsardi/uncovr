@@ -105,14 +105,29 @@ codecov <- function(
     "x-reduced-redundancy" = "false"
   )
 
+  cli::cli_bullets(c(
+    "i" = "Codecov upload ({params$service})",
+    "*" = "Repository: {.code {params$slug}}",
+    "*" = "Branch: {.code {params$branch}}",
+    "*" = "SHA: {.code {params$commit}}",
+    "!" = if (is.null(token)) {
+      "Could not find Codecov token!"
+    },
+    "*" = if (!is.null(token)) {
+      "Found Codecov token ({nchar(token)} characters)"
+    }
+  ))
+
   # TODO: retry
   resp <- curl::curl_fetch_memory(furl, handle = hh)
   if (resp$status_code != 200) {
-    stop("Failed to upload coverage to Codecov.")
+    stop("Failed to upload coverage to Codecov.\n", rawToChar(resp$content))
   }
   cnt <- strsplit(rawToChar(resp$content), "\n", fixed = TRUE)[[1]]
   cc_url <- cnt[1]
   s3_url <- cnt[2]
+
+  cli::cli_alert_success("Got Codecov upload URL")
 
   resp2 <- curl::curl_upload(
     report,
@@ -122,8 +137,10 @@ codecov <- function(
     httpheader = c("content-type" = "text/plain")
   )
   if (resp2$status_code != 200) {
-    stop("Failed to upload coverage to Codecov.")
+    stop("Failed to upload coverage to Codecov.\n", rawToChar(resp2$content))
   }
+
+  cli::cli_alert_success("Browse code coverage at {.url {cc_url}}")
 
   invisible(list(url = cc_url))
 }
