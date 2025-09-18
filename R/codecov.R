@@ -207,7 +207,7 @@ ccprov_actions <- list(
   },
 
   get_service = function(inputs) {
-    "github-actions"
+    "github"
   },
 
   get_service_name = function(inputs) {
