@@ -88,41 +88,23 @@ markdown <- function(path = ".", coverage = NULL, output = NULL) {
   total_funcs_emoji <- format_emoji(total_funcs)
 
   tests <- attr(coverage, "test_results")
-  byfile <- testthat_results_by_file(tests)
+  by_file <- testthat_results_by_file(tests)
+  by_test <- testthat_results_by_test(tests)
 
   totals <- list(
-    ok = sum(byfile$success),
-    fail = sum(byfile$broken),
-    warn = sum(byfile$warning),
-    skip = sum(byfile$skip)
+    ok = sum(by_file$success),
+    fail = sum(by_file$broken),
+    warn = sum(by_file$warning),
+    skip = sum(by_file$skip)
   )
 
-  test_files <- with(
-    byfile,
-    paste0(
-      "|[`",
-      file,
-      "`](",
-      baseurl,
-      "/tests/testthat/",
-      file,
-      ")|",
-      broken,
-      "|",
-      warning,
-      "|",
-      skip,
-      "|",
-      success,
-      "|",
-      collapse = "\n"
-    )
-  )
+  test_files <- format_results(by_file, baseurl)
+  test_details <- format_results(by_test, baseurl, tests = TRUE)
 
-  if (nrow(byfile) == 0) {
+  if (nrow(by_file) == 0) {
     test_files <- ""
+    test_details <- ""
   }
-  test_details <- ""
 
   emoji <- list(emo_ok = "✅", emo_fail = "❌", emo_warn = "⚠️", emo_skip = "🦘")
   vars <- c(
@@ -158,6 +140,37 @@ markdown <- function(path = ".", coverage = NULL, output = NULL) {
   writeLines(lns, output)
 
   invisible(output)
+}
+
+zeroemo <- function(x, emoji) {
+  ifelse(x == 0, "", paste0(emoji, " ", x))
+}
+
+format_results <- function(results, baseurl, tests = FALSE) {
+  with(
+    results,
+    paste0(
+      "|[`",
+      file,
+      "`](",
+      baseurl,
+      "/tests/testthat/",
+      file,
+      ")|",
+      if (tests) {
+        paste0(gsub("|", "\\|", fixed = TRUE, test), "|")
+      },
+      zeroemo(broken, "❌"),
+      "|",
+      zeroemo(warning, "⚠️"),
+      "|",
+      zeroemo(skip, "🦘"),
+      "|",
+      success,
+      "|",
+      collapse = "\n"
+    )
+  )
 }
 
 format_funcs <- function(hit, count) {

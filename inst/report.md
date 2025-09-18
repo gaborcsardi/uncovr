@@ -11,19 +11,24 @@
 
 ## 📊 {{ package }} test results
 
-{{ emo_fail }} **{{ n$fail }}** failed &nbsp; \
-{{ emo_warn }} **{{ n$warn }}** warnings &nbsp; \
-{{ emo_skip }} **{{ n$skip }}** skips \
-{{ emo_ok }} **{{ n$ok }}** passed &nbsp;
+{{ emo_fail }} **{{ n$fail }}** failed &emsp; \
+{{ emo_warn }} **{{ n$warn }}** warnings &emsp; \
+{{ emo_skip }} **{{ n$skip }}** skips &emsp; \
+{{ emo_ok }} **{{ n$ok }}** passed
 
 | File | {{ emo_fail }} Fail | {{ emo_warn }} Warn | {{ emo_skip }} Skip | {{ emo_ok }} Pass |
 |:-----|-----:|-----:|-----:|-----:|
 {{ test_files }}
 
-## 🧪 Test details
+<details>
+<summary>
 
-<details><summary>See here.</summary>
+## 🧪 Test details (click to reveal)
+
+</summary>
+
 | File | Test | Fail | Warn | Skip | Pass |
 |:-----|:-----|-----:|-----:|-----:|-----:|
 {{ test_details }}
+
 </details>

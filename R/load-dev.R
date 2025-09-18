@@ -2245,9 +2245,11 @@ print.cov_testthat_results <- function(x, ...) {
   invisible(x)
 }
 
-testthat_results_by_file <- function(x) {
+testthat_results_by_test <- function(x) {
   # This uses some testthat internals, ideally it would be in testthat
-  file <- factor(map_chr(x, "[[", "file"))
+  file <- map_chr(x, "[[", "file")
+  context <- map_chr(x, "[[", "context")
+  test <- map_chr(x, "[[", "test")
   broken <- map_int(x, function(x1) {
     sum(map_lgl(x1$results, expectation_broken))
   })
@@ -2260,12 +2262,28 @@ testthat_results_by_file <- function(x) {
   success <- map_int(x, function(x1) {
     sum(map_lgl(x1$results, expectation_success))
   })
+  by_test <- data.frame(
+    file = file,
+    test = test,
+    context = context,
+    broken = broken,
+    skip = skip,
+    warning = warning,
+    success = success
+  )
+  by_test <- by_test[order(by_test$context), ]
+  by_test
+}
+
+testthat_results_by_file <- function(x) {
+  by_test <- testthat_results_by_test(x)
+  file <- factor(by_test$file)
   by_file <- data.frame(
     file = levels(file),
-    broken = tapply(broken, file, sum),
-    skip = tapply(skip, file, sum),
-    warning = tapply(warning, file, sum),
-    success = tapply(success, file, sum)
+    broken = tapply(by_test$broken, file, sum),
+    skip = tapply(by_test$skip, file, sum),
+    warning = tapply(by_test$warning, file, sum),
+    success = tapply(by_test$success, file, sum)
   )
   by_file$context <- sub("^test-?", "", sub("[.][rR]$", "", by_file$file))
   by_file <- by_file[order(by_file$context), ]
