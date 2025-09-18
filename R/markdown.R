@@ -121,21 +121,24 @@ markdown <- function(path = ".", coverage = NULL, output = NULL) {
 
   test_details <- ""
 
-  vars <- list(
-    package = pkgname,
-    total_percent = total_percent,
-    total_lines_covered = sum(coverage$lines_covered),
-    total_lines = sum(coverage$code_lines),
-    total_funcs_percent = total_funcs_percent,
-    total_funcs_hit = sum(coverage$functions_hit),
-    total_funcs = sum(coverage$function_count),
-    data = data,
-    test_files = test_files,
-    test_details = test_details,
-    total_emoji = total_emoji,
-    total_funcs_emoji = total_funcs_emoji,
-    emoji = list(ok = "✅", fail = "❌", warn = "⚠️", skip = "🦘"),
-    n = totals
+  emoji <- list(emo_ok = "✅", emo_fail = "❌", emo_warn = "⚠️", emo_skip = "🦘")
+  vars <- c(
+    list(
+      package = pkgname,
+      total_percent = total_percent,
+      total_lines_covered = sum(coverage$lines_covered),
+      total_lines = sum(coverage$code_lines),
+      total_funcs_percent = total_funcs_percent,
+      total_funcs_hit = sum(coverage$functions_hit),
+      total_funcs = sum(coverage$function_count),
+      data = data,
+      test_files = test_files,
+      test_details = test_details,
+      total_emoji = total_emoji,
+      total_funcs_emoji = total_funcs_emoji,
+      n = totals
+    ),
+    emoji
   )
 
   lns <- glue::glue_data(
@@ -148,6 +151,7 @@ markdown <- function(path = ".", coverage = NULL, output = NULL) {
   output <- output %||%
     file.path(setup$dir, markdown_dir_name, paste0(pkgname, ".md"))
 
+  writeLines(lns)
   mkdirp(dirname(output))
   writeLines(lns, output)
 

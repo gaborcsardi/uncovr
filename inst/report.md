@@ -11,12 +11,12 @@
 
 ## 📊 {{ package }} test results
 
-{{ emoji$fail }} **{{ n$fail }}** failed &nbsp; \
-{{ emoji$warn }} **{{ n$warn }}** warnings &nbsp; \
-{{ emoji$skip }} **{{ n$skip }}** skips \
-{{ emoji$ok }} **{{ n$ok }}** passed &nbsp;
+{{ emo_fail }} **{{ n$fail }}** failed &nbsp; \
+{{ emo_warn }} **{{ n$warn }}** warnings &nbsp; \
+{{ emo_skip }} **{{ n$skip }}** skips \
+{{ emo_ok }} **{{ n$ok }}** passed &nbsp;
 
-| File | {{ emoji$fail }} Fail | {{ emoji$warn }} Warn | {{ emoji$skip }} Skip | {{ emoji$ok }} Pass |
+| File | {{ emo_fail }} Fail | {{ emo_warn }} Warn | {{ emo_skip }} Skip | {{ emo_ok }} Pass |
 |:-----|-----:|-----:|-----:|-----:|
 {{ test_files }}
 
