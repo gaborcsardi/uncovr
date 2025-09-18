@@ -52,7 +52,6 @@ knitr::opts_chunk$set(
   uncovered line intervals.
 * Summaries for (sub)directories.
 * HTML report including a summary table and details report for each file.
-* Upload test coverage results to <https://codecov.io>.
 
 ### Performance
 
@@ -82,7 +81,6 @@ pak::pkg_install("gaborcsardi/uncovr")
 | `last()`      | Print last test and coverage results.                  |
 | `retest()`    | Rerun failing tests.                                   |
 | `lcov()`      | Create LCOV coverage report.                           |
-| `codecov()`   | Upload test coverage results to [codecov.io](https://codecov.io) |
 | `document()`  | Use roxygen2 to (re)generated package manual.          |
 | `install()`   | Install local package tree.                            |
 

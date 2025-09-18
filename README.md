@@ -38,7 +38,6 @@ downloads](http://cranlogs.r-pkg.org/badges/uncovr)](http://www.r-pkg.org/pkg/un
 - Summaries for (sub)directories.
 - HTML report including a summary table and details report for each
   file.
-- Upload test coverage results to <https://codecov.io>.
 
 ### Performance
 
@@ -72,7 +71,6 @@ library(uncovr)
 | `last()`     | Print last test and coverage results.                            |
 | `retest()`   | Rerun failing tests.                                             |
 | `lcov()`     | Create LCOV coverage report.                                     |
-| `codecov()`  | Upload test coverage results to [codecov.io](https://codecov.io) |
 | `document()` | Use roxygen2 to (re)generated package manual.                    |
 | `install()`  | Install local package tree.                                      |
 
