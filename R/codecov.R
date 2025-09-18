@@ -189,8 +189,11 @@ ccprov_actions <- list(
 
   get_branch = function(inputs) {
     ref <- get_env("GITHUB_REF")
+    message(ref)
     re_branch <- "^refs/heads/(.*)$"
     branch <- ref %&&% if (grepl(re_branch, ref)) sub(re_branch, "\\1", ref)
+    message(branch)
+    message(get_env("GITHUB_HEAD_REF"))
     inputs[["branch"]] %||% get_env("GITHUB_HEAD_REF") %||% branch
   },
 
