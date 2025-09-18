@@ -77,9 +77,11 @@ opt_option_name <- function(opt, pkgname = utils::packageName()) {
   paste0(pkgname, "_", tolower(opt))
 }
 
-get_env <- function(env) {
+get_env <- function(env, keep_empty = FALSE) {
   val <- Sys.getenv(env, NA_character_)
   if (is.na(val)) {
+    NULL
+  } else if (!keep_empty && val == "") {
     NULL
   } else {
     structure(val, source = c("envvar", env))
