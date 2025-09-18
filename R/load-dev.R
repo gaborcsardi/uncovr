@@ -2245,10 +2245,14 @@ print.cov_testthat_results <- function(x, ...) {
   invisible(x)
 }
 
+test_name <- function(x) {
+  sub("^test-?", "", sub("[.][rR]$", "", x))
+}
+
 testthat_results_by_test <- function(x) {
   # This uses some testthat internals, ideally it would be in testthat
   file <- map_chr(x, "[[", "file")
-  context <- map_chr(x, "[[", "context")
+  context <- map_chr(x, function(x) x$context %||% test_name(x$file))
   test <- map_chr(x, "[[", "test")
   broken <- map_int(x, function(x1) {
     sum(map_lgl(x1$results, expectation_broken))
@@ -2285,7 +2289,7 @@ testthat_results_by_file <- function(x) {
     warning = tapply(by_test$warning, file, sum),
     success = tapply(by_test$success, file, sum)
   )
-  by_file$context <- sub("^test-?", "", sub("[.][rR]$", "", by_file$file))
+  by_file$context <- test_name(by_file$file)
   by_file <- by_file[order(by_file$context), ]
   by_file
 }
