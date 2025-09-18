@@ -100,9 +100,9 @@ markdown <- function(path = ".", coverage = NULL, output = NULL) {
   test_files <- with(
     byfile,
     paste0(
-      "|[",
+      "|[`",
       file,
-      "](",
+      "`](",
       baseurl,
       "/tests/testthat/",
       file,
@@ -119,6 +119,9 @@ markdown <- function(path = ".", coverage = NULL, output = NULL) {
     )
   )
 
+  if (nrow(byfile) == 0) {
+    test_files <- ""
+  }
   test_details <- ""
 
   emoji <- list(emo_ok = "✅", emo_fail = "❌", emo_warn = "⚠️", emo_skip = "🦘")
@@ -151,7 +154,6 @@ markdown <- function(path = ".", coverage = NULL, output = NULL) {
   output <- output %||%
     file.path(setup$dir, markdown_dir_name, paste0(pkgname, ".md"))
 
-  writeLines(lns)
   mkdirp(dirname(output))
   writeLines(lns, output)
 

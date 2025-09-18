@@ -854,14 +854,17 @@ test <- function(
     lcov(coverage = coverage_results)
   }
 
-  if (github_summary && Sys.getenv("GITHUB_STEP_SUMMARY") != "") {
+  if (github_summary) {
+    attr(coverage_results, "test_results") <- test_results
     ghout <- markdown(coverage = coverage_results)
-    cat(
-      readLines(ghout),
-      file = Sys.getenv("GITHUB_STEP_SUMMARY"),
-      sep = "\n",
-      append = TRUE
-    )
+    if (Sys.getenv("GITHUB_STEP_SUMMARY") != "") {
+      cat(
+        readLines(ghout),
+        file = Sys.getenv("GITHUB_STEP_SUMMARY"),
+        sep = "\n",
+        append = TRUE
+      )
+    }
   }
 
   if (show_coverage) {
