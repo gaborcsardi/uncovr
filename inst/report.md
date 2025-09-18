@@ -27,7 +27,7 @@
 
 </summary>
 
-| File | Test | Fail | Warn | Skip | Pass |
+| File | Test | {{ emo_fail }} Fail | {{ emo_warn }} Warn | {{ emo_skip }} Skip | {{ emo_ok }} Pass |
 |:-----|:-----|-----:|-----:|-----:|-----:|
 {{ test_details }}
 
