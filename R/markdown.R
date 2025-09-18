@@ -1,4 +1,29 @@
-markdown <- function(path = ".", coverage = NULL, output = NULL) {
+# https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-job-summary
+gha_job_summary_size_limit <- 1048576
+gha_job_summary_trunc_note <- "\n\n`[truncated for GitHub job summary limit]`"
+
+#' Generate a markdown test coverage report
+#'
+#' This is to create a [GitHub Actions](https://github.com/features/actions)
+#' [job summary](
+#'   https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-commands#adding-a-job-summary).
+#'
+#' @inheritParams reload
+#' @param coverage Test coverage results. If `NULL` then the last
+#'   results are used via [last()].
+#' @param output Output file. By default it is placed in the dev directory.
+#' @param truncate Whether to truncate the file if it is longer than the
+#'   GitHub Actions limit (currently `r gha_job_summary_size_limit` bytes).
+#' @return The path of the output file, invisibly.
+#'
+#' @export
+
+markdown <- function(
+  path = ".",
+  coverage = NULL,
+  output = NULL,
+  truncate = TRUE
+) {
   withr::local_dir(path)
   rm(path)
   coverage <- coverage %||% last(path = ".")
@@ -138,6 +163,13 @@ markdown <- function(path = ".", coverage = NULL, output = NULL) {
 
   mkdirp(dirname(output))
   writeLines(lns, output)
+
+  # If longer than the current limit, then truncate it
+  if (truncate && file.size(output) > gha_job_summary_size_limit) {
+    cnt <- readBin(output, what = "raw", n = gha_job_summary_size_limit - 100)
+    cnt <- c(cnt, charToRaw(gha_job_summary_trunc_note))
+    writeBin(cnt, output)
+  }
 
   invisible(output)
 }
