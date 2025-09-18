@@ -106,12 +106,12 @@ codecov <- function(
   )
 
   cli::cli_bullets(c(
-    "i" = "Codecov upload ({params$service})",
-    "*" = "Repository: {.code {params$slug}}",
-    "*" = "Branch: {.code {params$branch}}",
-    "*" = "SHA: {.code {params$commit}}",
+    "i" = "Codecov upload ({params['service']})",
+    "*" = "Repository: {.code {params['slug']}}",
+    "*" = "Branch: {.code {params['branch']}}",
+    "*" = "SHA: {.code {params['commit']}}",
     "!" = if (is.null(token)) {
-      "Could not find Codecov token!"
+      "Could not find Codecov token! Trying token-less upload."
     },
     "*" = if (!is.null(token)) {
       "Found Codecov token ({nchar(token)} characters)"
