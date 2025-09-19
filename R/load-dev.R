@@ -130,6 +130,9 @@ reload <- function(
   clean = FALSE,
   local_install = TRUE
 ) {
+  if (is_ci()) {
+    message(banner_load)
+  }
   withr::local_dir(path)
   type <- match.arg(type)
   setup <- reload_setup(type, ".", makeflags)
@@ -781,6 +784,10 @@ test <- function(
   dir.create(subprocdir)
   subprocdir <- normalizePath(subprocdir)
 
+  if (is_ci()) {
+    message(banner_test)
+  }
+
   withr::with_envvar(c(TESTTHAT_COVERAGE = setup$pkgname), {
     dev_data$test_results <- testthat::test_dir(
       test_dir,
@@ -869,6 +876,9 @@ test <- function(
   }
 
   if (show_coverage) {
+    if (is_ci()) {
+      message(banner_coverage)
+    }
     dev_data
   } else {
     invisible(dev_data)

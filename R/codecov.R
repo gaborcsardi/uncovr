@@ -52,6 +52,10 @@ codecov <- function(
   flags = NULL,
   pr = NULL
 ) {
+  if (is_ci()) {
+    message(banner_codecov)
+  }
+
   withr::local_dir(path)
   rm(path)
   coverage <- coverage %||% last(path = ".")

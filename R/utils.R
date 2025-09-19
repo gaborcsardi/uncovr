@@ -205,3 +205,7 @@ not_null <- function(x) {
 na_omit <- function(x) {
   x[!is.na(x)]
 }
+
+is_ci <- function() {
+  Sys.getenv("CI") == "true"
+}
