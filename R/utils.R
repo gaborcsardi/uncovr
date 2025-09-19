@@ -197,3 +197,11 @@ is_positron <- function() {
 is_vscode <- function() {
   Sys.getenv("TERM_PROGRAM") == "vscode"
 }
+
+not_null <- function(x) {
+  x[!map_lgl(x, is.null)]
+}
+
+na_omit <- function(x) {
+  x[!is.na(x)]
+}

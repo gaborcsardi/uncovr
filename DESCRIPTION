@@ -14,6 +14,7 @@ Imports:
     curl,
     desc,
     glue,
+    jsonlite,
     pkgbuild,
     pkgload,
     processx,
