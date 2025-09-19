@@ -38,7 +38,8 @@ downloads](http://cranlogs.r-pkg.org/badges/uncovr)](http://www.r-pkg.org/pkg/un
 - Summaries for (sub)directories.
 - HTML report including a summary table and details report for each
   file.
-- Upload test coverage results to <https://codecov.io>
+- Upload test coverage results to <https://codecov.io>.
+- Automatic markdown sumamry when running on GitHub Actions.
 
 ### Performance
 
@@ -58,10 +59,6 @@ pak::pkg_install("gaborcsardi/uncovr")
 ```
 
 ## Usage
-
-``` r
-library(uncovr)
-```
 
 | Function     | Description                                                      |
 |:-------------|:-----------------------------------------------------------------|

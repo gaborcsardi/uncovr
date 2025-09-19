@@ -53,6 +53,7 @@ knitr::opts_chunk$set(
 * Summaries for (sub)directories.
 * HTML report including a summary table and details report for each file.
 * Upload test coverage results to <https://codecov.io>.
+* Automatic markdown sumamry when running on GitHub Actions.
 
 ### Performance
 
