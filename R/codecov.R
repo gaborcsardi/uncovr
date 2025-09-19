@@ -75,6 +75,16 @@ codecov <- function(
 
   token <- token %||% get_codecov_token()
   if (is.null(token)) {
+    stop(
+      "No Codecov token. You need to set the `CODECOV_TOKEN` environment ",
+      "variable to your Codecov token, either a global token for your ",
+      "organization, or a repository token."
+    )
+  }
+
+  # TODO: this is once we have token-less uploads
+  # TODO: how would this even work with a global token?
+  if (is.null(token)) {
     if (is.null(params[["slug"]])) {
       stop("Slug must the set if a Codecov token is not passed")
     } else {
@@ -100,7 +110,6 @@ codecov <- function(
   codecov_create_commit(url, token, params)
   codecov_create_report(url, token, params)
   resp <- codecov_start_upload(url, token, params)
-
   payload <- codecov_create_payload(coverage)
   codecov_store_upload(resp$s3_url, payload)
 
@@ -179,6 +188,7 @@ codecov_start_upload <- function(url, token, params) {
   data <- list(
     ci_service = "github-actions",
     ci_url = NULL,
+    # the server checks if `cli_args` is included, but not its value
     cli_args = list(
       version = "cli-11.2.0"
     ),
@@ -193,6 +203,7 @@ codecov_start_upload <- function(url, token, params) {
 
   hand <- curl::new_handle()
   headers <- not_null(list(
+    # I am not sure if this is needed
     "user-agent" = "codecov-cli/11.2.0",
     "content-type" = "application/json",
     "content-length" = as.character(nchar(json)),
@@ -239,6 +250,7 @@ codecov_create_commit <- function(url, token, params) {
 
   data <- na_omit(c(
     branch = params[["branch"]],
+    # the server checks if `cli_args` is included, but not its value
     cli_args = list(
       version = "cli-11.2.0"
     ),
@@ -250,6 +262,7 @@ codecov_create_commit <- function(url, token, params) {
 
   hand <- curl::new_handle()
   headers <- not_null(list(
+    # I am not sure if this is needed
     "user-agent" = "codecov-cli/11.2.0",
     "content-type" = "application/json",
     "content-length" = as.character(nchar(json)),
@@ -278,6 +291,7 @@ codecov_create_report <- function(url, token, params) {
   )
 
   data <- list(
+    # the server checks if `cli_args` is included, but not its value
     cli_args = list(
       version = "cli-11.2.0"
     ),
@@ -287,6 +301,7 @@ codecov_create_report <- function(url, token, params) {
 
   hand <- curl::new_handle()
   headers <- not_null(list(
+    # I am not sure if this is needed
     "user-agent" = "codecov-cli/11.2.0",
     "content-type" = "application/json",
     "content-length" = as.character(nchar(json)),
