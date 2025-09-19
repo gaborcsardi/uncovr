@@ -131,7 +131,7 @@ reload <- function(
   local_install = TRUE
 ) {
   if (is_ci()) {
-    message(banner_load)
+    writeLines(banner_load)
   }
   withr::local_dir(path)
   type <- match.arg(type)
@@ -785,7 +785,7 @@ test <- function(
   subprocdir <- normalizePath(subprocdir)
 
   if (is_ci()) {
-    message(banner_test)
+    writeLines(banner_test)
   }
 
   withr::with_envvar(c(TESTTHAT_COVERAGE = setup$pkgname), {
@@ -877,7 +877,7 @@ test <- function(
 
   if (show_coverage) {
     if (is_ci()) {
-      message(banner_coverage)
+      writeLines(banner_coverage)
     }
     dev_data
   } else {

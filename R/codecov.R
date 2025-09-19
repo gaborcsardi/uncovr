@@ -53,7 +53,7 @@ codecov <- function(
   pr = NULL
 ) {
   if (is_ci()) {
-    message(banner_codecov)
+    writeLines(banner_codecov)
   }
 
   withr::local_dir(path)
