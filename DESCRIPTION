@@ -22,8 +22,7 @@ Imports:
     testthat (>= 2.99),
     tools,
     utils,
-    withr,
-    zip
+    withr
 Suggests:
     pillar,
     rstudioapi
