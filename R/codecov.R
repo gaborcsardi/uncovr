@@ -3,7 +3,7 @@
 #' @details
 #' Currently supported CI services:
 #'
-#'  * `github-actions`: GitHub Actions.
+#'  * GitHub Actions.
 #'
 #' @param path Path to the package tree.
 #' @param coverage Test coverage results. If `NULL` then the last
@@ -56,11 +56,6 @@ codecov <- function(
   rm(path)
   coverage <- coverage %||% last(path = ".")
 
-  mkdirp(tmpdir <- tempfile())
-  on.exit(unlink(tmpdir, recursive = TRUE), add = TRUE)
-  report <- file.path(tmpdir, "lcov.info")
-  lcov(coverage = coverage, output = report)
-
   inputs <- list(
     commit = commit %||% get_env("R_COV_COMMIT"),
     branch = branch %||% get_env("R_COV_BRANCH"),
@@ -102,144 +97,58 @@ codecov <- function(
     }
   ))
 
-  # 1. create commit ------------------------------------------------------
+  codecov_create_commit(url, token, params)
+  codecov_create_report(url, token, params)
+  resp <- codecov_start_upload(url, token, params)
 
-  api_url <- url %||% "https://api.codecov.io"
-  ingest_url <- url %||% "https://ingest.codecov.io"
+  payload <- codecov_create_payload(coverage)
+  codecov_store_upload(resp$s3_url, payload)
 
-  encoded_slug <- if (!is.null(params["slug"])) {
-    splitslug <- strsplit(params["slug"], "/")[[1]]
-    paste0(gsub("/", ":::", splitslug[1]), "::::", splitslug[2])
-  }
+  cli::cli_alert_success("Browse code coverage at {.url {resp$cc_url}}")
 
-  curl <- paste0(
-    ingest_url,
-    "/upload/",
-    params["service"],
-    "/",
-    encoded_slug,
-    "/commits"
+  invisible(list(url = resp$cc_url))
+}
+
+codecov_store_upload <- function(url, payload) {
+  payload_file <- tempfile()
+  on.exit(unlink(payload_file), add = TRUE)
+  writeBin(charToRaw(payload), payload_file)
+
+  withr::local_options(HTTPUserAgent = "codecov-cli/11.2.0")
+
+  resp <- curl::curl_upload(
+    payload_file,
+    url,
+    verbose = FALSE,
+    reuse = FALSE
   )
-
-  hh1 <- curl::new_handle()
-  headers <- not_null(list(
-    "content-type" = "application/json",
-    "authorization" = if (!is.null(token)) paste0("token ", token)
-  ))
-  curl::handle_setheaders(hh1, .list = headers)
-  data1 <- na_omit(c(
-    branch = unname(params["branch"]),
-    commitid = unname(params["commit"]),
-    pullid = unname(params["pr"])
-  ))
-  json1 <- jsonlite::toJSON(data1, auto_unbox = TRUE)
-  curl::handle_setopt(hh1, customrequest = "POST", postfields = json1)
-
-  resp1 <- curl::curl_fetch_memory(curl, handle = hh1)
-  if (resp1$status_code != 202) {
-    stop("Failed to create commit at Codecov.\n", rawToChar(resp1$content))
+  if (resp$status_code != 200) {
+    stop("Failed to upload coverage to Codecov.\n", rawToChar(resp$content))
   }
+}
 
-  # 2. create report ------------------------------------------------------
-
-  report_code <- "default"
-  rurl <- paste0(
-    api_url,
-    "/upload/",
-    params["service"],
-    "/",
-    encoded_slug,
-    "/commits/",
-    params["commit"],
-    "/reports/",
-    report_code,
-    "/results"
-  )
-
-  hh2 <- curl::new_handle()
-  curl::handle_setheaders(hh2, .list = headers)
-  curl::handle_setopt(
-    hh2,
-    customrequest = "POST",
-    postfields = '{"code": "default"}'
-  )
-
-  resp2 <- curl::curl_fetch_memory(rurl, handle = hh2)
-  if (resp2$status_code != 202) {
-    stop("Failed to create report at Codecov.\n", rawToChar(resp2$content))
-  }
-
-  # 3. upload coverage ----------------------------------------------------
-
-  furl <- paste0(
-    ingest_url,
-    "/upload/",
-    params["service"],
-    "/",
-    encoded_slug,
-    "/upload-coverage"
-  )
-
-  hh3 <- curl::new_handle()
-  curl::handle_setheaders(hh3, .list = headers)
-  data3 <- na_omit(c(
-    branch = unname(params["branch"]),
-    commitid = unname(params["commit"]),
-    pullid = unname(params["pr"]),
-    code = "default"
-  ))
-  json3 <- jsonlite::toJSON(data3, auto_unbox = TRUE)
-  curl::handle_setopt(hh3, customrequest = "POST", postfields = json3)
-
-  resp3 <- curl::curl_fetch_memory(furl, handle = hh3)
-  if (resp3$status_code != 202) {
-    stop(
-      "Failed to fetch upload storage URL from Codecov.\n",
-      rawToChar(resp3$content)
-    )
-  }
-
-  respurls <- jsonlite::parse_json(rawToChar(resp3$content))
-  cc_url <- respurls[["url"]]
-  s3_url <- respurls[["raw_upload_location"]]
-
-  cli::cli_alert_success("Got Codecov upload URL")
+codecov_create_payload <- function(coverage) {
+  mkdirp(tmpdir <- tempfile())
+  on.exit(unlink(tmpdir, recursive = TRUE), add = TRUE)
+  report <- file.path(tmpdir, "lcov.info")
+  lcov(coverage = coverage, output = report)
 
   payload <- list(
     "report_fixes" = list(
       "format" = "legacy",
       "value" = structure(list(), names = character())
     ),
-    "network_files" = list(),
+    "network_files" = c(coverage$path, ""),
     "coverage_files" = list(format_codecov_report(report)),
     "metadata" = structure(list(), names = character())
   )
 
-  # TODO: avoid temp file
-  json4 <- jsonlite::toJSON(payload, auto_unbox = TRUE)
-  tmp <- tempfile()
-  on.exit(unlink(tmp), add = TRUE)
-  writeLines(json4, tmp)
-
-  resp4 <- curl::curl_upload(
-    tmp,
-    s3_url,
-    verbose = FALSE,
-    reuse = FALSE,
-    httpheader = c("content-type" = "text/plain")
-  )
-  if (resp4$status_code != 200) {
-    stop("Failed to upload coverage to Codecov.\n", rawToChar(resp4$content))
-  }
-
-  cli::cli_alert_success("Browse code coverage at {.url {cc_url}}")
-
-  invisible(list(url = cc_url))
+  jsonlite::toJSON(payload, auto_unbox = TRUE)
 }
 
 format_codecov_report <- function(report) {
   list(
-    filename = "lcov.info",
+    filename = file.path(getwd(), "lcov.info"),
     format = "base64+compressed",
     data = encode_codecov_file(report),
     labels = ""
@@ -248,9 +157,148 @@ format_codecov_report <- function(report) {
 
 encode_codecov_file <- function(report) {
   buf <- readBin(report, "raw", n = file.size(report))
-  bufz <- zip::deflate(buf)$output
+  bufz <- memCompress(buf, type = "gzip")
   b64 <- jsonlite::base64_enc(bufz)
   b64
+}
+
+codecov_start_upload <- function(url, token, params) {
+  ingest_url <- url %||% "https://ingest.codecov.io"
+
+  furl <- paste0(
+    ingest_url,
+    "/upload/",
+    params[["service"]],
+    "/",
+    encode_slug(params[["slug"]]),
+    "/commits/",
+    params[["commit"]],
+    "/reports/default/uploads"
+  )
+
+  data <- list(
+    ci_service = "github-actions",
+    ci_url = NULL,
+    cli_args = list(
+      version = "cli-11.2.0"
+    ),
+    env = structure(list(), names = character()),
+    flags = list(),
+    job_code = NULL,
+    name = NULL,
+    version = "11.2.0",
+    file_not_found = FALSE
+  )
+  json <- jsonlite::toJSON(data, auto_unbox = TRUE, null = "null")
+
+  hand <- curl::new_handle()
+  headers <- not_null(list(
+    "user-agent" = "codecov-cli/11.2.0",
+    "content-type" = "application/json",
+    "content-length" = as.character(nchar(json)),
+    "authorization" = if (!is.null(token)) paste0("token ", token)
+  ))
+  curl::handle_setheaders(hand, .list = headers)
+  curl::handle_setopt(hand, customrequest = "POST", postfields = json)
+
+  resp <- curl::curl_fetch_memory(furl, handle = hand)
+  if (resp$status_code >= 300) {
+    stop(
+      "Failed to fetch upload storage URL from Codecov.\n",
+      rawToChar(resp$content)
+    )
+  }
+
+  respurls <- jsonlite::parse_json(rawToChar(resp$content))
+  cc_url <- respurls[["url"]]
+  s3_url <- respurls[["raw_upload_location"]]
+
+  cli::cli_alert_success("Got Codecov upload URL")
+
+  list(cc_url = cc_url, s3_url = s3_url)
+}
+
+encode_slug <- function(slug) {
+  if (!is.null(slug)) {
+    splitslug <- strsplit(slug, "/")[[1]]
+    paste0(gsub("/", ":::", splitslug[1]), "::::", splitslug[2])
+  }
+}
+
+codecov_create_commit <- function(url, token, params) {
+  ingest_url <- url %||% "https://ingest.codecov.io"
+
+  furl <- paste0(
+    ingest_url,
+    "/upload/",
+    params[["service"]],
+    "/",
+    encode_slug(params[["slug"]]),
+    "/commits"
+  )
+
+  data <- na_omit(c(
+    branch = params[["branch"]],
+    cli_args = list(
+      version = "cli-11.2.0"
+    ),
+    commitid = params[["commit"]],
+    parent_commit_id = NULL,
+    pullid = params[["pr"]]
+  ))
+  json <- jsonlite::toJSON(data, auto_unbox = TRUE, null = "null")
+
+  hand <- curl::new_handle()
+  headers <- not_null(list(
+    "user-agent" = "codecov-cli/11.2.0",
+    "content-type" = "application/json",
+    "content-length" = as.character(nchar(json)),
+    "authorization" = if (!is.null(token)) paste0("token ", token)
+  ))
+  curl::handle_setheaders(hand, .list = headers)
+  curl::handle_setopt(hand, customrequest = "POST", postfields = json)
+
+  resp <- curl::curl_fetch_memory(furl, handle = hand)
+  if (resp$status_code >= 300) {
+    stop("Failed to create commit at Codecov.\n", rawToChar(resp$content))
+  }
+}
+
+codecov_create_report <- function(url, token, params) {
+  ingest_url <- url %||% "https://ingest.codecov.io"
+  furl <- paste0(
+    ingest_url,
+    "/upload/",
+    params[["service"]],
+    "/",
+    encode_slug(params[["slug"]]),
+    "/commits/",
+    params[["commit"]],
+    "/reports"
+  )
+
+  data <- list(
+    cli_args = list(
+      version = "cli-11.2.0"
+    ),
+    code = "default"
+  )
+  json <- jsonlite::toJSON(data, auto_unbox = TRUE, null = "null")
+
+  hand <- curl::new_handle()
+  headers <- not_null(list(
+    "user-agent" = "codecov-cli/11.2.0",
+    "content-type" = "application/json",
+    "content-length" = as.character(nchar(json)),
+    "authorization" = if (!is.null(token)) paste0("token ", token)
+  ))
+  curl::handle_setheaders(hand, .list = headers)
+  curl::handle_setopt(hand, customrequest = "POST", postfields = json)
+
+  resp <- curl::curl_fetch_memory(furl, handle = hand)
+  if (resp$status_code >= 300) {
+    stop("Failed to create report at Codecov.\n", rawToChar(resp$content))
+  }
 }
 
 get_codecov_token <- function() {
@@ -349,7 +397,7 @@ ccprov_actions <- list(
   },
 
   get_service_params = function(inputs) {
-    c(
+    list(
       branch = ccprov_actions$get_branch(inputs),
       build = ccprov_actions$get_build(inputs),
       build_url = ccprov_actions$get_build_url(inputs),
@@ -375,4 +423,4 @@ ccprov_actions <- list(
   }
 )
 
-cc_providers <- list("github-actions" = ccprov_actions)
+cc_providers <- list("github" = ccprov_actions)

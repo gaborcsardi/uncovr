@@ -70,6 +70,6 @@ Upload test coverage results to codecov
 \details{
 Currently supported CI services:
 \itemize{
-\item \code{github-actions}: GitHub Actions.
+\item GitHub Actions.
 }
 }
