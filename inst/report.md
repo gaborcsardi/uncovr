@@ -1,4 +1,4 @@
-## 📊 {{ package }} test coverage
+## 🔬 {{ package }} test coverage
 
 {{ total_emoji }} **{{ total_percent }}** lines \
 `{{ total_lines_covered }}/{{ total_lines }}` &emsp; \

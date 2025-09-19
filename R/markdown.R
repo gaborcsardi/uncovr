@@ -131,7 +131,6 @@ markdown <- function(
     test_details <- ""
   }
 
-  emoji <- list(emo_ok = "✅", emo_fail = "❌", emo_warn = "⚠️", emo_skip = "🦘")
   vars <- c(
     list(
       package = pkgname,
@@ -174,6 +173,15 @@ markdown <- function(
   invisible(output)
 }
 
+emoji <- list(
+  emo_ok = "\u2705",
+  emo_fail = "\u274c",
+  emo_warn = "\u26a0\ufe0f",
+  emo_skip = "\U0001f998",
+  emo_star = "\u2b50",
+  emo_work = "\U0001f6e0\ufe0f"
+)
+
 zeroemo <- function(x, emoji) {
   ifelse(x == 0, "", paste0(emoji, " ", x))
 }
@@ -192,11 +200,11 @@ format_results <- function(results, baseurl, tests = FALSE) {
       if (tests) {
         paste0(gsub("|", "\\|", fixed = TRUE, test), "|")
       },
-      zeroemo(broken, "❌"),
+      zeroemo(broken, emoji$emo_fail),
       "|",
-      zeroemo(warning, "⚠️"),
+      zeroemo(warning, emoji$emo_warn),
       "|",
-      zeroemo(skip, "🦘"),
+      zeroemo(skip, emoji$emo_skip),
       "|",
       success,
       "|",
@@ -211,5 +219,13 @@ format_funcs <- function(hit, count) {
 }
 
 format_emoji <- function(x) {
-  ifelse(x == 100, "⭐", ifelse(x >= 95, "✅", ifelse(x >= 75, "🛠️", "❌")))
+  ifelse(
+    x == 100,
+    emoji$emo_star,
+    ifelse(
+      x >= 95,
+      emoji$emo_ok,
+      ifelse(x >= 75, emoji$emo_work, emoji$emo_fail)
+    )
+  )
 }
