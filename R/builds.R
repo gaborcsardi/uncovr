@@ -162,3 +162,68 @@ builds <- function(path = ".") {
 
   builds
 }
+
+get_dev_dir <- function(setup = list(hash = "")) {
+  file.path(".dev", setup$hash)
+}
+
+# specific for us, it should be in .Rbuildignore but have it here as well
+ignored_extra <- c("^[.]dev$")
+
+exclude_build_ignored <- function(
+  plan,
+  src = ".",
+  pkgname = desc::desc_get("Package", src)
+) {
+  if (nrow(plan) == 0) {
+    return(plan)
+  }
+  ign_file <- file.path(src, ".Rbuildignore")
+  ign <- if (file.exists(ign_file)) {
+    readLines(ign_file, warn = FALSE)
+  }
+  ign <- c(ignored_extra, ign)
+  ign <- ign[nzchar(ign)]
+  # case insensitive!
+  ign <- paste0("(?i)", ign)
+
+  ptrn <- c(ign, re_exclude(pkgname))
+  ptrn_dir <- re_exclude_dir(pkgname)
+
+  plan$exclude <- FALSE
+  plan <- exclude_paths(plan, ptrn)
+  plan <- exclude_dirs(plan, ptrn_dir)
+  plan <- exclude_downstream(plan)
+
+  plan[!plan$exclude, ]
+}
+
+exclude_paths <- function(plan, ptrn) {
+  for (p in ptrn) {
+    plan$exclude <- plan$exclude | grepl(p, plan$path, perl = TRUE)
+  }
+  plan
+}
+
+exclude_dirs <- function(plan, ptrn) {
+  for (p in ptrn) {
+    plan$exclude <- plan$exclude |
+      (plan$isdir & grepl(p, plan$path, perl = TRUE))
+  }
+  plan
+}
+
+exclude_downstream <- function(plan) {
+  # We don't actually need this now, but we could use it to optimize,
+  # because we could trim only the subsequent elements after a directory.
+  plan <- plan[order(plan$path), ]
+
+  # We need to take each excluded directory, and remove all paths in them
+  exdirs <- paste0(plan$path[plan$isdir & plan$exclude], "/")
+  del <- logical(nrow(plan))
+  for (ed in exdirs) {
+    del <- del | startsWith(plan$path, ed)
+  }
+  plan <- plan[!del, ]
+  plan
+}

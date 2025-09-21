@@ -204,3 +204,61 @@ test <- function(
     invisible(dev_data)
   }
 }
+
+add_coverage_summary <- function(coverage) {
+  # by directory
+  dirs <- all_leading_dirs(coverage$path)
+  sumdir <- function(x, dir) {
+    sum(x[startsWith(coverage$path, dir)], na.rm = TRUE)
+  }
+  sm <- data.frame(
+    name = c("All files", dirs[-1]),
+    line_count = map_int(dirs, sumdir, x = coverage$line_count),
+    code_lines = map_int(dirs, sumdir, x = coverage$code_lines),
+    lines_covered = map_int(dirs, sumdir, x = coverage$lines_covered),
+    total_hits = map_dbl(dirs, sumdir, x = as.double(coverage$total_hits)),
+    function_count = map_int(dirs, sumdir, x = coverage$function_count),
+    functions_hit = map_int(dirs, sumdir, x = coverage$functions_hit)
+  )
+  class(sm) <- c("tbl", class(sm))
+
+  sm$percent_covered <- sm$lines_covered / sm$code_lines * 100
+  attr(coverage, "summary") <- sm
+
+  coverage
+}
+
+calculate_uncovered_intervals <- function(lines) {
+  keep <- lines$status == "instrumented"
+  lineno <- seq_len(nrow(lines))[keep]
+  find_zero_ranges(lineno, lines$coverage[keep])
+}
+
+cov_get_counts <- function(names) {
+  env <- if (length(names) > 1 && exists(names[1], envir = baseenv())) {
+    baseenv()
+  } else {
+    globalenv()
+  }
+  structure(
+    lapply(names, function(name) {
+      .Call(c_cov_get_counts, get(name, envir = env))
+    }),
+    names = names
+  )
+}
+
+apply_covrignore <- function(paths, exclusion_file) {
+  if (!is.null(exclusion_file)) {
+    if (file.exists(exclusion_file)) {
+      excluded <- Sys.glob(readLines(exclusion_file))
+      paths <- setdiff(paths, excluded)
+      dirs <- excluded[file.exists(excluded) & is_dir(excluded)]
+      dirs <- ifelse(endsWith(dirs, "/"), dirs, paste0(dirs, "/"))
+      for (d in dirs) {
+        paths <- paths[!startsWith(paths, d)]
+      }
+    }
+  }
+  paths
+}

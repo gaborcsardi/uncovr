@@ -114,3 +114,120 @@ copy_inst_files <- function(src, tgt) {
     file.copy(fl, tgt, recursive = TRUE)
   }
 }
+
+inject_onload_lines <- function(setup, pkg_dir, lib, inject_script, fnx) {
+  mkdirp(lib)
+  subs <- list(
+    type_ = setup$type,
+    pkgname_ = setup$pkgname,
+    pkg_dir_ = normalizePath(pkg_dir),
+    lib_ = normalizePath(lib),
+    inject_script_ = if (!is.null(inject_script)) normalizePath(inject_script),
+    fnx_ = normalizePath(fnx)
+  )
+  deparse(
+    substitute(
+      {
+        "__COV__ DELETE FROM HERE"
+        `.__cov_has_onload` <- base::exists(
+          ".onLoad",
+          inherits = FALSE,
+          mode = "function"
+        )
+        if (`.__cov_has_onload`) {
+          .__cov__onload <- .onLoad
+        }
+        .onLoad <- function(libname, pkgname) {
+          ns <- base::asNamespace(pkgname_)
+          # restore old .onLoad (if any) and clean up namespace
+          # need to do this before the quick install
+          has_onload <- ns$`.__cov_has_onload`
+          if (has_onload) {
+            base::assign(".onLoad", ns$`.__cov__onload`, envir = ns)
+            base::rm(list = ".__cov__onload", envir = ns)
+          } else {
+            base::rm(list = ".onLoad", envir = ns)
+          }
+          base::rm(list = ".__cov_has_onload", envir = ns)
+
+          if (type_ == "coverage") {
+            base::asNamespace("uncovr")$fix_src_refs(ns)
+          }
+
+          # install the package
+          loaded <- base::list(
+            dll = ns$.__NAMESPACE__.$DLLs,
+            env = ns
+          )
+          base::asNamespace("uncovr")$quick_install_loaded(
+            pkgname_,
+            pkg_dir_,
+            lib_,
+            loaded,
+            inject_script_
+          )
+          # clean up source file, in case this file is loaded with `load_all()`
+          lns <- base::readLines(fnx_)
+          d1 <- base::grep("__COV__ DELETE FROM HERE", lns, fixed = TRUE)[1]
+          d2 <- base::grep("__COV__ DELETE UNTIL HERE", lns, fixed = TRUE)[2]
+          lns <- lns[-(d1:d2)]
+          base::writeLines(lns, fnx_)
+
+          # call original .onLoad
+          # TODO: is this ok, or needs Tailcall()?
+          if (has_onload) {
+            ns$.onLoad(libname, pkgname)
+          }
+        }
+        "__COV__ DELETE UNTIL HERE"
+      },
+      subs
+    )
+  )
+}
+
+fix_src_refs <- function(ns) {
+  # this functions intentionally does not care about reference counting!
+  set_attr <- function(x, name, value) {
+    .Call(c_cov_set_attr, x, name, value)
+  }
+
+  parsed <- getOption("uncovr_parsed_data")
+  if (is.null(parsed)) {
+    return()
+  }
+  for (pf in parsed) {
+    for (i in seq_along(pf)) {
+      sr <- utils::getSrcref(pf)[[i]]
+      if (is.null(sr)) {
+        next
+      }
+      if (
+        length(pf[[i]]) == 3 &&
+          (identical(pf[[i]][[1]], quote(`<-`)) ||
+            identical(pf[[i]][[1]], quote(`=`))) &&
+          typeof(pf[[i]][[2]]) == "symbol"
+      ) {
+        nm <- as.character(pf[[i]][[2]])
+        if (nm %in% names(ns)) {
+          fn <- ns[[nm]]
+          if (is.null(utils::getSrcref(fn))) {
+            next
+          }
+          set_attr(ns[[nm]], "srcref", sr)
+        }
+      }
+    }
+  }
+}
+
+update_libpath <- function(lib, pkgname) {
+  # remove exixting dev library for the same package, if any
+  current <- .libPaths()
+  current <- current[!grepl(paste0("/__dev_lib__$"), current)]
+  .libPaths(c(lib, current))
+}
+
+clean_libpath <- function(pkgname) {
+  update_libpath(NULL, pkgname)
+}
