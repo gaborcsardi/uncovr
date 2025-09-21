@@ -975,6 +975,7 @@ add_coverage_summary <- function(coverage) {
     function_count = map_int(dirs, sumdir, x = coverage$function_count),
     functions_hit = map_int(dirs, sumdir, x = coverage$functions_hit)
   )
+  class(sm) <- c("tbl", class(sm))
 
   sm$percent_covered <- sm$lines_covered / sm$code_lines * 100
   attr(coverage, "summary") <- sm
@@ -1095,7 +1096,9 @@ create_copy_plan <- function(
   )
   restplan <- exclude_build_ignored(restplan, src = ".", pkgname = pkgname)
 
-  rbind(topplan, restplan)
+  res <- rbind(topplan, restplan)
+  class(res) <- c("tbl", class(res))
+  res
 }
 
 create_update_plan <- function(
@@ -1250,6 +1253,8 @@ cov_instrument_dir <- function(
     funs = I(replicate(length(rfiles), NULL, simplify = FALSE)),
     uncovered = I(replicate(length(rfiles), list(), simplify = FALSE))
   )
+  class(fls) <- c("tbl", class(fls))
+
   parsed <- structure(vector("list", nrow(fls)), names = fls$path)
   for (i in seq_along(rfiles)) {
     cifile <- cov_instrument_file(fls$path[i], fls$symbol[i])
@@ -1647,6 +1652,7 @@ re_exclude_dir <- function(pkg) {
 
 `[.coverage_table2` <- function(x, i, j, drop = FALSE) {
   class(x) <- setdiff(class(x), "coverage_table2")
+  requireNamespace("pillar", quietly = TRUE)
   NextMethod("[")
 }
 
@@ -2001,6 +2007,7 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
     )
   }
 
+  class(res) <- c("tbl", class(res))
   res
 }
 
@@ -2288,6 +2295,7 @@ testthat_results_by_test <- function(x) {
     success = success
   )
   by_test <- by_test[order(by_test$context), ]
+  class(by_test) <- c("tbl", class(by_test))
   by_test
 }
 
