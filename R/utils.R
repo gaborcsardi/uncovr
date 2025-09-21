@@ -209,3 +209,27 @@ na_omit <- function(x) {
 is_ci <- function() {
   Sys.getenv("CI") == "true"
 }
+
+paste_named <- function(orig, new) {
+  for (nm in names(new)) {
+    orig[[nm]] <- if (nm %in% names(orig)) {
+      paste(orig[[nm]], new[[nm]])
+    } else {
+      new[[nm]]
+    }
+  }
+  orig
+}
+
+# relative path from project directory
+rel_path <- function(x, root) {
+  wd <- paste0(getwd(), "/")
+  x <- ifelse(startsWith(x, wd), substr(x, nchar(wd) + 1, nchar(x)), x)
+  x <- ifelse(startsWith(x, root), substr(x, nchar(root) + 1, nchar(x)), x)
+  x
+}
+
+quick_save_rds <- function(obj, path) {
+  ser <- serialize(obj, NULL, xdr = FALSE)
+  writeBin(ser, path)
+}
