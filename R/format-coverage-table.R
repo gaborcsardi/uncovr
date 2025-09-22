@@ -9,6 +9,16 @@
 #' @export
 
 format.coverage_table2 <- function(x, filter = NULL, ...) {
+  if (nrow(x) == 0) {
+    label <- attr(x, "coverage-name")
+    what <- if (is.null(label)) {
+      "source code"
+    } else {
+      paste0("code changes in ", sub(" coverage", "", label))
+    }
+    cli::cli_alert_info("No {what} to show.")
+    return(invisible(""))
+  }
   if (is.null(filter)) {
     format_coverage_table2_full(x, ...)
   } else {
