@@ -204,6 +204,22 @@ report_file_ <- function(
     )
   }
 
+  # Detect VS Code/Positron for hyperlinks
+  editor_scheme <- if (Sys.getenv("POSITRON") == "1") {
+    "positron"
+  } else if (Sys.getenv("TERM_PROGRAM") == "vscode") {
+    "vscode"
+  } else {
+    ""
+  }
+  
+  # Create file header with optional hyperlink
+  file_header <- if (nzchar(editor_scheme)) {
+    paste0('<a href="', editor_scheme, '://file', normalizePath(code_file, mustWork = FALSE), '" title="Open ', code_file, ' in ', editor_scheme, '"><code>', code_file, '</code></a>')
+  } else {
+    paste0('<code>', code_file, '</code>')
+  }
+  
   vars <- list(
     pkgname = pkgname,
     total_percent = total_percent,
@@ -224,7 +240,10 @@ report_file_ <- function(
     ),
     language = get_language_from_path(code_file),
     file_status = file_status,
-    funcs = funcs %||% "[]"
+    funcs = funcs %||% "[]",
+    editor_scheme = editor_scheme,
+    file_path_normalized = normalizePath(code_file, mustWork = FALSE),
+    file_header = file_header
   )
 
   # our pkgload::system.file() monkey-patch is buggy, so use find.package()
