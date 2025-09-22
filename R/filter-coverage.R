@@ -244,7 +244,7 @@ get_filter_commit <- function(path = ".", coverage = NULL) {
   rm(path)
   coverage <- coverage %||% last(path = ".")
 
-  get_filter_git("HEAD~1..HEAD", coverage$path, untracked = FALSE)
+  get_filter_git("HEAD^..HEAD", coverage$path, untracked = FALSE)
 }
 
 get_filter_diff <- function(path = ".", coverage = NULL) {
