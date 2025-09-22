@@ -14,12 +14,12 @@ downloads](http://cranlogs.r-pkg.org/badges/uncovr)](http://www.r-pkg.org/pkg/un
 ### Compatibility
 
 - Integrates with [testthat](https://testthat.r-lib.org/).
-- Supports parallel testthat runs out of the box.
+- Supports parallel testthat runs, out of the box.
 - Measures code in R (or other) subprocesses. Suprocesses use a locally
   installed version of the instrumented package.
 - Independent release, debug and coverage builds. Independent builds for
   R versions, different platforms, with Independent caches. Switch
-  between builds quickly and efficiently.
+  between builds automatically.
 - Supports covr’s exclusion file and exclusion markers.
 - Supports all of R’s class systems.
 - Supports lcov output.
@@ -34,16 +34,16 @@ downloads](http://cranlogs.r-pkg.org/badges/uncovr)](http://www.r-pkg.org/pkg/un
 
 - Function coverage. Counts how many times R (and C, C++, etc.)
   functions were called.
-- Measures R code in top-level expressions, that run at install time,
-  measures R code in `.onLoad()`, etc. functions.
+- Measures R code in top-level expressions, that run at install time.
+  Measures R code in `.onLoad()`, `.onAttach()`, etc. functions.
 
 ### Reporting
 
 - Terminal report, with line and function coverage, and a list of
   hyperlinked uncovered line intervals.
 - Summaries for (sub)directories.
-- HTML report including a summary table and details report for each
-  file.
+- HTML report, including a summary table and detailed reports for all
+  files.
 - Upload test coverage results to <https://codecov.io>.
 - Automatic markdown summary when running on GitHub Actions.
 - Test coverage of a PR, a git commit, a git branch relative to another
