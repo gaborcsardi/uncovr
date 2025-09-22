@@ -78,7 +78,9 @@ show_diff <- function(coverage) {
     writeLines("")
     print(diff("pr", coverage = coverage))
   }
-  if (should_filter_commit(coverage = coverage)) {
+  # TODO: this does not work because of the shallow clone on GHA,
+  # there is no HEAD~1 commit to compare against.
+  if (FALSE && should_filter_commit(coverage = coverage)) {
     # on GHA only
     writeLines("")
     print(diff("commit", coverage = coverage))
