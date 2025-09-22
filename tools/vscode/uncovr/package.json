@@ -69,6 +69,63 @@
         "category": "Uncovr",
         "command": "uncovr.diff"
       }
+    ],
+    "keybindings": [
+      {
+        "command": "uncovr.reload",
+        "key": "ctrl+shift+l",
+        "mac": "cmd+shift+l"
+      },
+      {
+        "command": "uncovr.document",
+        "key": "ctrl+shift+d",
+        "mac": "cmd+shift+d"
+      },
+      {
+        "command": "uncovr.test",
+        "key": "ctrl+shift+t",
+        "mac": "cmd+shift+t"
+      },
+      {
+        "command": "uncovr.builds",
+        "key": "ctrl+shift+u b",
+        "mac": "cmd+shift+u b"
+      },
+      {
+        "command": "uncovr.report",
+        "key": "ctrl+shift+u r",
+        "mac": "cmd+shift+u r"
+      },
+      {
+        "command": "uncovr.retest",
+        "key": "ctrl+shift+u a",
+        "mac": "cmd+shift+u a"
+      },
+      {
+        "command": "uncovr.last",
+        "key": "ctrl+shift+u p",
+        "mac": "cmd+shift+u p"
+      },
+      {
+        "command": "uncovr.testActive",
+        "key": "ctrl+shift+a",
+        "mac": "cmd+shift+a"
+      },
+      {
+        "command": "uncovr.lcov",
+        "key": "ctrl+shift+u l",
+        "mac": "cmd+shift+u l"
+      },
+      {
+        "command": "uncovr.install",
+        "key": "ctrl+shift+b",
+        "mac": "cmd+shift+b"
+      },
+      {
+        "command": "uncovr.diff",
+        "key": "ctrl+shift+u d",
+        "mac": "cmd+shift+u d"
+      }
     ]
   },
   "scripts": {
