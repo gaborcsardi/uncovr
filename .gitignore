@@ -4,3 +4,4 @@
 .RData
 node_modules
 tools/vscode/uncovr/out
+/README.html
