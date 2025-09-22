@@ -373,7 +373,7 @@ ccprov_actions <- list(
     inputs[["job"]] %||% get_env("GITHUB_WORKFLOW")
   },
 
-  get_pr = function(inputs) {
+  get_pr = function(inputs = NULL) {
     ref <- get_env("GITHUB_REF")
     re_pr <- "^refs/pull/([0-9]+)/merge$"
     pr <- get_env("GITHUB_HEAD_REF") %&&%
