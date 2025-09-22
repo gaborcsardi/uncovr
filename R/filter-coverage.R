@@ -212,7 +212,7 @@ get_filter_git_diff <- function(ref, path) {
 
 get_filter_git <- function(ref, paths, untracked = TRUE) {
   ret <- processx::run("git", c("diff", "--raw", ref, "--", paths))
-  mod <- paths %in% read.table(text = ret$stdout)[, 6]
+  mod <- paths %in% utils::read.table(text = ret$stdout)[, 6]
   ret <- vector("list", length(paths))
   unt <- git_is_untracked(paths)
   for (i in seq_along(paths)) {
