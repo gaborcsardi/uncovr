@@ -135,3 +135,11 @@ cli::test_that_cli(configs = c("plain", "ansi"), "style_bg_grey", {
     style_bg_grey("grey background")
   })
 })
+
+test_that("empty_data_frame", {
+  library(pillar)
+  expect_snapshot({
+    empty_data_frame(10)
+    empty_data_frame(0)
+  })
+})

@@ -199,10 +199,11 @@ test <- function(
     if (is_ci()) {
       writeLines(banner_coverage)
     }
-    dev_data
-  } else {
-    invisible(dev_data)
+    print(dev_data)
+    show_diff(coverage_results)
   }
+
+  invisible(dev_data)
 }
 
 add_coverage_summary <- function(coverage) {

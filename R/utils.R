@@ -233,3 +233,10 @@ quick_save_rds <- function(obj, path) {
   ser <- serialize(obj, NULL, xdr = FALSE)
   writeBin(ser, path)
 }
+
+empty_data_frame <- function(nrow) {
+  res <- data.frame(row.names = seq_len(nrow))
+  rownames(res) <- NULL
+  class(res) <- c("tbl", class(res))
+  res
+}

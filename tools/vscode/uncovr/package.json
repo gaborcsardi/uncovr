@@ -63,6 +63,11 @@
         "title": "Build and install R package",
         "category": "Uncovr",
         "command": "uncovr.install"
+      },
+      {
+        "title": "Coverage report for branch or changes",
+        "category": "Uncovr",
+        "command": "uncovr.diff"
       }
     ]
   },

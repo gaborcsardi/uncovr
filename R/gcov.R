@@ -105,7 +105,8 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
     }),
     lines = I(replicate(length(ccov), NULL, simplify = FALSE)),
     funs = I(replicate(length(ccov), NULL, simplify = FALSE)),
-    uncovered = I(replicate(length(ccov), NULL, simplify = FALSE))
+    uncovered = I(replicate(length(ccov), NULL, simplify = FALSE)),
+    filters = I(empty_data_frame(nrow = length(ccov)))
   )
   res$percent_covered <- ifelse(
     res$code_lines == 0,

@@ -120,3 +120,14 @@
       <cli_ansi_string>
       [1] [40mgrey background[49m
 
+# empty_data_frame
+
+    Code
+      empty_data_frame(10)
+    Output
+      # A data frame: 10 x 0
+    Code
+      empty_data_frame(0)
+    Output
+      # A data frame: 0 x 0
+
