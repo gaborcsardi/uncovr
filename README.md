@@ -23,6 +23,12 @@ downloads](http://cranlogs.r-pkg.org/badges/uncovr)](http://www.r-pkg.org/pkg/un
 - Supports covr’s exclusion file and exclusion markers.
 - Supports all of R’s class systems.
 - Supports lcov output.
+- Comes with a [Positron](https://positron.posit.co/) compatible [VS
+  Code](https://code.visualstudio.com/) extension.
+- Compatible with the [Coverage
+  Gutters](https://marketplace.visualstudio.com/items?itemName=ryanluker.vscode-coverage-gutters)
+  VS Code extension, also in
+  [Positron](https://open-vsx.org/extension/ryanluker/vscode-coverage-gutters).
 
 ### Instrumentation
 
