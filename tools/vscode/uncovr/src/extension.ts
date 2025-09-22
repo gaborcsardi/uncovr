@@ -121,6 +121,18 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 	context.subscriptions.push(install);
+
+	const diff = vscode.commands.registerCommand('uncovr.diff', () => {
+	if (inPositron()) {
+			vscode.commands.executeCommand(
+				'workbench.action.executeCode.console',
+				'uncovr::diff()'
+			);
+		} else {
+			vscode.commands.executeCommand('r.runCommand', 'uncovr::diff()');
+		}
+	});
+	context.subscriptions.push(install);
 }
 
 export function deactivate() {}

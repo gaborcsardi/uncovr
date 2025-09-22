@@ -27,7 +27,8 @@ cov_instrument_dir <- function(
     functions_hit = 0L,
     lines = I(replicate(length(rfiles), NULL, simplify = FALSE)),
     funs = I(replicate(length(rfiles), NULL, simplify = FALSE)),
-    uncovered = I(replicate(length(rfiles), list(), simplify = FALSE))
+    uncovered = I(replicate(length(rfiles), list(), simplify = FALSE)),
+    filters = I(empty_data_frame(nrow = length(rfiles)))
   )
   class(fls) <- c("tbl", class(fls))
 
@@ -58,7 +59,9 @@ cov_instrument_file <- function(path, cov_symbol) {
   brc_poss <- which(psd$token == "'{'")
 
   # drop rlang's {{ embrace operator up front
-  drop <- which(diff(psd$line1[brc_poss]) == 0 & diff(psd$col1[brc_poss]) == 1)
+  drop <- which(
+    base::diff(psd$line1[brc_poss]) == 0 & base::diff(psd$col1[brc_poss]) == 1
+  )
   drop <- c(drop, drop + 1L)
   if (length(drop)) {
     brc_poss <- brc_poss[-drop]

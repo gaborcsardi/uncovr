@@ -39,7 +39,9 @@ downloads](http://cranlogs.r-pkg.org/badges/uncovr)](http://www.r-pkg.org/pkg/un
 - HTML report including a summary table and details report for each
   file.
 - Upload test coverage results to <https://codecov.io>.
-- Automatic markdown sumamry when running on GitHub Actions.
+- Automatic markdown summary when running on GitHub Actions.
+- Test coverage of a PR, a git commit, a git branch relative to another
+  branch, changes relative to a git commit, etc.
 
 ### Performance
 
@@ -67,6 +69,7 @@ pak::pkg_install("gaborcsardi/uncovr")
 | `test()`     | Run package tests.                                               |
 | `report()`   | Generate HTML coverage report.                                   |
 | `last()`     | Print last test and coverage results.                            |
+| `diff()`     | Coverage of changes (or a branch or a PR).                       |
 | `retest()`   | Rerun failing tests.                                             |
 | `lcov()`     | Create LCOV coverage report.                                     |
 | `codecov()`  | Upload test coverage results to [codecov.io](https://codecov.io) |

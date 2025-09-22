@@ -29,7 +29,8 @@ format_coverage_table2_filter <- function(x, filter, ...) {
 
   x <- x[mch, ]
   bl <- format_pct(x$percent_covered)
-  cffn <- ffn <- format(c("code coverage", "", x$path))
+  label <- attr(x, "coverage-name") %||% "code coverage"
+  cffn <- ffn <- format(c(label, "", x$path))
   cfbl <- fbl <- format(c("% lines", "", bl))
 
   mid <- 3:(length(ffn))
@@ -86,7 +87,8 @@ format_coverage_table2_full <- function(x, ...) {
   fmiss <- is.na(fc) | is.na(fh)
   fs <- ifelse(fmiss, "", paste0(fh, "/", fc))
 
-  cffn <- ffn <- format(c("code coverage", "", fn, "", "total"))
+  label <- attr(x, "coverage-name") %||% "code coverage"
+  cffn <- ffn <- format(c(label, "", fn, "", "total"))
   cfbl <- fbl <- format(c("% lines", "", bl, "", bl[1]), justify = "right")
   cffs <- ffs <- format(c("funs", "", fs, "", fs[1]), justify = "right")
 
