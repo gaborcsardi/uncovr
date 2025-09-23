@@ -128,7 +128,14 @@ report <- function(
   }
 
   if (show) {
-    utils::browseURL(output)
+    if (
+      requireNamespace("rstudioapi", quietly = TRUE) &&
+        rstudioapi::isAvailable()
+    ) {
+      rstudioapi::viewer(output)
+    } else {
+      utils::browseURL(output)
+    }
   }
 
   invisible(output)
