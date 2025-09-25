@@ -5,3 +5,4 @@
 node_modules
 tools/vscode/uncovr/out
 /README.html
+/tools/vscode/uncovr/media

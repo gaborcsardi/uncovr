@@ -1,11 +1,11 @@
 {
   "name": "uncovr",
   "displayName": "uncovr",
-  "description": "R package development tools.",
+  "description": "R package development tools",
   "version": "0.0.1",
   "repository": "https://github.com/gaborcsardi/uncovr",
   "engines": {
-    "vscode": "^1.103.0"
+    "vscode": "^1.104.0"
   },
   "categories": [
     "Other"
@@ -14,6 +14,11 @@
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
+      {
+        "title": "Uncovr: List R Builds",
+        "category": "Uncovr",
+        "command": "uncovr.buildView"
+      },
       {
         "title": "(Re)load R package",
         "category": "Uncovr",
@@ -38,11 +43,6 @@
         "title": "R package test coverage report",
         "category": "Uncovr",
         "command": "uncovr.report"
-      },
-      {
-        "title": "List R package builds",
-        "category": "Uncovr",
-        "command": "uncovr.builds"
       },
       {
         "title": "Show last R package tests results",
@@ -87,7 +87,7 @@
         "mac": "cmd+shift+t"
       },
       {
-        "command": "uncovr.builds",
+        "command": "uncovr.buildView",
         "key": "ctrl+shift+u b",
         "mac": "cmd+shift+u b"
       },
@@ -139,7 +139,7 @@
   "devDependencies": {
     "@types/mocha": "^10.0.10",
     "@types/node": "22.x",
-    "@types/vscode": "^1.103.0",
+    "@types/vscode": "^1.104.0",
     "@typescript-eslint/eslint-plugin": "^8.42.0",
     "@typescript-eslint/parser": "^8.42.0",
     "@vscode/test-cli": "^0.0.11",

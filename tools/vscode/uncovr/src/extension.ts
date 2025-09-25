@@ -1,7 +1,79 @@
 import * as vscode from 'vscode';
 import { inPositron } from '@posit-dev/positron';
+import * as path from 'path';
+import * as fsx from 'fs';
+import { promises as fs } from "fs";
+
+interface Build {
+  r_version: string;
+	platform: string;
+	type: string;
+	hash: string;
+	pkg_name: string;
+	pkg_version: string;
+	disk_size?: bigint;
+	last_built?: Date;
+}
+
+interface AppState {
+	folder?: string;
+	builds: Array<Build>;
+}
+
+let appState: AppState = { builds: [] };
+
+async function updateState() {
+  // Get the first workspace folder (if there is one)
+  const folders = vscode.workspace.workspaceFolders;
+  if (!folders) {
+    vscode.window.showErrorMessage("No workspace folder open");
+    return;
+  }
+
+  const folderUri = vscode.Uri.joinPath(folders[0].uri, ".dev");
+
+	appState.folder = path.basename(path.dirname(folderUri.fsPath));
+
+	let dirs = await listBuildDirs(folderUri);
+	if (!dirs) { return; }
+	let builds = [];
+
+	for (const d of dirs) {
+		let conf = path.join(d, "_setup.json");
+		if (!fsx.existsSync(conf)) { continue; }
+		let cnt = await fs.readFile(conf, 'utf8');
+		let obj = JSON.parse(cnt);
+		builds.push({
+			r_version: obj.rver,
+			platform: obj.platform,
+			type: obj.type,
+			hash: obj.hash,
+			pkg_name: obj.pkgname,
+			pkg_version: obj.pkgversion
+		});
+	}
+
+	appState.builds = builds;
+}
+
+async function updateStateAndNotify(panel: vscode.WebviewPanel) {
+	await updateState();
+	console.log(appState.builds[0]);
+  panel.webview.postMessage({ command: "setState", data: appState });
+}
+
+export async function listBuildDirs(folderUri: vscode.Uri) {
+  try {
+    // Read directory entries
+    const entries = await vscode.workspace.fs.readDirectory(folderUri);
+		return entries.map(ent => path.join(folderUri.fsPath, ent[0]));
+  } catch (err) {
+    vscode.window.showErrorMessage(`Failed to read directory: ${err}`);
+  }
+}
 
 export function activate(context: vscode.ExtensionContext) {
+
 	const reload = vscode.commands.registerCommand('uncovr.reload', () => {
 		if (inPositron()) {
 			vscode.commands.executeCommand(
@@ -133,6 +205,65 @@ export function activate(context: vscode.ExtensionContext) {
 		}
 	});
 	context.subscriptions.push(install);
+
+  context.subscriptions.push(
+    vscode.commands.registerCommand('uncovr.buildView', async () => {
+			const panel = vscode.window.createWebviewPanel(
+				"uncovrBuilds",
+				"R builds",
+				vscode.ViewColumn.Two,
+				{
+					enableScripts: true,
+					localResourceRoots: [vscode.Uri.file(path.join(context.extensionPath, "media"))]
+				}
+			);
+
+			await updateState();
+			panel.webview.html = getWebviewContent(
+				panel.webview,
+				context.extensionPath,
+				appState
+			);
+
+			// Handle messages from React
+			panel.webview.onDidReceiveMessage(async message => {
+				switch (message.command) {
+					case "reload":
+						await updateStateAndNotify(panel);
+						break;
+					case "delAll":
+						console.log("delall");
+						break;
+					case "delBuild":
+						console.log(message.args);
+						break;
+				}
+			});
+    })
+  );
 }
 
-export function deactivate() {}
+function getWebviewContent(
+  webview: vscode.Webview,
+  extensionPath: string,
+  initialData: any
+): string {
+  const mediaPath = path.join(extensionPath, 'media');
+  const indexPath = path.join(mediaPath, 'index.html');
+  let html = fsx.readFileSync(indexPath, 'utf8');
+
+  html = html.replace(
+    /"\/assets\//g,
+    `"${webview.asWebviewUri(
+      vscode.Uri.file(path.join(mediaPath, 'assets'))
+    ).toString()}/`
+  );
+
+  // Inject initial data before </head>
+  const initScript = `<script>window.initialData = ${JSON.stringify(
+    initialData
+  )};</script>`;
+  html = html.replace('</head>', `${initScript}</head>`);
+
+  return html;
+}
