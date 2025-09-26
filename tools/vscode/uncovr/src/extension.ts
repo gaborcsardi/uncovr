@@ -3,6 +3,8 @@ import { inPositron } from '@posit-dev/positron';
 import * as path from 'path';
 import * as fsx from 'fs';
 import { promises as fs } from "fs";
+import getFolderSize from "get-folder-size";
+import { rimraf } from 'rimraf';
 
 interface Build {
   r_version: string;
@@ -11,8 +13,8 @@ interface Build {
 	hash: string;
 	pkg_name: string;
 	pkg_version: string;
-	disk_size?: bigint;
-	last_built?: Date;
+	disk_size: number;
+	last_built: Date;
 }
 
 interface AppState {
@@ -43,13 +45,17 @@ async function updateState() {
 		if (!fsx.existsSync(conf)) { continue; }
 		let cnt = await fs.readFile(conf, 'utf8');
 		let obj = JSON.parse(cnt);
+		let stat = await fs.stat(conf);
+		let size = await getFolderSize.loose(d);
 		builds.push({
 			r_version: obj.rver,
 			platform: obj.platform,
 			type: obj.type,
 			hash: obj.hash,
 			pkg_name: obj.pkgname,
-			pkg_version: obj.pkgversion
+			pkg_version: obj.pkgversion,
+			disk_size: size,
+			last_built: stat.mtime
 		});
 	}
 
@@ -60,6 +66,50 @@ async function updateStateAndNotify(panel: vscode.WebviewPanel) {
 	await updateState();
 	console.log(appState.builds[0]);
   panel.webview.postMessage({ command: "setState", data: appState });
+}
+
+async function deleteBuild(hash: string) {
+  const folders = vscode.workspace.workspaceFolders;
+  if (!folders) {
+    vscode.window.showErrorMessage("No workspace folder open");
+    return;
+  }
+
+  const folderUri = vscode.Uri.joinPath(folders[0].uri, ".dev", hash);
+	if (!fsx.existsSync(folderUri.fsPath)) {
+		vscode.window.showErrorMessage(`No such build: ${hash}`);
+		return;
+	}
+
+	const libPath = vscode.Uri.joinPath(folderUri, "__dev_lib__");
+	try {
+		if (fsx.existsSync(libPath.fsPath)) {
+			await fs.chmod(libPath.fsPath, 0o755);
+		}
+		await rimraf(folderUri.fsPath);
+	} catch (err) {
+		vscode.window.showErrorMessage(`Failed to delete build ${hash}: ${err}`);
+	}
+}
+
+async function deleteAll() {
+  // Get the first workspace folder (if there is one)
+  const folders = vscode.workspace.workspaceFolders;
+  if (!folders) {
+    vscode.window.showErrorMessage("No workspace folder open");
+    return;
+  }
+
+  const folderUri = vscode.Uri.joinPath(folders[0].uri, ".dev");
+
+	appState.folder = path.basename(path.dirname(folderUri.fsPath));
+
+	let dirs = await listBuildDirs(folderUri);
+	if (!dirs) { return; }
+
+	for (const d of dirs) {
+		await deleteBuild(path.basename(d));
+	}
 }
 
 export async function listBuildDirs(folderUri: vscode.Uri) {
@@ -232,10 +282,12 @@ export function activate(context: vscode.ExtensionContext) {
 						await updateStateAndNotify(panel);
 						break;
 					case "delAll":
-						console.log("delall");
+						await deleteAll();
+						await updateStateAndNotify(panel);
 						break;
 					case "delBuild":
-						console.log(message.args);
+						await deleteBuild(message.args[0]);
+						await updateStateAndNotify(panel);
 						break;
 				}
 			});

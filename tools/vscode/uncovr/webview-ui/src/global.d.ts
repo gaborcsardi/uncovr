@@ -1,6 +1,7 @@
 import {
   VscodeBadge,
   VscodeButton,
+  VscodeButtonGroup,
   VscodeCheckbox,
   VscodeCheckboxGroup,
   // VscodeCollapsible,
@@ -61,6 +62,7 @@ declare module "react" {
       };
       "vscode-badge": WebComponentProps<VscodeBadge>;
       "vscode-button": WebComponentProps<VscodeButton>;
+      "vscode-button-group": WebComponentProps<VscodeButtonGroup>;
       "vscode-checkbox": WebComponentProps<VscodeCheckbox>;
       "vscode-checkbox-group": WebComponentProps<VscodeCheckboxGroup>;
       // "vscode-collapsible": WebComponentProps<VscodeCollapsible> & {

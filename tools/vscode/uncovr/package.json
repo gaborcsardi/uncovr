@@ -15,7 +15,7 @@
   "contributes": {
     "commands": [
       {
-        "title": "Uncovr: List R Builds",
+        "title": "List R Builds",
         "category": "Uncovr",
         "command": "uncovr.buildView"
       },
@@ -148,6 +148,8 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@posit-dev/positron": "^0.1.8"
+    "@posit-dev/positron": "^0.1.8",
+    "get-folder-size": "^5.0.0",
+    "rimraf": "^6.0.1"
   }
 }
