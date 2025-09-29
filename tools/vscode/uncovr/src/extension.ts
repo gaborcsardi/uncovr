@@ -290,7 +290,27 @@ export function activate(context: vscode.ExtensionContext) {
 						break;
 				}
 			});
-    })
+
+			// Watch for changes
+		  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+			if (!!workspaceFolder) {
+				const pattern = new vscode.RelativePattern(workspaceFolder, '.dev/*/_setup.json');
+				const watcher = vscode.workspace.createFileSystemWatcher(pattern);
+				watcher.onDidCreate(async uri => {
+					await updateStateAndNotify(panel);
+				});
+
+				watcher.onDidChange(async uri => {
+					await updateStateAndNotify(panel);
+				});
+
+				watcher.onDidDelete(async uri => {
+					await updateStateAndNotify(panel);
+				});
+
+				context.subscriptions.push(watcher);
+			}
+		})
   );
 }
 

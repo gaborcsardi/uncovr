@@ -121,13 +121,13 @@ update_package_tree <- function(
   }
 
   plan_file <- file.path(dst, plan_file_name)
-  saveRDS(plan, plan_file)
+  quick_save_rds(plan, plan_file)
   setup_file <- file.path(dst, setup_file_name)
   setup <- getOption(opt_setup)
-  saveRDS(setup, setup_file)
+  quick_save_rds(setup, setup_file)
   setup_json <- sub("[.]rds$", ".json", setup_file)
   setup$compiler_flags <- as.list(setup$compiler_flags)
-  writeLines(
+  write_lines_safe(
     jsonlite::toJSON(setup, auto_unbox = TRUE, pretty = TRUE),
     setup_json
   )
