@@ -64,7 +64,6 @@ async function updateState() {
 
 async function updateStateAndNotify(panel: vscode.WebviewPanel) {
 	await updateState();
-	console.log(appState.builds[0]);
   panel.webview.postMessage({ command: "setState", data: appState });
 }
 
