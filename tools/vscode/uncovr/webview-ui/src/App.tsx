@@ -3,23 +3,8 @@ import '@vscode-elements/elements';
 import '@vscode-elements/elements/dist/vscode-button';
 import '@vscode-elements/elements/dist/vscode-button-group';
 import '@vscode-elements/elements/dist/vscode-table';
-import { siR } from "simple-icons/icons";
 import TimeAgo from 'timeago-react';
 import prettyBytes from 'pretty-bytes';
-
-function Icon({ icon, size = 14 }: { icon: { svg: string; hex: string }; size?: number }) {
-  return (
-    <svg
-      role="img"
-      viewBox="0 0 14 14"
-      width={size}
-      height={size}
-      fill="currentColor"
-      style={{ verticalAlign: "-0.225em" }}
-      dangerouslySetInnerHTML={{ __html: icon.svg }}
-    />
-  );
-}
 
 interface Build {
   r_version: string;
@@ -82,7 +67,7 @@ function App() {
         columns={["6", "6", "15", "10", "10", "10", "6"]}>
         <vscode-table-header slot="header">
           <vscode-table-header-cell>Type</vscode-table-header-cell>
-          <vscode-table-header-cell><Icon icon={siR}/></vscode-table-header-cell>
+          <vscode-table-header-cell><i className="devicon-r-plain"></i></vscode-table-header-cell>
           <vscode-table-header-cell>Platform</vscode-table-header-cell>
           <vscode-table-header-cell>Last</vscode-table-header-cell>
           <vscode-table-header-cell>Size</vscode-table-header-cell>

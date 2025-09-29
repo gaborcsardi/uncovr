@@ -12,10 +12,10 @@
   "dependencies": {
     "@vscode-elements/elements": "^2.3.1",
     "@vscode/codicons": "^0.0.40",
+    "devicon": "^2.17.0",
     "pretty-bytes": "^7.1.0",
     "react": "^19.1.1",
     "react-dom": "^19.1.1",
-    "simple-icons": "^15.16.0",
     "timeago-react": "^3.0.7"
   },
   "devDependencies": {
