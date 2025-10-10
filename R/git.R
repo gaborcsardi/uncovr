@@ -1,5 +1,5 @@
 has_git <- function() {
-  Sys.which("git") != ""
+  Sys.which("git") != "" && file.exists(".git")
 }
 
 git_has_changed <- function(paths = NULL) {
