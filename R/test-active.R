@@ -39,6 +39,7 @@ test_active <- function(file = NULL, ...) {
     }
   }
 
+  cli::cli_alert_info("Running tests matching filter {.val {filter}}.")
   test(filter = filter, ...)
 }
 
