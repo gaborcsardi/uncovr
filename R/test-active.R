@@ -33,6 +33,13 @@ test_active <- function(file = NULL, ...) {
     } else {
       # TODO: do a better job than this regex
       testfile <- tools::file_path_sans_ext(basename(testfile))
+      if (grepl("-c$", testfile)) {
+        testfile <- c(
+          testfile,
+          sub("-c$", "", testfile),
+          sub("-c$", ".c", testfile)
+        )
+      }
       testfile <- sub("^test[-_.]", "", testfile)
       testfile <- gsub(".", "[.]", fixed = TRUE, testfile)
       filter <- paste0("^(", paste(testfile, collapse = "|"), ")$")
