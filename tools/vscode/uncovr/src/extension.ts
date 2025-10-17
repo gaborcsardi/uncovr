@@ -3,8 +3,8 @@ import { inPositron } from '@posit-dev/positron';
 import * as path from 'path';
 import * as fsx from 'fs';
 import { promises as fs } from "fs";
-const getFolderSize = require("get-folder-size");
 import { rimraf } from 'rimraf';
+
 
 interface Build {
   r_version: string;
@@ -39,6 +39,9 @@ async function updateState() {
 	let dirs = await listBuildDirs(folderUri);
 	if (!dirs) { return; }
 	let builds = [];
+
+	const { default: getFolderSize } = await import("get-folder-size");
+
 
 	for (const d of dirs) {
 		let conf = path.join(d, "_setup.json");
