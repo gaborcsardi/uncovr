@@ -3,7 +3,7 @@ import { inPositron } from '@posit-dev/positron';
 import * as path from 'path';
 import * as fsx from 'fs';
 import { promises as fs } from "fs";
-import getFolderSize from "get-folder-size";
+const getFolderSize = require("get-folder-size");
 import { rimraf } from 'rimraf';
 
 interface Build {
