@@ -33,12 +33,14 @@ test_active <- function(file = NULL, ...) {
     } else {
       # TODO: do a better job than this regex
       testfile <- tools::file_path_sans_ext(basename(testfile))
-      if (grepl("-c$", testfile)) {
-        testfile <- c(
+      if (grepl("[.]c", file) || grepl("-c$", testfile)) {
+        testfile <- unique(c(
           testfile,
           sub("-c$", "", testfile),
-          sub("-c$", ".c", testfile)
-        )
+          sub("-c$", ".c", testfile),
+          paste0(tools::file_path_sans_ext(basename(file)), "-c"),
+          basename(file)
+        ))
       }
       testfile <- sub("^test[-_.]", "", testfile)
       testfile <- gsub(".", "[.]", fixed = TRUE, testfile)
