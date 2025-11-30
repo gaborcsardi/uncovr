@@ -18,8 +18,12 @@ git_is_untracked <- function(paths) {
 }
 
 git_current_branch <- function() {
-  ret <- processx::run("git", c("symbolic-ref", "--short", "HEAD"))
-  trimws(ret$stdout)
+  ghref <- Sys.getenv("GITHUB_REF_NAME")
+  if (nzchar(ghref)) {
+    ghref
+  } else {
+    trimws(processx::run("git", c("symbolic-ref", "--short", "HEAD"))$stdout)
+  }
 }
 
 git_branch_exists <- function(branch) {
@@ -32,7 +36,18 @@ git_branch_exists <- function(branch) {
 }
 
 git_default_branch <- function() {
-  if (git_branch_exists("main")) {
+  baseref <- Sys.getenv("GITHUB_BASE_REF")
+  if (nzchar(baseref)) {
+    processx::run(
+      "git",
+      c("fetch", "origin", baseref)
+    )
+    processx::run(
+      "git",
+      c("branch", baseref, paste0("origin/", baseref))
+    )
+    baseref
+  } else if (git_branch_exists("main")) {
     "main"
   } else if (git_branch_exists("master")) {
     "master"

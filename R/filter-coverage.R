@@ -262,7 +262,16 @@ get_filter_pr <- function(path = ".", coverage = NULL) {
   coverage <- coverage %||% last(path = ".")
 
   basebranch <- git_default_branch()
-  ret <- processx::run("git", c("merge-base", basebranch, "HEAD"))
-  base <- trimws(ret$stdout)
+  base <- basebranch
+  tryCatch(
+    {
+      ret <- processx::run(
+        "git",
+        c("merge-base", basebranch, "HEAD")
+      )
+      base <- trimws(ret$stdout)
+    },
+    error = function(e) NULL
+  )
   get_filter_git(base, coverage$path, untracked = FALSE)
 }
