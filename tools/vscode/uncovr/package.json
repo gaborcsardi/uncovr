@@ -2,7 +2,8 @@
   "name": "uncovr",
   "displayName": "uncovr",
   "description": "R package development tools",
-  "version": "0.0.1",
+  "publisher": "gaborcsardi",
+  "version": "0.0.2",
   "repository": "https://github.com/gaborcsardi/uncovr",
   "engines": {
     "vscode": "^1.103.0"
