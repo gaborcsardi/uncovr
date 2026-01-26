@@ -129,7 +129,8 @@ report <- function(
 
   if (show) {
     if (
-      requireNamespace("rstudioapi", quietly = TRUE) &&
+      (Sys.getenv("RSTUDIO") == "1" || Sys.getenv("POSITRON") == "1") &&
+        requireNamespace("rstudioapi", quietly = TRUE) &&
         rstudioapi::isAvailable()
     ) {
       rstudioapi::viewer(output)
