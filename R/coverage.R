@@ -157,7 +157,11 @@ test <- function(
   }
 
   dev_data$coverage$percent_covered <-
-    dev_data$coverage$lines_covered / dev_data$coverage$code_lines * 100
+    ifelse(
+      dev_data$coverage$code_lines == 0,
+      100,
+      dev_data$coverage$lines_covered / dev_data$coverage$code_lines * 100
+    )
   dev_data$coverage$percent_covered[dev_data$coverage$code_lines == 0] <- 100
 
   dev_data$coverage <- add_coverage_summary(dev_data$coverage)
@@ -223,7 +227,11 @@ add_coverage_summary <- function(coverage) {
   )
   class(sm) <- c("tbl", class(sm))
 
-  sm$percent_covered <- sm$lines_covered / sm$code_lines * 100
+  sm$percent_covered <- ifelse(
+    sm$code_lines == 0,
+    100,
+    sm$lines_covered / sm$code_lines * 100
+  )
   attr(coverage, "summary") <- sm
 
   coverage
