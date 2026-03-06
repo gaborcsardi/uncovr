@@ -49,6 +49,26 @@ SEXP cov_gcov_flush_package(SEXP dllhandle) {
 }
 
 #ifdef COV_BUILD_SAFE
+
+#ifndef ENVFLAGS
+struct sxpinfo_struct {
+    SEXPTYPE type      :  TYPE_BITS;
+                            /* ==> (FUNSXP == 99) %% 2^5 == 3 == CLOSXP
+                            * -> warning: `type' is narrower than values
+                            *              of its type
+                            * when SEXPTYPE was an enum */
+    unsigned int scalar:  1;
+    unsigned int obj   :  1;
+    unsigned int alt   :  1;
+    unsigned int gp    : 16;
+};
+struct SEXPREC {
+    struct sxpinfo_struct sxpinfo;
+};
+#define ENVFLAGS(x) ((x)->sxpinfo.gp)
+#define SET_ENVFLAGS(x,v) (((x)->sxpinfo.gp)=(v))
+#endif
+
 #define FRAME_LOCK_MASK (1<<14)
 #define FRAME_IS_LOCKED(e) (ENVFLAGS(e) & FRAME_LOCK_MASK)
 #define LOCK_FRAME(e) SET_ENVFLAGS(e, ENVFLAGS(e) | FRAME_LOCK_MASK)
