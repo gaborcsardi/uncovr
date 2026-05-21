@@ -11,7 +11,6 @@ quick_install_loaded <- function(
   lib <- normalizePath(lib)
   tgt <- normalizePath(tgt)
   Sys.chmod(lib, mode = "0755", use_umask = FALSE)
-  on.exit(Sys.chmod(lib, mode = "0555", use_umask = FALSE))
 
   # detto
   if (!is.null(inject_script)) {
