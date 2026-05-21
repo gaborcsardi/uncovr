@@ -166,7 +166,7 @@ cov_instrument_file <- function(path, cov_symbol) {
       col1 = funres$brace_col + 1L,
       line2 = funres$brace_line,
       col2 = funres$brace_col + 1L,
-      code = paste0("`", cov_symbol, "`[", funres$id, "]; ")
+      code = paste0("`", cov_symbol, "`[", funres$id, "]; NULL; ")
     )
     inj <- rbind(inj, injf)
   }

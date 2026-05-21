@@ -106,6 +106,24 @@ test_that("a function wrapped in `# nocov start`/`end` is dropped", {
   expect_false(any(vapply(res$instrumented[4:8], has_counter, logical(1))))
 })
 
+test_that("counter calls evaluate to NULL", {
+  # Otherwise inserting a counter into an empty function body would change
+  # the function's return value from NULL to the counter's integer value.
+  res <- cov_instrument_in_tempdir(c(
+    "f <- function() {",
+    "}",
+    "g <- function() {",
+    "  1",
+    "}"
+  ))
+  src <- paste(res$instrumented, collapse = "\n")
+  env <- new.env()
+  assign(".__cov_t", .Call(c_cov_make_counter, nrow(res$funs) + nrow(res$lines)), envir = env)
+  eval(parse(text = src), envir = env)
+  expect_null(env$f())
+  expect_equal(env$g(), 1)
+})
+
 test_that("a function survives when only its def line is excluded", {
   # The top-level expression counter for line 1 must be dropped (line 1 is
   # excluded), but the function-body counter at `{` should still be injected
