@@ -90,11 +90,32 @@ cov_instrument_file <- function(path, cov_symbol) {
   # Drop duplicate lines, only the first expression is counted.
   # TODO: improve this and count every expression individually
   inj <- injx[!duplicated(injx$line1), , drop = FALSE]
+
+  lns0 <- lns <- untabify(readLines(path))
+
+  # Compute line exclusions up front, so we can skip injecting counters
+  # into excluded expressions instead of running them and ignoring the
+  # result. Excluding the head line of a multi-line expression now drops
+  # the counter for the whole expression; partial exclusion (excluding a
+  # later line of a multi-line expression while leaving line1 intact) is
+  # still possible and is handled when `res` is finalized below.
+  drop <- parse_line_exclusions(lns0, path)
+  if (length(drop) && nrow(inj)) {
+    excluded_expr <- inj$line1 %in% drop
+    if (any(excluded_expr)) {
+      extra <- unlist(.mapply(
+        `:`,
+        list(inj$line1[excluded_expr], inj$line2[excluded_expr]),
+        NULL
+      ))
+      drop <- sort(unique(c(drop, extra)))
+      inj <- inj[!excluded_expr, , drop = FALSE]
+    }
+  }
+
   # we note this before adding the function coverage markers, because
   # those typically go into non-instrumented lines
   instrumented_lines <- inj$line1
-
-  lns0 <- lns <- untabify(readLines(path))
 
   # now do the functions as well
   # TODO: \()? Or maybe not?
@@ -121,6 +142,23 @@ cov_instrument_file <- function(path, cov_symbol) {
     id = seq_along(fun_poss) + length(lns0),
     coverage = rep(NA_integer_, length(fun_poss))
   )
+
+  # Drop functions whose first line is excluded and whose body has no
+  # surviving instrumented expression. Same rule as before, just applied
+  # before injection so the counter is never inserted.
+  if (nrow(funres) && length(drop)) {
+    excluded_fun <- funres$line1 %in% drop & vapply(
+      seq_len(nrow(funres)),
+      function(i) {
+        !any(inj$line1 >= funres$line1[i] & inj$line1 <= funres$line2[i])
+      },
+      logical(1)
+    )
+    if (any(excluded_fun)) {
+      funres <- funres[!excluded_fun, , drop = FALSE]
+      funres$id <- seq_len(nrow(funres)) + length(lns0)
+    }
+  }
 
   if (nrow(funres)) {
     injf <- data.frame(
@@ -182,27 +220,12 @@ cov_instrument_file <- function(path, cov_symbol) {
   res$coverage[res$status == "instrumented"] <- 0L
   res$status[is.na(res$status)] <- "noncode"
 
-  # we add line exclusions here, so it is theoretically possible
-  # to only exclude parts of a multi-line expression
-  drop <- parse_line_exclusions(lns0, path)
+  # Mark excluded lines (counters for wholly-excluded expressions were
+  # already skipped above; `drop` was extended to cover their full span).
   if (length(drop)) {
     res$status[drop] <- "excluded"
     res$id[drop] <- NA_integer_
     res$coverage[drop] <- NA_integer_
-  }
-
-  # drop functions that are completely excluded
-  firstlineex <- which(res$status[funres$line1] == "excluded")
-  for (fex in firstlineex) {
-    l1 <- funres$line1[fex]
-    l2 <- funres$line2[fex]
-    if (!any(res$status[l1:l2] == "instrumented")) {
-      funres$status[fex] <- "excluded"
-    }
-  }
-  if (any(funres$status == "excluded")) {
-    funres <- funres[funres$status != "excluded", ]
-    funres$id <- seq_len(nrow(funres)) + length(lns0)
   }
 
   res <- list(lines = res, funs = funres, parsed = ps, code = lns)

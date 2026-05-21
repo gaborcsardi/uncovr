@@ -9,7 +9,7 @@ reload_setup <- function(
 
   # setup build options
   setup <- list(
-    version = 1L,
+    version = 2L,
     rver = as.character(getRversion()[, 1:2]),
     platform = R.Version()$platform,
     type = type
