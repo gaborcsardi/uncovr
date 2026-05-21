@@ -137,7 +137,12 @@ test <- function(
       sum(dev_data$coverage$funs[[i]]$coverage > 0, na.rm = TRUE)
   }
 
-  if (file.exists("src")) {
+  gcno_files <- dir(
+    file.path(pkg_path, "src"),
+    recursive = TRUE,
+    pattern = "[.]gcno$"
+  )
+  if (length(gcno_files) > 0) {
     # try to flush the coverage data for the package
     tryCatch(
       gcov_flush_package(dev_data$setup$pkgname),
