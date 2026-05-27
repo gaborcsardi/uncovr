@@ -171,11 +171,11 @@ builds <- function(path = ".") {
 }
 
 get_dev_dir <- function(setup = list(hash = "")) {
-  file.path(".dev", setup$hash)
+  file.path(".cache", "uncovr", setup$hash)
 }
 
 # specific for us, it should be in .Rbuildignore but have it here as well
-ignored_extra <- c("^[.]dev$")
+ignored_extra <- c("^[.]cache$")
 
 exclude_build_ignored <- function(
   plan,

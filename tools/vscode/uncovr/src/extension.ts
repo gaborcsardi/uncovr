@@ -32,7 +32,7 @@ async function updateState() {
     return;
   }
 
-  const folderUri = vscode.Uri.joinPath(folders[0].uri, ".dev");
+  const folderUri = vscode.Uri.joinPath(folders[0].uri, ".cache", "uncovr");
 
 	appState.folder = path.basename(path.dirname(folderUri.fsPath));
 
@@ -77,7 +77,7 @@ async function deleteBuild(hash: string) {
     return;
   }
 
-  const folderUri = vscode.Uri.joinPath(folders[0].uri, ".dev", hash);
+  const folderUri = vscode.Uri.joinPath(folders[0].uri, ".cache", "uncovr", hash);
 	if (!fsx.existsSync(folderUri.fsPath)) {
 		vscode.window.showErrorMessage(`No such build: ${hash}`);
 		return;
@@ -102,7 +102,7 @@ async function deleteAll() {
     return;
   }
 
-  const folderUri = vscode.Uri.joinPath(folders[0].uri, ".dev");
+  const folderUri = vscode.Uri.joinPath(folders[0].uri, ".cache", "uncovr");
 
 	appState.folder = path.basename(path.dirname(folderUri.fsPath));
 
@@ -297,7 +297,7 @@ export function activate(context: vscode.ExtensionContext) {
 			// Watch for changes
 		  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
 			if (!!workspaceFolder) {
-				const pattern = new vscode.RelativePattern(workspaceFolder, '.dev/*/_setup.json');
+				const pattern = new vscode.RelativePattern(workspaceFolder, '.cache/uncovr/*/_setup.json');
 				const watcher = vscode.workspace.createFileSystemWatcher(pattern);
 				watcher.onDidCreate(async uri => {
 					await updateStateAndNotify(panel);
