@@ -28,6 +28,9 @@
 #' @param github_summary Whether to generate a markdown summary in
 #'   `$GITHUB_STEP_SUMMARY`. It defaults to `FALSE`, except if running on
 #'   GitHub Actions.
+#' @param stop_on_failure Whether to throw an error if any tests fail.
+#'   Defaults to `TRUE` on CI, `FALSE` interactively. Coverage output
+#'   is always shown before the error is signalled.
 #'
 #' @inheritParams reload
 #'
@@ -72,7 +75,8 @@ test <- function(
   report = FALSE,
   show_report = report && interactive(),
   lcov_info = NULL,
-  github_summary = NULL
+  github_summary = NULL,
+  stop_on_failure = is_ci()
 ) {
   lcov_info <- lcov_info %||% get_option("lcov_info", "flag")
   github_summary <- github_summary %||% Sys.getenv("GITHUB_ACTIONS") != ""
@@ -210,6 +214,14 @@ test <- function(
     }
     print(dev_data)
     show_diff(coverage_results)
+  }
+
+  if (stop_on_failure) {
+    tr <- as.data.frame(dev_data$test_results)
+    nfail <- sum(tr$failed) + sum(tr$error)
+    if (nfail > 0) {
+      stop(nfail, " test(s) failed.", call. = FALSE)
+    }
   }
 
   invisible(dev_data)
