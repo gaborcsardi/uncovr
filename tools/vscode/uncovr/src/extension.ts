@@ -130,10 +130,10 @@ export function activate(context: vscode.ExtensionContext) {
 		if (inPositron()) {
 			vscode.commands.executeCommand(
 				'workbench.action.executeCode.console',
-				'uncovr::reload()'
+				' uncovr::reload()'
 			);
 		} else {
-			vscode.commands.executeCommand('r.runCommand', 'uncovr::reload()');
+			vscode.commands.executeCommand('r.runCommand', ' uncovr::reload()');
 		}
 	});
 	context.subscriptions.push(reload);
@@ -142,10 +142,10 @@ export function activate(context: vscode.ExtensionContext) {
 		if (inPositron()) {
 			vscode.commands.executeCommand(
 				'workbench.action.executeCode.console',
-				'uncovr::test()'
+				' uncovr::test()'
 			);
 		} else {
-			vscode.commands.executeCommand('r.runCommand', 'uncovr::test()');
+			vscode.commands.executeCommand('r.runCommand', ' uncovr::test()');
 		}
 	});
 	context.subscriptions.push(test);
@@ -154,10 +154,10 @@ export function activate(context: vscode.ExtensionContext) {
 	if (inPositron()) {
 			vscode.commands.executeCommand(
 				'workbench.action.executeCode.console',
-				'uncovr::document()'
+				' uncovr::document()'
 			);
 		} else {
-			vscode.commands.executeCommand('r.runCommand', 'uncovr::document()');
+			vscode.commands.executeCommand('r.runCommand', ' uncovr::document()');
 		}
 	});
 	context.subscriptions.push(document);
@@ -166,10 +166,10 @@ export function activate(context: vscode.ExtensionContext) {
 	if (inPositron()) {
 			vscode.commands.executeCommand(
 				'workbench.action.executeCode.console',
-				'uncovr::retest()'
+				' uncovr::retest()'
 			);
 		} else {
-			vscode.commands.executeCommand('r.runCommand', 'uncovr::retest()');
+			vscode.commands.executeCommand('r.runCommand', ' uncovr::retest()');
 		}
 	});
 	context.subscriptions.push(retest);
@@ -178,10 +178,10 @@ export function activate(context: vscode.ExtensionContext) {
 	if (inPositron()) {
 			vscode.commands.executeCommand(
 				'workbench.action.executeCode.console',
-				'uncovr::report()'
+				' uncovr::report()'
 			);
 		} else {
-			vscode.commands.executeCommand('r.runCommand', 'uncovr::report()');
+			vscode.commands.executeCommand('r.runCommand', ' uncovr::report()');
 		}
 	});
 	context.subscriptions.push(report);
@@ -190,10 +190,10 @@ export function activate(context: vscode.ExtensionContext) {
 	if (inPositron()) {
 			vscode.commands.executeCommand(
 				'workbench.action.executeCode.console',
-				'uncovr::builds()'
+				' uncovr::builds()'
 			);
 		} else {
-			vscode.commands.executeCommand('r.runCommand', 'uncovr::builds()');
+			vscode.commands.executeCommand('r.runCommand', ' uncovr::builds()');
 		}
 	});
 	context.subscriptions.push(builds);
@@ -202,10 +202,10 @@ export function activate(context: vscode.ExtensionContext) {
 	if (inPositron()) {
 			vscode.commands.executeCommand(
 				'workbench.action.executeCode.console',
-				'uncovr::last()'
+				' uncovr::last()'
 			);
 		} else {
-			vscode.commands.executeCommand('r.runCommand', 'uncovr::last()');
+			vscode.commands.executeCommand('r.runCommand', ' uncovr::last()');
 		}
 	});
 	context.subscriptions.push(last);
@@ -214,10 +214,10 @@ export function activate(context: vscode.ExtensionContext) {
 	if (inPositron()) {
 			vscode.commands.executeCommand(
 				'workbench.action.executeCode.console',
-				'uncovr::test_active()'
+				' uncovr::test_active()'
 			);
 		} else {
-			vscode.commands.executeCommand('r.runCommand', 'uncovr::test_active()');
+			vscode.commands.executeCommand('r.runCommand', ' uncovr::test_active()');
 		}
 	});
 	context.subscriptions.push(testActive);
@@ -226,10 +226,10 @@ export function activate(context: vscode.ExtensionContext) {
 	if (inPositron()) {
 			vscode.commands.executeCommand(
 				'workbench.action.executeCode.console',
-				'uncovr::lcov()'
+				' uncovr::lcov()'
 			);
 		} else {
-			vscode.commands.executeCommand('r.runCommand', 'uncovr::lcov()');
+			vscode.commands.executeCommand('r.runCommand', ' uncovr::lcov()');
 		}
 	});
 	context.subscriptions.push(lcov);
@@ -238,10 +238,10 @@ export function activate(context: vscode.ExtensionContext) {
 	if (inPositron()) {
 			vscode.commands.executeCommand(
 				'workbench.action.executeCode.console',
-				'uncovr::install()'
+				' uncovr::install()'
 			);
 		} else {
-			vscode.commands.executeCommand('r.runCommand', 'uncovr::install()');
+			vscode.commands.executeCommand('r.runCommand', ' uncovr::install()');
 		}
 	});
 	context.subscriptions.push(install);
@@ -250,10 +250,10 @@ export function activate(context: vscode.ExtensionContext) {
 	if (inPositron()) {
 			vscode.commands.executeCommand(
 				'workbench.action.executeCode.console',
-				'uncovr::diff()'
+				' uncovr::diff()'
 			);
 		} else {
-			vscode.commands.executeCommand('r.runCommand', 'uncovr::diff()');
+			vscode.commands.executeCommand('r.runCommand', ' uncovr::diff()');
 		}
 	});
 	context.subscriptions.push(install);
