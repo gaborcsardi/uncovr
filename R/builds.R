@@ -67,11 +67,15 @@ create_update_plan <- function(
     acthash <- rep(NA_character_, length(common_paths))
     tohash <- !cnew$isdir & !is_link(cnew$target)
     acthash[tohash] <- cli::hash_file_xxhash(cnew$target[tohash])
+    # We refresh a file if its hash changed. This covers `copy` actions, but
+    # also `link` actions that fell back to copying (e.g. on Windows without
+    # symlink privileges): there the target is a real file, not a symlink, so
+    # `is_link()` is FALSE and we re-copy on source changes. Real symlinks
+    # always reflect the source, so they need no refresh.
     update$update <- common_paths[
       cold$isdir != cnew$isdir |
         cold$action != cnew$action |
-        (cnew$action == "copy" &
-          !cold$isdir &
+        (!cold$isdir &
           !cnew$isdir &
           !is_link(cnew$target) &
           cnew$hash != acthash)
@@ -110,7 +114,7 @@ update_package_tree <- function(
     target <- planadd$target[i]
     isdir <- planadd$isdir[i]
     if (action == "link") {
-      file.symlink(file.path(wd, path), target)
+      link_or_copy(file.path(wd, path), target, isdir)
     } else if (isdir) {
       # files are copied later
       mkdirp(target)
