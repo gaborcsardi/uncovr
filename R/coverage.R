@@ -112,6 +112,10 @@ test <- function(
     writeLines(banner_test)
   }
 
+  if (is.null(reporter) && is_ci()) {
+    reporter <- CiReporter$new(package = setup$pkgname)
+  }
+
   withr::with_envvar(c(TESTTHAT_COVERAGE = setup$pkgname), {
     dev_data$test_results <- testthat::test_dir(
       test_dir,
