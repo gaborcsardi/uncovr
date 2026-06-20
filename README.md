@@ -5,10 +5,6 @@
 
 > Test coverage tool for R.
 
-[![](http://www.r-pkg.org/badges/version/uncovr)](http://www.r-pkg.org/pkg/uncovr)
-[![CRAN RStudio mirror
-downloads](http://cranlogs.r-pkg.org/badges/uncovr)](http://www.r-pkg.org/pkg/uncovr)
-
 ## Features
 
 ### Compatibility
@@ -44,7 +40,7 @@ downloads](http://cranlogs.r-pkg.org/badges/uncovr)](http://www.r-pkg.org/pkg/un
 - Summaries for (sub)directories.
 - HTML report, including a summary table and detailed reports for all
   files.
-- Upload test coverage results to <https://codecov.io>.
+- Upload test coverage results to [codecov.io](https://about.codecov.io/).
 - Automatic markdown summary when running on GitHub Actions.
 - Test coverage of a PR, a git commit, a git branch relative to another
   branch, changes relative to a git commit, etc.
@@ -71,7 +67,7 @@ pak::pkg_install("gaborcsardi/uncovr")
 | Function        | Description                                                       |
 |:----------------|:------------------------------------------------------------------|
 | `builds()`      | List all builds.                                                  |
-| `codecov()`     | Upload test coverage results to [codecov.io](https://codecov.io). |
+| `codecov()`     | Upload test coverage results to [codecov.io](https://about.codecov.io/). |
 | `diff()`        | Coverage of changes (or a branch or a PR).                        |
 | `document()`    | Use roxygen2 to (re)generated package manual.                     |
 | `install()`     | Install local package tree.                                       |
