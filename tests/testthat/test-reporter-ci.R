@@ -35,8 +35,8 @@ test_that("CiReporter renders blocks, skips and failures", {
   )
   out <- cli::ansi_strip(out)
 
-  expect_true(any(grepl("demo test suite ─+$", out)))
-  expect_true(any(grepl("› checks .* » is.na \\.\\. \\[", out)))
+  expect_true(any(grepl("demo test suite \u2500+$", out)))
+  expect_true(any(grepl("\u203a checks .* \u00bb is.na \\.\\. \\[", out)))
   expect_true(any(grepl("^PASS x2  FAIL x1  WARN x0  SKIP x1  \\[", out)))
 })
 
@@ -58,7 +58,7 @@ test_that("CiReporter groups consecutive skips", {
   )
   out <- cli::ansi_strip(out)
 
-  skip_idx <- grep("^SKIP › ", out)
+  skip_idx <- grep("^SKIP \u203a ", out)
   expect_length(skip_idx, 3)
   expect_equal(skip_idx, seq(skip_idx[1], by = 1, length.out = 3))
 })

@@ -25,7 +25,7 @@ CiReporter <- R6::R6Class(
       pkg <- self$package %||% "package"
       head <- paste0(cli::symbol$pointer, " ", pkg, " test suite ")
       width <- max(0, cli::console_width() - cli::ansi_nchar(head))
-      private$line(head, strrep("─", width))
+      private$line(head, strrep("\u2500", width))
       private$blank()
     },
 
@@ -92,9 +92,9 @@ CiReporter <- R6::R6Class(
           private$line(
             paste0(
               private$label(type),
-              " › ",
+              " \u203a ",
               private$loc_ctx(result),
-              " » ",
+              " \u00bb ",
               test,
               if (nzchar(msg)) paste0(" [", msg, "]")
             )
@@ -105,9 +105,9 @@ CiReporter <- R6::R6Class(
           private$line(
             paste0(
               private$label(type),
-              " › ",
+              " \u203a ",
               private$loc_ctx(result),
-              " » ",
+              " \u00bb ",
               test
             )
           )
@@ -125,11 +125,11 @@ CiReporter <- R6::R6Class(
         line <- if (is.na(private$test_line)) "" else private$test_line
         dur <- format_duration(proc.time()[["elapsed"]] - private$test_started)
         private$line(
-          "     › ",
+          "     \u203a ",
           ctx,
           " ",
           line,
-          " » ",
+          " \u00bb ",
           test,
           " ",
           private$dots,
