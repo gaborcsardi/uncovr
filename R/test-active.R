@@ -21,7 +21,27 @@ test_active <- function(file = NULL, ...) {
   } else {
     file <- get_active_file()
     if (is.null(file) || !file.exists(file)) {
-      stop("Could not find the currently active file.")
+      msg <- "Could not find the currently active file."
+      if (is_vscode() && !rstudioapi::isAvailable()) {
+        msg <- c(
+          msg,
+          i = paste0(
+            "In VS Code the active file is only available when the ",
+            "{.pkg vscode-R} session watcher is attached to this R session."
+          ),
+          "*" = paste0(
+            "Start R with the {.emph R: Create R Terminal} command, or ",
+            "{.code source(\"~/.vscode-R/init.R\")} from your {.file .Rprofile}."
+          ),
+          "*" = paste0(
+            "Make sure {.field r.sessionWatcher} and ",
+            "{.field r.session.emulateRStudioAPI} are enabled in your ",
+            "VS Code settings."
+          ),
+          i = "Or pass a file path or filter to {.fun test_active} directly."
+        )
+      }
+      stop(cli::format_error(msg))
     }
   }
 
