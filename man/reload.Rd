@@ -51,8 +51,6 @@ to use.
 \itemize{
 \item \code{path}: Relative path of the file.
 \item \code{isdir}: Whether it is a directory.
-\item \code{action}: How to create the path in the build directory: \code{"link"} or
-\code{"copy"}.
 \item \code{target}: Relative path of the file or directory in the build
 directory.
 \item \code{hash}: Hash of the file for files, it is \code{NA} for directories.

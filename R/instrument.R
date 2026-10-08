@@ -51,7 +51,7 @@ cov_instrument_file <- function(path, cov_symbol) {
   hash <- cli::hash_file_xxhash(path)
   cached <- get_cached_file(path, hash)
   if (!is.null(cached)) {
-    base::writeLines(cached$code, path)
+    write_lines_safe(cached$code, path)
     return(cached)
   }
   ps <- parse(path, keep.source = TRUE)
@@ -179,7 +179,7 @@ cov_instrument_file <- function(path, cov_symbol) {
     il <- ils[i]
     lns[il] <- str_insert_parallel(lns[il], injs[[i]]$col1, injs[[i]]$code)
   }
-  base::writeLines(lns, path)
+  write_lines_safe(lns, path)
 
   res <- data.frame(
     lines = lns0,

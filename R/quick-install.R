@@ -170,7 +170,7 @@ inject_onload_lines <- function(setup, pkg_dir, lib, inject_script, fnx) {
           d1 <- base::grep("__COV__ DELETE FROM HERE", lns, fixed = TRUE)[1]
           d2 <- base::grep("__COV__ DELETE UNTIL HERE", lns, fixed = TRUE)[2]
           lns <- lns[-(d1:d2)]
-          base::writeLines(lns, fnx_)
+          base::asNamespace("uncovr")$write_lines_safe(lns, fnx_)
 
           # call original .onLoad
           # TODO: is this ok, or needs Tailcall()?

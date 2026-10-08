@@ -15,6 +15,7 @@ SEXP cov_get_counts(SEXP counter);
 SEXP cov_read_file_raw(SEXP path);
 SEXP cov_read_lines(SEXP path);
 SEXP cov_parse_gcov(SEXP path);
+SEXP cov_clone_file(SEXP from, SEXP to);
 
 SEXP cov_set_attr(SEXP x, SEXP name, SEXP value) {
   Rf_setAttrib(x, name, value);
@@ -101,6 +102,7 @@ static const R_CallMethodDef callMethods[]  = {
   CALLDEF(cov_read_file_raw, 1),
   CALLDEF(cov_read_lines, 1),
   CALLDEF(cov_parse_gcov, 1),
+  CALLDEF(cov_clone_file, 2),
   CALLDEF(cov_gcov_flush_package, 1),
   CALLDEF(cov_lock_base, 0),
   CALLDEF(cov_unlock_base, 0),

@@ -26,13 +26,7 @@ install <- function(
     unlink(setup[["dir"]], recursive = TRUE)
   }
 
-  copy <- c("src", if (type == "coverage") "R")
-  plan <- update_package_tree(
-    ".",
-    setup$dir,
-    pkgname = setup$pkgname,
-    copy = copy
-  )
+  plan <- update_package_tree(".", setup$dir, pkgname = setup$pkgname)
 
   pkg_dir <- file.path(setup$dir, setup$pkgname)
   inst <- utils::install.packages(

@@ -1,28 +1,26 @@
 create_copy_plan <- function(
   src = ".",
-  pkgname = desc::desc_get("Package", src),
-  copy = character()
+  pkgname = desc::desc_get("Package", src)
 ) {
   withr::local_dir(src)
 
   topfiles <- dir(all.files = TRUE, include.dirs = TRUE, no.. = TRUE)
   topplan <- data.frame(
     path = topfiles,
-    isdir = is_dir(topfiles),
-    action = ifelse(topfiles %in% copy, "copy", "link")
+    isdir = is_dir(topfiles)
   )
   topplan <- exclude_build_ignored(topplan, src = ".", pkgname = pkgname)
 
   rest <- dir(
-    topplan$path[topplan$isdir & topplan$action == "copy"],
+    topplan$path[topplan$isdir],
     recursive = TRUE,
     all.files = TRUE,
-    full.names = TRUE
+    full.names = TRUE,
+    include.dirs = TRUE
   )
   restplan <- data.frame(
     path = rest,
-    isdir = is_dir(rest),
-    action = rep("copy", length(rest))
+    isdir = is_dir(rest)
   )
   restplan <- exclude_build_ignored(restplan, src = ".", pkgname = pkgname)
 
@@ -34,10 +32,9 @@ create_copy_plan <- function(
 create_update_plan <- function(
   src,
   dst,
-  pkgname = desc::desc_get("Package", src),
-  copy = character()
+  pkgname = desc::desc_get("Package", src)
 ) {
-  plan <- create_copy_plan(src, pkgname, copy)
+  plan <- create_copy_plan(src, pkgname)
   plan$target <- file.path(dst, pkgname, plan$path)
   plan$hash <- NA_character_
   plan$hash[!plan$isdir] <- cli::hash_file_xxhash(plan$path[!plan$isdir])
@@ -59,26 +56,19 @@ create_update_plan <- function(
     ))
     # check if we need to update files:
     # - dir -> file or file -> dir change
-    # - action change
+    # - target is a symlink, older versions symlinked files and dirs
     # - hash of file change
     common_paths <- intersect(plan$path, oldplan$path)
     cold <- oldplan[match(common_paths, oldplan$path), ]
     cnew <- plan[match(common_paths, plan$path), ]
+    islink <- is_link(cnew$target)
     acthash <- rep(NA_character_, length(common_paths))
-    tohash <- !cnew$isdir & !is_link(cnew$target)
+    tohash <- !cnew$isdir & !islink & file.exists(cnew$target)
     acthash[tohash] <- cli::hash_file_xxhash(cnew$target[tohash])
-    # We refresh a file if its hash changed. This covers `copy` actions, but
-    # also `link` actions that fell back to copying (e.g. on Windows without
-    # symlink privileges): there the target is a real file, not a symlink, so
-    # `is_link()` is FALSE and we re-copy on source changes. Real symlinks
-    # always reflect the source, so they need no refresh.
     update$update <- common_paths[
       cold$isdir != cnew$isdir |
-        cold$action != cnew$action |
-        (!cold$isdir &
-          !cnew$isdir &
-          !is_link(cnew$target) &
-          cnew$hash != acthash)
+        islink |
+        (tohash & cnew$hash != acthash)
     ]
   } else {
     update[["add"]] <- plan$path
@@ -90,12 +80,11 @@ create_update_plan <- function(
 update_package_tree <- function(
   src,
   dst,
-  pkgname = desc::desc_get("Package", src),
-  copy = character()
+  pkgname = desc::desc_get("Package", src)
 ) {
   withr::local_dir(src)
 
-  plan <- create_update_plan(src, dst, pkgname, copy)
+  plan <- create_update_plan(src, dst, pkgname)
   upd <- plan$update
   plan <- plan$plan
 
@@ -103,24 +92,23 @@ update_package_tree <- function(
   mkdirp(file.path(dst, pkgname))
 
   todel <- file.path(dst, pkgname, c(upd$delete, upd$update))
-  unlink(todel, force = TRUE, recursive = TRUE)
-  planadd <- plan[plan$path %in% c(upd$add, upd$update), ]
+  # Symlinks from older versions must be removed without `force = TRUE`,
+  # because that calls `chmod()` on the symlink, which changes the mode of
+  # the source file.
+  links <- todel[is_link(todel)]
+  unlink(links)
+  unlink(setdiff(todel, links), force = TRUE, recursive = TRUE)
+  # also add paths that were removed above, e.g. files in a deleted
+  # symlinked directory
+  planadd <- plan[
+    plan$path %in% c(upd$add, upd$update) | !file.exists(plan$target),
+  ]
 
-  # TODO: make relative symlinks, no absolute
-  wd <- getwd()
   for (i in seq_len(nrow(planadd))) {
-    path <- planadd$path[i]
-    action <- planadd$action[i]
-    target <- planadd$target[i]
-    isdir <- planadd$isdir[i]
-    if (action == "link") {
-      link_or_copy(file.path(wd, path), target, isdir)
-    } else if (isdir) {
-      # files are copied later
-      mkdirp(target)
+    if (planadd$isdir[i]) {
+      mkdirp(planadd$target[i])
     } else {
-      mkdirp(dirname(target))
-      file.copy(path, target)
+      clone_link_or_copy(planadd$path[i], planadd$target[i])
     }
   }
 

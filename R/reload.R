@@ -58,8 +58,6 @@ reload_setup <- function(
 #' - `plan`: Data frame of the plan to create the build directory. Columns:
 #'   - `path`: Relative path of the file.
 #'   - `isdir`: Whether it is a directory.
-#'   - `action`: How to create the path in the build directory: `"link"` or
-#'     `"copy"`.
 #'   - `target`: Relative path of the file or directory in the build
 #'     directory.
 #'   - `hash`: Hash of the file for files, it is `NA` for directories.
@@ -89,13 +87,7 @@ reload <- function(
   }
 
   cli::cli_alert_info("Updating dev tree ({type})")
-  copy <- c("src", if (type == "coverage" || local_install) "R")
-  plan <- update_package_tree(
-    ".",
-    setup$dir,
-    pkgname = setup$pkgname,
-    copy = copy
-  )
+  plan <- update_package_tree(".", setup$dir, pkgname = setup$pkgname)
 
   pkg_dir <- file.path(setup$dir, setup$pkgname)
 
@@ -124,7 +116,7 @@ reload <- function(
     cclines <- create_counters_lines(setup, cov_data)
     attr(cov_data, "metadata")$ccshift <- length(cclines)
     attr(cov_data, "metadata")$ccfile <- fn1
-    writeLines(c(cclines, readLines(fn1)), fn1)
+    write_lines_safe(c(cclines, readLines(fn1)), fn1)
   }
 
   if (local_install) {
@@ -137,7 +129,7 @@ reload <- function(
     # before the actualy .onLoad, in case .onLoad manipulates the namespace,
     # e.g. like in the pillar package:
     # https://github.com/r-lib/pillar/blob/d7e85eddd826da733c5aec12ccfb4d274c2eb5a6/R/zzz.R#L53
-    writeLines(
+    write_lines_safe(
       c(
         readLines(fnx),
         inject_onload_lines(setup, pkg_dir, lib, inject_script, fnx)
