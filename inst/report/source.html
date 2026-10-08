@@ -193,16 +193,38 @@
       lines = {{ lines }};
       coverage = {{ coverage }};
       funcs = {{ funcs }};
+      var editorScheme = "{{ editor_scheme }}";
+      var filePath = "{{ file_path_normalized }}";
     </script>
 
     <script>
       var code = lines.join("\n");
+      
+      function createEditorLink(text, line) {
+        if (editorScheme && filePath) {
+          var url = editorScheme + "://file" + filePath + (line ? ":" + line : "");
+          return "<a href=\"" + url + "\" title=\"Open in " + editorScheme + "\">" + text + "</a>";
+        }
+        return text;
+      }
+      
       function funclick(row) {
         $('.marker').removeClass('marker');
         var td = $('#L' + row);
         td.addClass("marker");
         td.parent().addClass('marker');
         return true;
+      }
+      
+      function lineclick(row) {
+        // If we have editor scheme, try to open in editor, otherwise use funclick
+        if (editorScheme && filePath) {
+          var url = editorScheme + "://file" + filePath + ":" + row;
+          window.open(url, '_blank');
+          return false;
+        } else {
+          return funclick(row);
+        }
       }
       $(document).ready( function() {
         // insert code
@@ -213,6 +235,15 @@
         $('code.hljs').each(function(i, block) {
           hljs.lineNumbersBlockSync(block, { singleLine: true });
         });
+        
+        // Make line numbers clickable for editor links
+        if (editorScheme && filePath) {
+          $('#coverage tr td.hljs-ln-numbers').each(function(i) {
+            var lineNum = i + 1;
+            var originalContent = $(this).text();
+            $(this).html('<a href="' + editorScheme + '://file' + filePath + ':' + lineNum + '" title="Open line ' + lineNum + ' in ' + editorScheme + '" onclick="return lineclick(' + lineNum + ');">' + originalContent + '</a>');
+          });
+        }
         // add coverage numbers
         var tds = $('#coverage tr td.hljs-ln-numbers');
         var tls = $('#coverage tr td.hljs-ln-code');
@@ -282,7 +313,7 @@
           <h2>
             <a href="{{ pkgname }}-report.html">{{ pkgname }} test coverage</a>
           </h2>
-          <h3><code>{{ path }}</code></h3>
+          <h3>{{ file_header }}</h3>
           <span class="cov-summary-cont">
             <span class="bold">{{ file_percent }}</span> lines
             <code class="cov-summary">{{ file_lines_covered }}/{{ file_lines }}</code>
