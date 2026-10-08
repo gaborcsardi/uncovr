@@ -9,7 +9,7 @@
 ^codecov\.yml$
 ^[\.]?air\.toml$
 ^\.vscode$
-^\.dev$
+^\.cache$
 ^src/.*[.]o$
 ^src/.*[.]so$
 ^src/.*[.]dll$

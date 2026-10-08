@@ -88,8 +88,8 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
   res <- data.frame(
     stringsAsFactors = FALSE,
     path = names(ccov),
-    symbol = NA_character_,
-    num_markers = NA_integer_,
+    symbol = rep(NA_character_, length(ccov)),
+    num_markers = rep(NA_integer_, length(ccov)),
     line_count = map_int(ccov, nrow),
     code_lines = map_int(ccov, function(x) sum(!is.na(x$coverage))),
     lines_covered = map_int(ccov, function(x) {
@@ -98,7 +98,7 @@ load_c_coverage <- function(path, exclusion_file = NULL) {
     total_hits = map_dbl(ccov, function(x) {
       sum(as.double(x$coverage), na.rm = TRUE)
     }),
-    percent_covered = NA_real_,
+    percent_covered = rep(NA_real_, length(ccov)),
     function_count = map_int(ccov_funs, nrow),
     functions_hit = map_int(ccov_funs, function(x) {
       sum(x$coverage > 0, na.rm = TRUE)

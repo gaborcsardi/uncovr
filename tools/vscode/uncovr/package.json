@@ -1,8 +1,9 @@
 {
   "name": "uncovr",
   "displayName": "uncovr",
-  "description": "R package development tools.",
-  "version": "0.0.1",
+  "description": "R package development tools",
+  "publisher": "gaborcsardi",
+  "version": "0.0.2",
   "repository": "https://github.com/gaborcsardi/uncovr",
   "engines": {
     "vscode": "^1.103.0"
@@ -14,6 +15,11 @@
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
+      {
+        "title": "List R Builds",
+        "category": "Uncovr",
+        "command": "uncovr.buildView"
+      },
       {
         "title": "(Re)load R package",
         "category": "Uncovr",
@@ -38,11 +44,6 @@
         "title": "R package test coverage report",
         "category": "Uncovr",
         "command": "uncovr.report"
-      },
-      {
-        "title": "List R package builds",
-        "category": "Uncovr",
-        "command": "uncovr.builds"
       },
       {
         "title": "Show last R package tests results",
@@ -87,7 +88,7 @@
         "mac": "cmd+shift+t"
       },
       {
-        "command": "uncovr.builds",
+        "command": "uncovr.buildView",
         "key": "ctrl+shift+u b",
         "mac": "cmd+shift+u b"
       },
@@ -148,6 +149,8 @@
     "typescript": "^5.9.2"
   },
   "dependencies": {
-    "@posit-dev/positron": "^0.1.8"
+    "@posit-dev/positron": "^0.1.8",
+    "get-folder-size": "^5.0.0",
+    "rimraf": "^6.0.1"
   }
 }

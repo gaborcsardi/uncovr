@@ -28,6 +28,9 @@
 #' @param github_summary Whether to generate a markdown summary in
 #'   `$GITHUB_STEP_SUMMARY`. It defaults to `FALSE`, except if running on
 #'   GitHub Actions.
+#' @param stop_on_failure Whether to throw an error if any tests fail.
+#'   Defaults to `TRUE` on CI, `FALSE` interactively. Coverage output
+#'   is always shown before the error is signalled.
 #'
 #' @inheritParams reload
 #'
@@ -72,7 +75,8 @@ test <- function(
   report = FALSE,
   show_report = report && interactive(),
   lcov_info = NULL,
-  github_summary = NULL
+  github_summary = NULL,
+  stop_on_failure = is_ci()
 ) {
   lcov_info <- lcov_info %||% get_option("lcov_info", "flag")
   github_summary <- github_summary %||% Sys.getenv("GITHUB_ACTIONS") != ""
@@ -108,6 +112,10 @@ test <- function(
     writeLines(banner_test)
   }
 
+  if (is.null(reporter) && is_ci()) {
+    reporter <- CiReporter$new(package = setup$pkgname)
+  }
+
   withr::with_envvar(c(TESTTHAT_COVERAGE = setup$pkgname), {
     dev_data$test_results <- testthat::test_dir(
       test_dir,
@@ -137,7 +145,12 @@ test <- function(
       sum(dev_data$coverage$funs[[i]]$coverage > 0, na.rm = TRUE)
   }
 
-  if (file.exists("src")) {
+  gcno_files <- dir(
+    file.path(pkg_path, "src"),
+    recursive = TRUE,
+    pattern = "[.]gcno$"
+  )
+  if (length(gcno_files) > 0) {
     # try to flush the coverage data for the package
     tryCatch(
       gcov_flush_package(dev_data$setup$pkgname),
@@ -157,7 +170,11 @@ test <- function(
   }
 
   dev_data$coverage$percent_covered <-
-    dev_data$coverage$lines_covered / dev_data$coverage$code_lines * 100
+    ifelse(
+      dev_data$coverage$code_lines == 0,
+      100,
+      dev_data$coverage$lines_covered / dev_data$coverage$code_lines * 100
+    )
   dev_data$coverage$percent_covered[dev_data$coverage$code_lines == 0] <- 100
 
   dev_data$coverage <- add_coverage_summary(dev_data$coverage)
@@ -203,6 +220,14 @@ test <- function(
     show_diff(coverage_results)
   }
 
+  if (stop_on_failure) {
+    tr <- as.data.frame(dev_data$test_results)
+    nfail <- sum(tr$failed) + sum(tr$error)
+    if (nfail > 0) {
+      stop(nfail, " test(s) failed.", call. = FALSE)
+    }
+  }
+
   invisible(dev_data)
 }
 
@@ -223,7 +248,11 @@ add_coverage_summary <- function(coverage) {
   )
   class(sm) <- c("tbl", class(sm))
 
-  sm$percent_covered <- sm$lines_covered / sm$code_lines * 100
+  sm$percent_covered <- ifelse(
+    sm$code_lines == 0,
+    100,
+    sm$lines_covered / sm$code_lines * 100
+  )
   attr(coverage, "summary") <- sm
 
   coverage

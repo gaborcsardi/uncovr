@@ -1,0 +1,34 @@
+/* /Users/gaborcsardi/Library/Python/3.13/bin/pyftsubset  devicon.ttf --unicodes=U+ebdb,U+ebd0 --output-file=r.ttf */
+/* https://github.com/devicons/devicon/blob/master/devicon-base.css */
+
+@font-face {
+  font-family: 'devicon';
+  src: url('fonts/devicon.ttf?cz6qyc') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: block;
+}
+
+[class^="devicon-"], [class*=" devicon-"] {
+  /* use !important to prevent issues with browser extensions that change fonts */
+  font-family: 'devicon' !important;
+  speak: never;
+  font-style: normal;
+  font-weight: normal;
+  font-variant: normal;
+  text-transform: none;
+  line-height: 1;
+  vertical-align: text-bottom;
+
+  /* Better Font Rendering =========== */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.devicon-r-line:before {
+  content: "\ebd0";
+}
+
+.devicon-r-plain:before {
+  content: "\ebdb";
+}

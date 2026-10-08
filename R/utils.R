@@ -240,3 +240,10 @@ empty_data_frame <- function(nrow) {
   class(res) <- c("tbl", class(res))
   res
 }
+
+write_lines_safe <- function(lines, path) {
+  bak <- paste0(path, "~")
+  on.exit(unlink(bak), add = TRUE)
+  writeLines(lines, bak)
+  file.rename(bak, path)
+}

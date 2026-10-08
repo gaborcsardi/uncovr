@@ -82,19 +82,21 @@ pak::pkg_install("gaborcsardi/uncovr")
 
 ## Usage
 
-| Function      | Description                                            |
-|:--------------|:-------------------------------------------------------|
-| `builds()`    | List all builds.                                       |
-| `reload()`    | (Re)load local package tree.                           |
-| `test()`      | Run package tests.                                     |
-| `report()`    | Generate HTML coverage report.                         |
-| `last()`      | Print last test and coverage results.                  |
-| `diff()`      | Coverage of changes (or a branch or a PR).             |
-| `retest()`    | Rerun failing tests.                                   |
-| `lcov()`      | Create LCOV coverage report.                           |
-| `codecov()`   | Upload test coverage results to [codecov.io](https://codecov.io) |
-| `document()`  | Use roxygen2 to (re)generated package manual.          |
-| `install()`   | Install local package tree.                            |
+| Function        | Description                                          |
+|:----------------|:-----------------------------------------------------|
+| `builds()`      | List all builds.                                     |
+| `codecov()`     | Upload test coverage results to [codecov.io](https://codecov.io). |
+| `diff()`        | Coverage of changes (or a branch or a PR).           |
+| `document()`    | Use roxygen2 to (re)generated package manual.        |
+| `install()`     | Install local package tree.                          |
+| `last()`        | Print last test and coverage results.                |
+| `lcov()`        | Create LCOV coverage report.                         |
+| `markdown()`    | Generate markdown summary of coverage results.       |
+| `reload()`      | (Re)load local package tree.                         |
+| `report()`      | Generate HTML coverage report.                       |
+| `retest()`      | Rerun failing tests.                                 |
+| `test()`        | Run package tests.                                   |
+| `test_active()` | Run tests for the active file.                       |
 
 ## License
 

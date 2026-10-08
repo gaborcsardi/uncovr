@@ -56,7 +56,11 @@ diff <- function(
     c2$code_lines[i] <- sum(c2$lines[[i]]$status == "instrumented")
     c2$lines_covered[i] <- sum(c2$lines[[i]]$coverage > 0, na.rm = TRUE)
     c2$total_hits[i] <- sum(c2$lines[[i]]$coverage, na.rm = TRUE)
-    c2$percent_covered[i] <- c2$lines_covered[i] / c2$code_lines[i] * 100
+    c2$percent_covered[i] <- if (c2$code_lines[i] == 0) {
+      100
+    } else {
+      c2$lines_covered[i] / c2$code_lines[i] * 100
+    }
     c2$uncovered[[i]] <- calculate_uncovered_intervals(c2$lines[[i]])
 
     # functions
@@ -262,7 +266,16 @@ get_filter_pr <- function(path = ".", coverage = NULL) {
   coverage <- coverage %||% last(path = ".")
 
   basebranch <- git_default_branch()
-  ret <- processx::run("git", c("merge-base", basebranch, "HEAD"))
-  base <- trimws(ret$stdout)
+  base <- basebranch
+  tryCatch(
+    {
+      ret <- processx::run(
+        "git",
+        c("merge-base", basebranch, "HEAD")
+      )
+      base <- trimws(ret$stdout)
+    },
+    error = function(e) NULL
+  )
   get_filter_git(base, coverage$path, untracked = FALSE)
 }

@@ -15,7 +15,8 @@ test(
   report = FALSE,
   show_report = report && interactive(),
   lcov_info = NULL,
-  github_summary = NULL
+  github_summary = NULL,
+  stop_on_failure = is_ci()
 )
 }
 \arguments{
@@ -52,6 +53,10 @@ are set, then TRUE.}
 \item{github_summary}{Whether to generate a markdown summary in
 \verb{$GITHUB_STEP_SUMMARY}. It defaults to \code{FALSE}, except if running on
 GitHub Actions.}
+
+\item{stop_on_failure}{Whether to throw an error if any tests fail.
+Defaults to \code{TRUE} on CI, \code{FALSE} interactively. Coverage output
+is always shown before the error is signalled.}
 }
 \value{
 A list of class \code{package_coverage} with entries:

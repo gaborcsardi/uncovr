@@ -9,7 +9,7 @@
 #include <io.h>
 #include <fcntl.h>
 
-static int utf8_to_utf16(const char* s, WCHAR** ws_ptr) {
+int utf8_to_utf16(const char* s, WCHAR** ws_ptr) {
   int ws_len, r;
   WCHAR* ws;
 

@@ -15,6 +15,7 @@ SEXP cov_get_counts(SEXP counter);
 SEXP cov_read_file_raw(SEXP path);
 SEXP cov_read_lines(SEXP path);
 SEXP cov_parse_gcov(SEXP path);
+SEXP cov_clone_file(SEXP from, SEXP to);
 
 SEXP cov_set_attr(SEXP x, SEXP name, SEXP value) {
   Rf_setAttrib(x, name, value);
@@ -49,6 +50,26 @@ SEXP cov_gcov_flush_package(SEXP dllhandle) {
 }
 
 #ifdef COV_BUILD_SAFE
+
+#ifndef ENVFLAGS
+struct sxpinfo_struct {
+    SEXPTYPE type      :  TYPE_BITS;
+                            /* ==> (FUNSXP == 99) %% 2^5 == 3 == CLOSXP
+                            * -> warning: `type' is narrower than values
+                            *              of its type
+                            * when SEXPTYPE was an enum */
+    unsigned int scalar:  1;
+    unsigned int obj   :  1;
+    unsigned int alt   :  1;
+    unsigned int gp    : 16;
+};
+struct SEXPREC {
+    struct sxpinfo_struct sxpinfo;
+};
+#define ENVFLAGS(x) ((x)->sxpinfo.gp)
+#define SET_ENVFLAGS(x,v) (((x)->sxpinfo.gp)=(v))
+#endif
+
 #define FRAME_LOCK_MASK (1<<14)
 #define FRAME_IS_LOCKED(e) (ENVFLAGS(e) & FRAME_LOCK_MASK)
 #define LOCK_FRAME(e) SET_ENVFLAGS(e, ENVFLAGS(e) | FRAME_LOCK_MASK)
@@ -81,6 +102,7 @@ static const R_CallMethodDef callMethods[]  = {
   CALLDEF(cov_read_file_raw, 1),
   CALLDEF(cov_read_lines, 1),
   CALLDEF(cov_parse_gcov, 1),
+  CALLDEF(cov_clone_file, 2),
   CALLDEF(cov_gcov_flush_package, 1),
   CALLDEF(cov_lock_base, 0),
   CALLDEF(cov_unlock_base, 0),
