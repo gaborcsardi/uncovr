@@ -226,7 +226,3 @@ update_libpath <- function(lib, pkgname) {
   current <- current[!grepl(paste0("/__dev_lib__$"), current)]
   .libPaths(c(lib, current))
 }
-
-clean_libpath <- function(pkgname) {
-  update_libpath(NULL, pkgname)
-}

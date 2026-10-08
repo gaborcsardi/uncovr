@@ -117,7 +117,7 @@ report <- function(
   writeLines(lns, output)
 
   for (path in coverage$path) {
-    report_file_(
+    report_file(
       path,
       coverage = coverage,
       path = ".",
@@ -148,16 +148,6 @@ format_percent <- function(x) {
 }
 
 report_file <- function(
-  code_file = NULL,
-  coverage = NULL,
-  path = ".",
-  output_dir = NULL,
-  show = interactive()
-) {
-  report_file_(code_file, coverage, path, output_dir, show)
-}
-
-report_file_ <- function(
   code_file = NULL,
   coverage = NULL,
   path = ".",
