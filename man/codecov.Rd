@@ -19,7 +19,8 @@ codecov(
   slug = NULL,
   yaml = NULL,
   flags = NULL,
-  pr = NULL
+  pr = NULL,
+  no_token = NULL
 )
 }
 \arguments{
@@ -73,6 +74,18 @@ Can be one or more flags. E.g., \code{flags = "unit"} or \code{flags = "unit,jav
 
 \item{pr}{The pull request number this commit is currently found in.
 If \code{NULL} it is detected automatically.}
+
+\item{no_token}{What to do if there is no Codecov token and no
+GitHub Actions OIDC token. Possible values:
+\itemize{
+\item \code{"skip"}: show a warning message and skip the upload.
+\item \code{"error"}: throw an error.
+\item \code{"auto"}: \code{"skip"} for pull requests, \code{"error"} otherwise.
+Pull requests from forks never have a token on GitHub Actions.
+}
+
+If \code{NULL}, the \code{R_COV_NO_TOKEN} environment variable is used, and
+if that is not set either, \code{"auto"}.}
 }
 \description{
 Upload test coverage results to codecov

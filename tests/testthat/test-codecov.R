@@ -75,3 +75,46 @@ test_that("get_github_oidc_token errors", {
   )
   expect_error(get_github_oidc_token(), "invalid response")
 })
+
+test_that("codecov() no_token", {
+  withr::local_envvar(
+    CI = NA,
+    CODECOV_TOKEN = NA,
+    R_COV_NO_TOKEN = NA,
+    GITHUB_ACTIONS = "true",
+    GITHUB_REPOSITORY = "owner/repo",
+    GITHUB_REF = "refs/heads/main",
+    GITHUB_HEAD_REF = NA,
+    ACTIONS_ID_TOKEN_REQUEST_URL = NA,
+    ACTIONS_ID_TOKEN_REQUEST_TOKEN = NA
+  )
+  cov <- list()
+
+  # not a PR: error by default
+  expect_error(codecov(coverage = cov, commit = "abc"), "No Codecov token")
+  expect_message(
+    res <- codecov(coverage = cov, commit = "abc", no_token = "skip"),
+    "skipping Codecov upload"
+  )
+  expect_null(res$url)
+
+  # PR: skip by default
+  withr::local_envvar(
+    GITHUB_REF = "refs/pull/12/merge",
+    GITHUB_HEAD_REF = "feature"
+  )
+  expect_message(
+    codecov(coverage = cov, commit = "abc"),
+    "skipping Codecov upload for pull request"
+  )
+  expect_error(
+    codecov(coverage = cov, commit = "abc", no_token = "error"),
+    "No Codecov token"
+  )
+
+  # env var
+  withr::local_envvar(R_COV_NO_TOKEN = "error")
+  expect_error(codecov(coverage = cov, commit = "abc"), "No Codecov token")
+
+  expect_error(codecov(coverage = cov, commit = "abc", no_token = "foo"))
+})

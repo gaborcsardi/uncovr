@@ -41,6 +41,15 @@
 #'   Can be one or more flags. E.g., `flags = "unit"` or `flags = "unit,java"`.
 #' @param pr The pull request number this commit is currently found in.
 #'   If `NULL` it is detected automatically.
+#' @param no_token What to do if there is no Codecov token and no
+#'   GitHub Actions OIDC token. Possible values:
+#'   * `"skip"`: show a warning message and skip the upload.
+#'   * `"error"`: throw an error.
+#'   * `"auto"`: `"skip"` for pull requests, `"error"` otherwise.
+#'     Pull requests from forks never have a token on GitHub Actions.
+#'
+#'   If `NULL`, the `R_COV_NO_TOKEN` environment variable is used, and
+#'   if that is not set either, `"auto"`.
 
 #' @export
 
@@ -59,7 +68,8 @@ codecov <- function(
   slug = NULL,
   yaml = NULL,
   flags = NULL,
-  pr = NULL
+  pr = NULL,
+  no_token = NULL
 ) {
   if (is_ci()) {
     writeLines(banner_codecov)
@@ -88,6 +98,22 @@ codecov <- function(
 
   token <- token %||% get_codecov_token()
   if (is.null(token)) {
+    no_token <- no_token %||% get_env("R_COV_NO_TOKEN") %||% "auto"
+    no_token <- match.arg(no_token, c("auto", "skip", "error"))
+    if (no_token == "auto") {
+      no_token <- if (is.null(params[["pr"]])) "error" else "skip"
+    }
+    if (no_token == "skip") {
+      if (is.null(params[["pr"]])) {
+        cli::cli_alert_warning("No Codecov token, skipping Codecov upload.")
+      } else {
+        cli::cli_alert_warning(
+          "No Codecov token, skipping Codecov upload for pull request
+           #{params[['pr']]}."
+        )
+      }
+      return(invisible(list(url = NULL)))
+    }
     stop(
       "No Codecov token. You need to set the `CODECOV_TOKEN` environment ",
       "variable to your Codecov token, either a global token for your ",
