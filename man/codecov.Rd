@@ -33,8 +33,18 @@ results are used via \code{\link[=last]{last()}}.}
 \item{service}{The CI service name. If \code{NULL} then it is detected
 automatically from environment variables.}
 
-\item{token}{Codecode token to identify the project. If the
-\code{CODECOV_TOKEN} environment variable is set, it is used as the token.}
+\item{token}{Codecov token to identify the project. If the
+\code{CODECOV_TOKEN} environment variable is set, it is used as the token.
+Otherwise, on GitHub Actions, uncovr requests an OIDC token from
+GitHub and uses that. This needs the \code{id-token: write} permission
+for the job:
+
+\if{html}{\out{<div class="sourceCode yaml">}}\preformatted{permissions:
+  contents: read
+  id-token: write
+}\if{html}{\out{</div>}}
+
+OIDC tokens are not available for pull requests from forks.}
 
 \item{name}{A custom name for this specific upload.}
 

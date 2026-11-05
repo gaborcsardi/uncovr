@@ -11,8 +11,17 @@
 #' @param url Codecov URL. If `NULL` the default URL is used.
 #' @param service The CI service name. If `NULL` then it is detected
 #'   automatically from environment variables.
-#' @param token Codecode token to identify the project. If the
+#' @param token Codecov token to identify the project. If the
 #'  `CODECOV_TOKEN` environment variable is set, it is used as the token.
+#'  Otherwise, on GitHub Actions, uncovr requests an OIDC token from
+#'  GitHub and uses that. This needs the `id-token: write` permission
+#'  for the job:
+#'  ```yaml
+#'  permissions:
+#'    contents: read
+#'    id-token: write
+#'  ```
+#'  OIDC tokens are not available for pull requests from forks.
 #' @param name A custom name for this specific upload.
 #' @param commit The destination commit sha for the report. If `NULL` it is
 #'   detected automatically.
@@ -82,7 +91,10 @@ codecov <- function(
     stop(
       "No Codecov token. You need to set the `CODECOV_TOKEN` environment ",
       "variable to your Codecov token, either a global token for your ",
-      "organization, or a repository token."
+      "organization, or a repository token. On GitHub Actions you can ",
+      "also give the job the `id-token: write` permission to use an ",
+      "OIDC token instead. (OIDC tokens are not available for pull ",
+      "requests from forks.)"
     )
   }
 
@@ -106,7 +118,9 @@ codecov <- function(
     "!" = if (is.null(token)) {
       "Could not find Codecov token! Trying token-less upload."
     },
-    "*" = if (!is.null(token)) {
+    "*" = if (identical(attr(token, "source")[1], "oidc")) {
+      "Using GitHub Actions OIDC token"
+    } else if (!is.null(token)) {
       "Found Codecov token ({nchar(token)} characters)"
     }
   ))
@@ -322,7 +336,50 @@ codecov_create_report <- function(url, token, params) {
 
 get_codecov_token <- function() {
   # TODO validate
-  get_env("CODECOV_TOKEN")
+  get_env("CODECOV_TOKEN") %||% get_github_oidc_token()
+}
+
+# On GitHub Actions, if the job has the `id-token: write` permission,
+# we can get a short lived OIDC token from GitHub, and Codecov accepts
+# that instead of a Codecov token. This is what codecov-action does with
+# `use_oidc: true`.
+get_github_oidc_token <- function(audience = "https://codecov.io") {
+  if (Sys.getenv("GITHUB_ACTIONS") == "") {
+    return(NULL)
+  }
+  req_url <- get_env("ACTIONS_ID_TOKEN_REQUEST_URL")
+  req_token <- get_env("ACTIONS_ID_TOKEN_REQUEST_TOKEN")
+  if (is.null(req_url) || is.null(req_token)) {
+    return(NULL)
+  }
+
+  url <- paste0(req_url, "&audience=", curl::curl_escape(audience))
+  resp <- github_oidc_fetch(url, req_token)
+  if (resp$status_code >= 300) {
+    stop(
+      "Failed to get OIDC token from GitHub Actions.\n",
+      rawToChar(resp$content)
+    )
+  }
+  token <- jsonlite::parse_json(rawToChar(resp$content))[["value"]]
+  if (!is.character(token) || length(token) != 1 || token == "") {
+    stop("Failed to get OIDC token from GitHub Actions, invalid response.")
+  }
+
+  # hide the token in the GitHub Actions log
+  writeLines(paste0("::add-mask::", token))
+
+  structure(token, source = c("oidc", "GitHub Actions"))
+}
+
+github_oidc_fetch <- function(url, req_token) {
+  hand <- curl::new_handle()
+  curl::handle_setheaders(
+    hand,
+    "authorization" = paste("bearer", req_token),
+    "accept" = "application/json"
+  )
+  curl::curl_fetch_memory(url, handle = hand)
 }
 
 detect_codecov_provider <- function(inputs) {

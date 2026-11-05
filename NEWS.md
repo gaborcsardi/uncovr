@@ -1,6 +1,10 @@
 
 # 0.0.0.9000
 
+* `codecov()` now uses a GitHub Actions OIDC token if `CODECOV_TOKEN`
+  is not set, so you don't need to store a Codecov token as a secret.
+  The job needs the `id-token: write` permission for this.
+
 * The build directory is now created by cloning every file of the
   package, instead of symlinking (on Unix) or copying (on Windows).
   Cloning uses `clonefile()` on macOS, the `FICLONE` ioctl on Linux and
