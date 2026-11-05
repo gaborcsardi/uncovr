@@ -6,8 +6,9 @@
   The job needs the `id-token: write` permission for this.
 
 * `codecov()` has a new `no_token` argument that says what to do if
-  there is no Codecov token. By default it skips the upload for pull
-  requests and errors otherwise.
+  there is no Codecov token. By default it tries a token-less upload
+  for pull requests from forks (and skips the upload if that fails),
+  and errors otherwise.
 
 * The build directory is now created by cloning every file of the
   package, instead of symlinking (on Unix) or copying (on Windows).

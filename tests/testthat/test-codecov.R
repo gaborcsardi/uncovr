@@ -85,6 +85,7 @@ test_that("codecov() no_token", {
     GITHUB_REPOSITORY = "owner/repo",
     GITHUB_REF = "refs/heads/main",
     GITHUB_HEAD_REF = NA,
+    GITHUB_EVENT_PATH = NA,
     ACTIONS_ID_TOKEN_REQUEST_URL = NA,
     ACTIONS_ID_TOKEN_REQUEST_TOKEN = NA
   )
@@ -98,23 +99,129 @@ test_that("codecov() no_token", {
   )
   expect_null(res$url)
 
-  # PR: skip by default
+  # PR, not from a fork: also error by default
   withr::local_envvar(
     GITHUB_REF = "refs/pull/12/merge",
     GITHUB_HEAD_REF = "feature"
   )
+  expect_error(codecov(coverage = cov, commit = "abc"), "No Codecov token")
   expect_message(
-    codecov(coverage = cov, commit = "abc"),
+    codecov(coverage = cov, commit = "abc", no_token = "skip"),
     "skipping Codecov upload for pull request"
-  )
-  expect_error(
-    codecov(coverage = cov, commit = "abc", no_token = "error"),
-    "No Codecov token"
   )
 
   # env var
-  withr::local_envvar(R_COV_NO_TOKEN = "error")
-  expect_error(codecov(coverage = cov, commit = "abc"), "No Codecov token")
+  withr::local_envvar(R_COV_NO_TOKEN = "skip")
+  expect_message(
+    codecov(coverage = cov, commit = "abc"),
+    "skipping Codecov upload"
+  )
 
   expect_error(codecov(coverage = cov, commit = "abc", no_token = "foo"))
+})
+
+local_fork_pr <- function(head_repo, .local_envir = parent.frame()) {
+  event <- withr::local_tempfile(.local_envir = .local_envir)
+  owner <- sub("/.*$", "", head_repo)
+  jsonlite::write_json(
+    list(
+      pull_request = list(
+        head = list(
+          label = paste0(owner, ":feature"),
+          repo = list(full_name = head_repo)
+        )
+      )
+    ),
+    event,
+    auto_unbox = TRUE
+  )
+  withr::local_envvar(
+    CI = NA,
+    CODECOV_TOKEN = NA,
+    R_COV_NO_TOKEN = NA,
+    GITHUB_ACTIONS = "true",
+    GITHUB_REPOSITORY = "owner/repo",
+    GITHUB_REF = "refs/pull/12/merge",
+    GITHUB_HEAD_REF = "feature",
+    GITHUB_EVENT_PATH = event,
+    ACTIONS_ID_TOKEN_REQUEST_URL = NA,
+    ACTIONS_ID_TOKEN_REQUEST_TOKEN = NA,
+    .local_envir = .local_envir
+  )
+}
+
+test_that("is_fork, get_head_label", {
+  local_fork_pr("someone/repo")
+  expect_true(ccprov_actions$is_fork(list()))
+  expect_equal(ccprov_actions$get_head_label(list()), "someone:feature")
+
+  local_fork_pr("owner/repo")
+  expect_false(ccprov_actions$is_fork(list()))
+
+  withr::local_envvar(GITHUB_EVENT_PATH = NA)
+  expect_false(ccprov_actions$is_fork(list()))
+  expect_null(ccprov_actions$get_head_label(list()))
+})
+
+test_that("codecov() token-less upload for fork PR", {
+  local_fork_pr("someone/repo")
+  args <- NULL
+  local_mocked_bindings(
+    codecov_upload = function(url, token, params, coverage) {
+      args <<- list(token = token, params = params)
+      list(cc_url = "https://codecov.io/x")
+    }
+  )
+  expect_message(
+    res <- codecov(coverage = list(), commit = "abc"),
+    "token-less"
+  )
+  expect_null(args$token)
+  expect_equal(args$params$branch, "someone:feature")
+  expect_equal(res$url, "https://codecov.io/x")
+
+  # explicit branch is kept
+  suppressMessages(
+    codecov(coverage = list(), commit = "abc", branch = "mybranch")
+  )
+  expect_equal(c(args$params$branch), "mybranch")
+})
+
+test_that("codecov() failed token-less upload", {
+  local_fork_pr("someone/repo")
+  local_mocked_bindings(
+    codecov_upload = function(...) stop("Token required")
+  )
+  # auto: skip
+  expect_message(
+    res <- codecov(coverage = list(), commit = "abc"),
+    "upload failed, skipping"
+  )
+  expect_null(res$url)
+
+  # explicit tokenless: error
+  expect_error(
+    codecov(coverage = list(), commit = "abc", no_token = "tokenless"),
+    "Token required"
+  )
+})
+
+test_that("codecov() does not try token-less upload for non-fork PR", {
+  local_fork_pr("owner/repo")
+  local_mocked_bindings(
+    codecov_upload = function(...) stop("should not be called")
+  )
+  expect_error(codecov(coverage = list(), commit = "abc"), "No Codecov token")
+})
+
+test_that("codecov() errors if upload with token fails in non-fork PR", {
+  local_fork_pr("owner/repo")
+  withr::local_envvar(CODECOV_TOKEN = "secret")
+  local_mocked_bindings(
+    codecov_upload = function(...) stop("Upload failed")
+  )
+  expect_error(
+    suppressMessages(codecov(coverage = list(), commit = "abc")),
+    "Upload failed"
+  )
 })

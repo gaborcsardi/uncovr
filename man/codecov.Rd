@@ -78,10 +78,13 @@ If \code{NULL} it is detected automatically.}
 \item{no_token}{What to do if there is no Codecov token and no
 GitHub Actions OIDC token. Possible values:
 \itemize{
+\item \code{"tokenless"}: try a token-less upload. Codecov only accepts
+these for public repositories, from pull requests from forks.
 \item \code{"skip"}: show a warning message and skip the upload.
 \item \code{"error"}: throw an error.
-\item \code{"auto"}: \code{"skip"} for pull requests, \code{"error"} otherwise.
-Pull requests from forks never have a token on GitHub Actions.
+\item \code{"auto"}: for pull requests from forks, try a token-less upload,
+and skip it if it fails. \code{"error"} otherwise. (Pull requests from
+forks never have a token on GitHub Actions.)
 }
 
 If \code{NULL}, the \code{R_COV_NO_TOKEN} environment variable is used, and

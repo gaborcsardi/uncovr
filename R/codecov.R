@@ -43,10 +43,13 @@
 #'   If `NULL` it is detected automatically.
 #' @param no_token What to do if there is no Codecov token and no
 #'   GitHub Actions OIDC token. Possible values:
+#'   * `"tokenless"`: try a token-less upload. Codecov only accepts
+#'     these for public repositories, from pull requests from forks.
 #'   * `"skip"`: show a warning message and skip the upload.
 #'   * `"error"`: throw an error.
-#'   * `"auto"`: `"skip"` for pull requests, `"error"` otherwise.
-#'     Pull requests from forks never have a token on GitHub Actions.
+#'   * `"auto"`: for pull requests from forks, try a token-less upload,
+#'     and skip it if it fails. `"error"` otherwise. (Pull requests from
+#'     forks never have a token on GitHub Actions.)
 #'
 #'   If `NULL`, the `R_COV_NO_TOKEN` environment variable is used, and
 #'   if that is not set either, `"auto"`.
@@ -97,42 +100,40 @@ codecov <- function(
   params <- cc_prov$get_service_params(inputs)
 
   token <- token %||% get_codecov_token()
+  # in "auto" mode we skip the upload if a token-less upload fails
+  skip_on_failure <- FALSE
   if (is.null(token)) {
     no_token <- no_token %||% get_env("R_COV_NO_TOKEN") %||% "auto"
-    no_token <- match.arg(no_token, c("auto", "skip", "error"))
+    no_token <- match.arg(no_token, c("auto", "tokenless", "skip", "error"))
     if (no_token == "auto") {
-      no_token <- if (is.null(params[["pr"]])) "error" else "skip"
+      no_token <- if (cc_prov$is_fork(inputs)) "tokenless" else "error"
+      skip_on_failure <- no_token == "tokenless"
     }
     if (no_token == "skip") {
-      if (is.null(params[["pr"]])) {
-        cli::cli_alert_warning("No Codecov token, skipping Codecov upload.")
-      } else {
-        cli::cli_alert_warning(
-          "No Codecov token, skipping Codecov upload for pull request
-           #{params[['pr']]}."
-        )
-      }
+      codecov_skip_message(params)
       return(invisible(list(url = NULL)))
     }
-    stop(
-      "No Codecov token. You need to set the `CODECOV_TOKEN` environment ",
-      "variable to your Codecov token, either a global token for your ",
-      "organization, or a repository token. On GitHub Actions you can ",
-      "also give the job the `id-token: write` permission to use an ",
-      "OIDC token instead. (OIDC tokens are not available for pull ",
-      "requests from forks.)"
-    )
-  }
+    if (no_token == "error") {
+      stop(
+        "No Codecov token. You need to set the `CODECOV_TOKEN` environment ",
+        "variable to your Codecov token, either a global token for your ",
+        "organization, or a repository token. On GitHub Actions you can ",
+        "also give the job the `id-token: write` permission to use an ",
+        "OIDC token instead. (OIDC tokens are not available for pull ",
+        "requests from forks.)"
+      )
+    }
 
-  # TODO: this is once we have token-less uploads
-  # TODO: how would this even work with a global token?
-  if (is.null(token)) {
+    # token-less upload. Codecov only accepts these for public repos,
+    # from forks, and the branch must be `<fork-owner>:<branch>`.
+    if (is.null(inputs[["branch"]])) {
+      params[["branch"]] <- cc_prov$get_head_label(inputs) %||%
+        params[["branch"]]
+    }
     if (is.null(params[["slug"]])) {
-      stop("Slug must the set if a Codecov token is not passed")
-    } else {
-      if (!grepl("/", params[["slug"]])) {
-        stop("Slug must follow the format of <owner>/<repo> for Codecov upload")
-      }
+      stop("Slug must be set for a token-less Codecov upload")
+    } else if (!grepl("/", params[["slug"]])) {
+      stop("Slug must follow the format of <owner>/<repo> for Codecov upload")
     }
   }
 
@@ -142,7 +143,7 @@ codecov <- function(
     "*" = "Branch: {.code {params['branch']}}",
     "*" = "SHA: {.code {params['commit']}}",
     "!" = if (is.null(token)) {
-      "Could not find Codecov token! Trying token-less upload."
+      "No Codecov token, trying token-less upload."
     },
     "*" = if (identical(attr(token, "source")[1], "oidc")) {
       "Using GitHub Actions OIDC token"
@@ -151,15 +152,46 @@ codecov <- function(
     }
   ))
 
+  resp <- if (skip_on_failure) {
+    tryCatch(
+      codecov_upload(url, token, params, coverage),
+      error = function(err) {
+        cli::cli_alert_warning(
+          "Token-less Codecov upload failed, skipping it: {conditionMessage(err)}"
+        )
+        NULL
+      }
+    )
+  } else {
+    codecov_upload(url, token, params, coverage)
+  }
+  if (is.null(resp)) {
+    return(invisible(list(url = NULL)))
+  }
+
+  cli::cli_alert_success("Browse code coverage at {.url {resp$cc_url}}")
+
+  invisible(list(url = resp$cc_url))
+}
+
+codecov_upload <- function(url, token, params, coverage) {
   codecov_create_commit(url, token, params)
   codecov_create_report(url, token, params)
   resp <- codecov_start_upload(url, token, params)
   payload <- codecov_create_payload(coverage)
   codecov_store_upload(resp$s3_url, payload)
+  resp
+}
 
-  cli::cli_alert_success("Browse code coverage at {.url {resp$cc_url}}")
-
-  invisible(list(url = resp$cc_url))
+codecov_skip_message <- function(params) {
+  if (is.null(params[["pr"]])) {
+    cli::cli_alert_warning("No Codecov token, skipping Codecov upload.")
+  } else {
+    cli::cli_alert_warning(
+      "No Codecov token, skipping Codecov upload for pull request
+       #{params[['pr']]}."
+    )
+  }
 }
 
 codecov_store_upload <- function(url, payload) {
@@ -496,6 +528,28 @@ ccprov_actions <- list(
 
   get_slug = function(inputs) {
     inputs[["slug"]] %||% get_env("GITHUB_REPOSITORY")
+  },
+
+  # The webhook payload of the event that triggered the workflow
+  get_event = function() {
+    path <- get_env("GITHUB_EVENT_PATH")
+    if (is.null(path) || !file.exists(path)) {
+      return(NULL)
+    }
+    tryCatch(jsonlite::read_json(path), error = function(err) NULL)
+  },
+
+  is_fork = function(inputs) {
+    event <- ccprov_actions$get_event()
+    head <- event[["pull_request"]][["head"]][["repo"]][["full_name"]]
+    repo <- get_env("GITHUB_REPOSITORY")
+    is.character(head) && !is.null(repo) && head != repo
+  },
+
+  # `<owner>:<branch>` of the head of the pull request
+  get_head_label = function(inputs) {
+    label <- ccprov_actions$get_event()[["pull_request"]][["head"]][["label"]]
+    if (is.character(label)) label
   },
 
   get_service_params = function(inputs) {
