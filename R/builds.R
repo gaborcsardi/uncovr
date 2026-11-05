@@ -91,7 +91,17 @@ update_package_tree <- function(
   # make sure that target dir exists
   mkdirp(file.path(dst, pkgname))
 
-  todel <- file.path(dst, pkgname, c(upd$delete, upd$update))
+  # New paths might already exist in the build tree, e.g. if there is no
+  # old plan file, or if the build created them. Remove these, except for
+  # existing directories, these might contain build artifacts.
+  addplan <- plan[plan$path %in% upd$add, ]
+  stale <- addplan$path[
+    is_link(addplan$target) |
+      (file.exists(addplan$target) &
+        (!addplan$isdir | !is_dir(addplan$target)))
+  ]
+
+  todel <- file.path(dst, pkgname, c(upd$delete, upd$update, stale))
   # Symlinks from older versions must be removed without `force = TRUE`,
   # because that calls `chmod()` on the symlink, which changes the mode of
   # the source file.

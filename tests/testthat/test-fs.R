@@ -32,6 +32,18 @@ test_that("clone_link_or_copy falls back to hard links", {
   expect_equal(readLines(tgt), "foo")
 })
 
+test_that("clone_link_or_copy errors if it cannot copy", {
+  local_mocked_bindings(clone_file = function(...) FALSE)
+  tmp <- tempfile()
+  on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
+  mkdirp(tmp)
+  src <- file.path(tmp, "src")
+  writeLines("foo", src)
+  tgt <- file.path(tmp, "tgt")
+  writeLines("bar", tgt)
+  expect_error(clone_link_or_copy(src, tgt), "Failed to copy")
+})
+
 test_that("write_lines_safe does not write through hard links", {
   tmp <- tempfile()
   on.exit(unlink(tmp, recursive = TRUE), add = TRUE)
@@ -76,6 +88,40 @@ test_that("update_package_tree", {
   expect_equal(readLines(file.path(src, "R", "f.R")), "f <- function() 2")
   update_package_tree(src, dst, pkgname = "foo")
   expect_equal(readLines(file.path(tgt, "R", "f.R")), "f <- function() 2")
+})
+
+test_that("update_package_tree replaces existing files not in the plan", {
+  src <- tempfile()
+  dst <- tempfile()
+  on.exit(unlink(c(src, dst), recursive = TRUE), add = TRUE)
+  mkdirp(file.path(src, "R"))
+  mkdirp(file.path(src, "src"))
+  writeLines("Package: foo", file.path(src, "DESCRIPTION"))
+  writeLines("f <- function() 1", file.path(src, "R", "f.R"))
+  writeLines("int x;", file.path(src, "src", "foo.c"))
+  withr::local_options(structure(list(list()), names = opt_setup))
+
+  update_package_tree(src, dst, pkgname = "foo")
+  tgt <- file.path(dst, "foo")
+
+  # build artifact, not in the source tree
+  writeLines("generated", file.path(tgt, "src", "Makevars"))
+  writeLines("object", file.path(tgt, "src", "foo.o"))
+  # now the file is added to the source tree
+  writeLines("PKG_CFLAGS = -O0", file.path(src, "src", "Makevars"))
+  update_package_tree(src, dst, pkgname = "foo")
+  expect_equal(
+    readLines(file.path(tgt, "src", "Makevars")),
+    "PKG_CFLAGS = -O0"
+  )
+
+  # no plan file, e.g. after an interrupted run
+  write_lines_safe("modified", file.path(tgt, "R", "f.R"))
+  unlink(file.path(dst, plan_file_name))
+  update_package_tree(src, dst, pkgname = "foo")
+  expect_equal(readLines(file.path(tgt, "R", "f.R")), "f <- function() 1")
+  # existing directories are kept, with the build artifacts
+  expect_equal(readLines(file.path(tgt, "src", "foo.o")), "object")
 })
 
 test_that("update_package_tree replaces old symlinks", {

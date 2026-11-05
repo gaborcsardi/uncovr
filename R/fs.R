@@ -28,7 +28,9 @@ clone_link_or_copy <- function(from, target) {
   if (isTRUE(suppressWarnings(file.link(from, target)))) {
     return(invisible("link"))
   }
-  file.copy(from, target)
+  if (!file.copy(from, target)) {
+    stop("Failed to copy '", from, "' to '", target, "'.")
+  }
   invisible("copy")
 }
 
