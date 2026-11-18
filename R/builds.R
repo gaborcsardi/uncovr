@@ -118,58 +118,16 @@ update_package_tree <- function(
     if (planadd$isdir[i]) {
       mkdirp(planadd$target[i])
     } else {
-      clone_link_or_copy(planadd$path[i], planadd$target[i])
+      link_or_copy(planadd$path[i], planadd$target[i])
     }
   }
 
   plan_file <- file.path(dst, plan_file_name)
   quick_save_rds(plan, plan_file)
   setup_file <- file.path(dst, setup_file_name)
-  setup <- getOption(opt_setup)
-  quick_save_rds(setup, setup_file)
-  setup_json <- sub("[.]rds$", ".json", setup_file)
-  setup$compiler_flags <- as.list(setup$compiler_flags)
-  write_lines_safe(
-    jsonlite::toJSON(setup, auto_unbox = TRUE, pretty = TRUE),
-    setup_json
-  )
+  quick_save_rds(getOption(opt_setup), setup_file)
 
   invisible(plan)
-}
-
-#' List development builds
-#'
-#' @inheritParams reload
-#' @return Data frame with columns:
-#'   - `type`: Build type, character.
-#'   - `r_version`: R version, first two digits only, character.
-#'   - `platform`: Build platform triplet, character.
-#'   - `last_built`: Time stamp of the last build, [POSIXct].
-#'   - `dist_size`: Size of the build directory in bytes, double.
-#'   - `id`: Name of the build directory.
-#' @export
-
-builds <- function(path = ".") {
-  withr::local_dir(path)
-  dirs <- dir(get_dev_dir(), full.names = TRUE, include.dirs = TRUE)
-  setup_paths <- file.path(dirs, setup_file_name)
-  setups <- lapply(setup_paths, readRDS)
-  builds <- data.frame(
-    stringsAsFactors = FALSE,
-    type = map_chr(setups, "[[", "type"),
-    r_version = map_chr(setups, "[[", "rver"),
-    platform = map_chr(setups, "[[", "platform"),
-    last_built = file.mtime(setup_paths),
-    disk_size = dir_size(dirs),
-    id = basename(dirs)
-  )
-  rownames(builds) <- NULL
-
-  # Better printing if pillar is available
-  class(builds) <- c("tbl", class(builds))
-  requireNamespace("pillar", quietly = TRUE)
-
-  builds
 }
 
 get_dev_dir <- function(setup = list(hash = "")) {

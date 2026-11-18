@@ -4,15 +4,29 @@
 \name{uncovr-package}
 \alias{uncovr}
 \alias{uncovr-package}
-\title{uncovr: Experimental add-ons for testthat}
+\title{uncovr: Code Coverage for Testthat}
 \description{
-Experimental extensions for testthat.
+Measure the code coverage of the R code of a package, while running its 'testthat' tests. Instrumentation is fast, and the coverage counters have very low overhead. Reports line and function coverage in the terminal.
 }
 \seealso{
 Useful links:
 \itemize{
   \item \url{https://github.com/gaborcsardi/uncovr}
   \item Report bugs at \url{https://github.com/gaborcsardi/uncovr/issues}
+}
+
+}
+\author{
+\strong{Maintainer}: Gábor Csárdi \email{csardi.gabor@gmail.com}
+
+Authors:
+\itemize{
+  \item Gábor Csárdi \email{csardi.gabor@gmail.com}
+}
+
+Other contributors:
+\itemize{
+  \item Posit Software, PBC (\href{https://ror.org/03wc8by49}{ROR}) [copyright holder, funder]
 }
 
 }

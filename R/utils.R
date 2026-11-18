@@ -76,26 +76,6 @@ order_df <- function(df, col) {
   df[order(df[[col]]), ]
 }
 
-summary_line <- function(n_ok, n_fail, n_warn, n_skip) {
-  pass <- if (n_ok) format_type("pass") else "PASS"
-  fail <- if (n_fail) format_type("error") else "FAIL"
-  warn <- if (n_warn) format_type("warning") else "WARN"
-  skip <- if (n_skip) format_type("skip") else "SKIP"
-
-  passn <- paste0(pass, " x", n_ok)
-  failn <- paste0(fail, " x", n_fail)
-  warnn <- paste0(warn, " x", n_warn)
-  skipn <- paste0(skip, " x", n_skip)
-
-  paste(
-    sep = "  ",
-    if (n_ok) passn else cli::col_grey(passn),
-    if (n_fail) failn else cli::col_grey(failn),
-    if (n_warn) warnn else cli::col_grey(warnn),
-    if (n_skip) skipn else cli::col_grey(skipn)
-  )
-}
-
 styles <- new.env(parent = emptyenv())
 
 style_orange <- function(...) {
@@ -103,13 +83,6 @@ style_orange <- function(...) {
     styles$orange <- cli::make_ansi_style("orange")
   }
   styles$orange(...)
-}
-
-style_bg_blue <- function(...) {
-  if (is.null(styles$bg_blue)) {
-    styles$bg_blue <- cli::make_ansi_style("#0000ff", bg = TRUE)
-  }
-  styles$bg_blue(...)
 }
 
 style_bg_orange <- function(...) {
@@ -131,18 +104,6 @@ style_bg_grey <- function(...) {
     styles$bg_grey <- cli::make_ansi_style("#404040", bg = TRUE)
   }
   styles$bg_grey(...)
-}
-
-format_type <- function(type) {
-  switch(
-    type,
-    pass = style_bg_green(cli::col_white("PASS")),
-    success = style_bg_green(cli::col_white("PASS")),
-    skip = style_bg_blue(cli::col_white("SKIP")),
-    error = cli::bg_red(cli::col_white("FAIL")),
-    failure = cli::bg_red(cli::col_white("FAIL")),
-    warning = style_bg_orange(cli::col_white("WARN"))
-  )
 }
 
 all_leading_dirs <- function(paths) {
@@ -190,14 +151,6 @@ is_string <- function(x) {
   is.character(x) && length(x) == 1 && !is.na(x)
 }
 
-is_positron <- function() {
-  Sys.getenv("POSITRON") != ""
-}
-
-is_vscode <- function() {
-  Sys.getenv("TERM_PROGRAM") == "vscode"
-}
-
 not_null <- function(x) {
   x[!map_lgl(x, is.null)]
 }
@@ -208,17 +161,6 @@ na_omit <- function(x) {
 
 is_ci <- function() {
   Sys.getenv("CI") == "true"
-}
-
-paste_named <- function(orig, new) {
-  for (nm in names(new)) {
-    orig[[nm]] <- if (nm %in% names(orig)) {
-      paste(orig[[nm]], new[[nm]])
-    } else {
-      new[[nm]]
-    }
-  }
-  orig
 }
 
 # relative path from project directory
