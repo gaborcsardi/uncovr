@@ -72,7 +72,10 @@ load_instrumented <- function(
 }
 
 find_function_names <- function(cov_data, env, setup) {
-  pkgdir <- paste0(file.path(setup$dir, setup$pkgname), "/")
+  # normalize both sides, on Windows the paths might use different
+  # separators, short (8.3) names, or drive letter case
+  norm <- function(x) normalizePath(x, winslash = "/", mustWork = FALSE)
+  pkgdir <- paste0(norm(file.path(setup$dir, setup$pkgname)), "/")
   for (on in names(env)) {
     if (is.function(env[[on]]) && !is.primitive(env[[on]])) {
       fun <- env[[on]]
@@ -82,7 +85,7 @@ find_function_names <- function(cov_data, env, setup) {
       if (!identical(environmentName(environment(fun)), setup$pkgname)) {
         next
       }
-      odr <- rel_path(utils::getSrcDirectory(fun), pkgdir)
+      odr <- rel_path(norm(utils::getSrcDirectory(fun)), pkgdir)
       ofn <- utils::getSrcFilename(fun)
       oph <- file.path(odr, ofn)
       fidx <- match(oph, cov_data$path)
