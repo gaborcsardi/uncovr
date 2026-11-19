@@ -9,7 +9,7 @@ reload_setup <- function(path = ".", build_dir = tempdir(), makeflags = NULL) {
     platform = R.Version()$platform,
     type = "coverage"
   )
-  setup[["hash"]] = cli::hash_obj_sha1(setup)
+  setup[["hash"]] <- cli::hash_obj_sha1(setup)
   setup[["compiler_flags"]] <- makeflags
   setup[["pkgname"]] <- unname(desc::desc_get("Package", "."))
   setup[["dir"]] <- get_dev_dir(build_dir, setup$pkgname, setup)
@@ -21,7 +21,11 @@ reload_setup <- function(path = ".", build_dir = tempdir(), makeflags = NULL) {
 # Update the build tree, instrument the R code, create the coverage
 # counters and load the instrumented package with `pkgload::load_all()`.
 
-load_instrumented <- function(path = ".", build_dir = tempdir(), clean = FALSE) {
+load_instrumented <- function(
+  path = ".",
+  build_dir = tempdir(),
+  clean = FALSE
+) {
   mkdirp(build_dir)
   build_dir <- normalizePath(build_dir)
   withr::local_dir(path)

@@ -119,7 +119,11 @@ test_that("counter calls evaluate to NULL", {
   ))
   src <- paste(res$instrumented, collapse = "\n")
   env <- new.env()
-  assign(".__cov_t", .Call(c_cov_make_counter, nrow(res$funs) + nrow(res$lines)), envir = env)
+  assign(
+    ".__cov_t",
+    .Call(c_cov_make_counter, nrow(res$funs) + nrow(res$lines)),
+    envir = env
+  )
   eval(parse(text = src), envir = env)
   expect_null(env$f())
   expect_equal(env$g(), 1)

@@ -151,13 +151,15 @@ cov_instrument_file <- function(path, cov_symbol) {
   # surviving instrumented expression. Same rule as before, just applied
   # before injection so the counter is never inserted.
   if (nrow(funres) && length(drop)) {
-    excluded_fun <- funres$line1 %in% drop & vapply(
-      seq_len(nrow(funres)),
-      function(i) {
-        !any(inj$line1 >= funres$line1[i] & inj$line1 <= funres$line2[i])
-      },
-      logical(1)
-    )
+    excluded_fun <- funres$line1 %in%
+      drop &
+      vapply(
+        seq_len(nrow(funres)),
+        function(i) {
+          !any(inj$line1 >= funres$line1[i] & inj$line1 <= funres$line2[i])
+        },
+        logical(1)
+      )
     if (any(excluded_fun)) {
       funres <- funres[!excluded_fun, , drop = FALSE]
       funres$id <- seq_len(nrow(funres)) + length(lns0)
