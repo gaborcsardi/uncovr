@@ -96,8 +96,15 @@ are excluded. The file may contain glob patterns, see \code{\link[=Sys.glob]{Sys
 }
 
 \examples{
-\dontshow{if (FALSE) withAutoprint(\{ # examplesIf}
-# Run in the root of a package tree
-coverage()
-\dontshow{\}) # examplesIf}
+# Copy the example package that comes with uncovr to a temporary
+# directory, because `coverage()` writes its build into the package tree
+src <- system.file("example", "demopkg", package = "uncovr")
+invisible(file.copy(src, tempdir(), recursive = TRUE))
+pkg <- file.path(tempdir(), "demopkg")
+
+coverage(path = pkg)
+
+# Clean up
+pkgload::unload("demopkg")
+unlink(pkg, recursive = TRUE)
 }

@@ -61,9 +61,18 @@
 #'   - `test_results`: Return value of [testthat::test_dir()].
 #'
 #' @export
-#' @examplesIf FALSE
-#' # Run in the root of a package tree
-#' coverage()
+#' @examples
+#' # Copy the example package that comes with uncovr to a temporary
+#' # directory, because `coverage()` writes its build into the package tree
+#' src <- system.file("example", "demopkg", package = "uncovr")
+#' invisible(file.copy(src, tempdir(), recursive = TRUE))
+#' pkg <- file.path(tempdir(), "demopkg")
+#'
+#' coverage(path = pkg)
+#'
+#' # Clean up
+#' pkgload::unload("demopkg")
+#' unlink(pkg, recursive = TRUE)
 
 coverage <- function(
   filter = NULL,
