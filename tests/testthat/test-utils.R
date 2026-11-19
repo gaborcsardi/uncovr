@@ -126,6 +126,7 @@ cli::test_that_cli(configs = c("plain", "ansi"), "style_bg_grey", {
 })
 
 test_that("empty_data_frame", {
+  skip_if_not_installed("pillar")
   library(pillar)
   expect_snapshot({
     empty_data_frame(10)
