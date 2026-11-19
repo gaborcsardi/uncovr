@@ -1,6 +1,12 @@
 inst_cache_file <- function(path, hash) {
   path <- gsub("/", "-", path)
-  file.path("..", cov_dir_name, path, paste0(hash, ".rds"))
+  # include the uncovr version, so a new version does not use stale results
+  file.path(
+    "..",
+    cov_dir_name,
+    path,
+    paste0(hash, "-", utils::packageVersion("uncovr"), ".rds")
+  )
 }
 
 # the cached files might be large, so only cache them for an hour, but

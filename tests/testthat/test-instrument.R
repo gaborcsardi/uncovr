@@ -66,6 +66,146 @@ test_that("excluding the head of a multi-line expression excludes the span", {
   expect_true(all(is.na(res$lines$id[2:5])))
 })
 
+test_that("`# nocov next` excludes the next single-line expression", {
+  res <- cov_instrument_in_tempdir(c(
+    "f <- function(x) {",
+    "  a <- 1",
+    "  # nocov next",
+    "  b <- 2",
+    "  a + b",
+    "}"
+  ))
+
+  expect_true(has_counter(res$instrumented[2]))
+  expect_false(has_counter(res$instrumented[4]))
+  expect_true(has_counter(res$instrumented[5]))
+  expect_equal(res$lines$status[3], "noncode")
+  expect_equal(res$lines$status[4], "excluded")
+  expect_true(is.na(res$lines$coverage[4]))
+})
+
+test_that("`# nocov next` excludes a whole multi-line expression", {
+  res <- cov_instrument_in_tempdir(c(
+    "f <- function() {",
+    "  # nocov next",
+    "  d <- c(",
+    "    1,",
+    "    2",
+    "  )",
+    "  d",
+    "}"
+  ))
+
+  expect_false(any(has_counter(res$instrumented[3:6])))
+  expect_equal(res$lines$status[3:6], rep("excluded", 4))
+  expect_true(has_counter(res$instrumented[7]))
+})
+
+test_that("`# nocov next` excludes a whole function", {
+  res <- cov_instrument_in_tempdir(c(
+    "# nocov next",
+    "f <- function(x) {",
+    "  if (x) {",
+    "    1",
+    "  }",
+    "}",
+    "g <- function() {",
+    "  2",
+    "}"
+  ))
+
+  expect_false(any(has_counter(res$instrumented[2:6])))
+  expect_equal(res$lines$status[2:6], rep("excluded", 5))
+  expect_equal(nrow(res$funs), 1L)
+  expect_equal(res$funs$line1, 7L)
+  expect_true(has_counter(res$instrumented[8]))
+})
+
+test_that("`# nocov next` excludes an if-else with nested blocks", {
+  res <- cov_instrument_in_tempdir(c(
+    "f <- function(x) {",
+    "  # nocov next",
+    "  if (x) {",
+    "    1",
+    "  } else {",
+    "    2",
+    "  }",
+    "  3",
+    "}"
+  ))
+
+  expect_false(any(has_counter(res$instrumented[3:7])))
+  expect_equal(res$lines$status[3:7], rep("excluded", 5))
+  expect_true(has_counter(res$instrumented[8]))
+})
+
+test_that("trailing `# nocov next` does not exclude its own line", {
+  res <- cov_instrument_in_tempdir(c(
+    "f <- function() {",
+    "  foobar() # nocov next",
+    "  baz()",
+    "}"
+  ))
+
+  expect_true(has_counter(res$instrumented[2]))
+  expect_equal(res$lines$status[2], "instrumented")
+  expect_false(has_counter(res$instrumented[3]))
+  expect_equal(res$lines$status[3], "excluded")
+})
+
+test_that("`# nocov next` with no next expression is a no-op", {
+  res <- cov_instrument_in_tempdir(c(
+    "f <- function() {",
+    "  a <- 1",
+    "  # nocov next",
+    "}",
+    "# nocov next"
+  ))
+
+  expect_true(has_counter(res$instrumented[2]))
+  expect_false("excluded" %in% res$lines$status)
+  expect_equal(nrow(res$funs), 1L)
+})
+
+test_that("`# nocov next` before two expressions on one line", {
+  # Exclusion is per line in the report, so the whole line is excluded.
+  res <- cov_instrument_in_tempdir(c(
+    "f <- function() {",
+    "  # nocov next",
+    "  a <- 1; b <- 2",
+    "  a + b",
+    "}"
+  ))
+
+  expect_false(has_counter(res$instrumented[3]))
+  expect_equal(res$lines$status[3], "excluded")
+  expect_true(has_counter(res$instrumented[4]))
+})
+
+test_that("parse_next_expr_exclusions", {
+  pd <- function(lines) {
+    utils::getParseData(parse(text = lines, keep.source = TRUE))
+  }
+  expect_equal(parse_next_expr_exclusions(pd("x <- 1")), integer())
+  expect_equal(
+    parse_next_expr_exclusions(pd(c("# nocov next", "x <- c(", "1", ")"))),
+    2:4
+  )
+  expect_equal(
+    parse_next_expr_exclusions(pd(c("f(a, # nocov next", "  b,", "  c)"))),
+    2L
+  )
+  expect_equal(
+    parse_next_expr_exclusions(pd(c("#nocov next", "x = 1", "y"))),
+    2L
+  )
+  # not a directive
+  expect_equal(
+    parse_next_expr_exclusions(pd(c("# nocov nextx", "x"))),
+    integer()
+  )
+})
+
 test_that("excluding a non-head line of a multi-line expression keeps it", {
   res <- cov_instrument_in_tempdir(c(
     "f <- function() {",

@@ -1,6 +1,10 @@
 
 # 0.0.0.9000
 
+* A `# nocov next` comment now excludes the next R expression from the
+  coverage, including all of its lines, e.g. a whole function or a
+  multi-line call (#5).
+
 * `codecov()` now uses a GitHub Actions OIDC token if `CODECOV_TOKEN`
   is not set, so you don't need to store a Codecov token as a secret.
   The job needs the `id-token: write` permission for this.

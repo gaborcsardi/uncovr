@@ -103,7 +103,10 @@ cov_instrument_file <- function(path, cov_symbol) {
   # the counter for the whole expression; partial exclusion (excluding a
   # later line of a multi-line expression while leaving line1 intact) is
   # still possible and is handled when `res` is finalized below.
-  drop <- parse_line_exclusions(lns0, path)
+  drop <- sort(unique(c(
+    parse_line_exclusions(lns0, path),
+    parse_next_expr_exclusions(psd)
+  )))
   if (length(drop) && nrow(inj)) {
     excluded_expr <- inj$line1 %in% drop
     if (any(excluded_expr)) {
