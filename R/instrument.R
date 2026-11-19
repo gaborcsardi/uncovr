@@ -256,7 +256,7 @@ parser_expands_tabs <- local({
   function() {
     if (is.null(expands)) {
       withr::local_options(keep.parse.data = TRUE)
-      psd <- getParseData(parse(text = "\tx", keep.source = TRUE))
+      psd <- utils::getParseData(parse(text = "\tx", keep.source = TRUE))
       expands <<- psd$col1[1] == 9
     }
     expands
