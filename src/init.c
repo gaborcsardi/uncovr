@@ -1,95 +1,10 @@
-#ifdef _WIN32
-#include "windows.h"
-#else
-#include <dlfcn.h>
-#endif
-
 #define R_NO_REMAP
-#define R_USE_C99_IN_CXX 1
 #include <R.h>
 #include <Rinternals.h>
 #include <R_ext/Rdynload.h>
 
 SEXP cov_make_counter(SEXP len);
 SEXP cov_get_counts(SEXP counter);
-SEXP cov_read_file_raw(SEXP path);
-SEXP cov_read_lines(SEXP path);
-SEXP cov_parse_gcov(SEXP path);
-SEXP cov_clone_file(SEXP from, SEXP to);
-
-SEXP cov_set_attr(SEXP x, SEXP name, SEXP value) {
-  Rf_setAttrib(x, name, value);
-  return R_NilValue;
-}
-
-SEXP cov_gcov_flush_package(SEXP dllhandle) {
-  void *cdllhandle = (void *) R_ExternalPtrAddr(dllhandle);
-
-  DL_FUNC ptr;
-#ifdef _WIN32
-  ptr = (DL_FUNC) GetProcAddress((HMODULE)cdllhandle, "__gcov_dump");
-#else
-  ptr = (DL_FUNC) dlsym(cdllhandle, "__gcov_dump");
-#endif
-  if (!ptr) {
-    Rf_error("Cannot find __gcov_dump symbol");
-  }
-  ptr();
-
-#ifdef _WIN32
-  ptr =(DL_FUNC) GetProcAddress((HMODULE)cdllhandle, "__gcov_reset");
-#else
-  ptr =(DL_FUNC) dlsym(cdllhandle, "__gcov_reset");
-#endif
-  if (!ptr) {
-    Rf_error("Cannot find __gcov_reset symbol");
-  }
-  ptr();
-
-  return Rf_ScalarLogical(TRUE);
-}
-
-#ifdef COV_BUILD_SAFE
-
-#ifndef ENVFLAGS
-struct sxpinfo_struct {
-    SEXPTYPE type      :  TYPE_BITS;
-                            /* ==> (FUNSXP == 99) %% 2^5 == 3 == CLOSXP
-                            * -> warning: `type' is narrower than values
-                            *              of its type
-                            * when SEXPTYPE was an enum */
-    unsigned int scalar:  1;
-    unsigned int obj   :  1;
-    unsigned int alt   :  1;
-    unsigned int gp    : 16;
-};
-struct SEXPREC {
-    struct sxpinfo_struct sxpinfo;
-};
-#define ENVFLAGS(x) ((x)->sxpinfo.gp)
-#define SET_ENVFLAGS(x,v) (((x)->sxpinfo.gp)=(v))
-#endif
-
-#define FRAME_LOCK_MASK (1<<14)
-#define FRAME_IS_LOCKED(e) (ENVFLAGS(e) & FRAME_LOCK_MASK)
-#define LOCK_FRAME(e) SET_ENVFLAGS(e, ENVFLAGS(e) | FRAME_LOCK_MASK)
-#define UNLOCK_FRAME(e) SET_ENVFLAGS(e, ENVFLAGS(e) & (~ FRAME_LOCK_MASK))
-SEXP cov_lock_base() {
-  LOCK_FRAME(R_BaseEnv);
-  return Rf_ScalarLogical(1);
-}
-SEXP cov_unlock_base() {
-  UNLOCK_FRAME(R_BaseEnv);
-  return Rf_ScalarLogical(1);
-}
-#else
-SEXP cov_lock_base() {
-  return Rf_ScalarLogical(0);
-}
-SEXP cov_unlock_base() {
-  return Rf_ScalarLogical(0);
-}
-#endif
 
 void cov_init_altrep(DllInfo *dll);
 
@@ -99,22 +14,14 @@ void cov_init_altrep(DllInfo *dll);
 static const R_CallMethodDef callMethods[]  = {
   CALLDEF(cov_make_counter, 1),
   CALLDEF(cov_get_counts, 1),
-  CALLDEF(cov_read_file_raw, 1),
-  CALLDEF(cov_read_lines, 1),
-  CALLDEF(cov_parse_gcov, 1),
-  CALLDEF(cov_clone_file, 2),
-  CALLDEF(cov_gcov_flush_package, 1),
-  CALLDEF(cov_lock_base, 0),
-  CALLDEF(cov_unlock_base, 0),
-  CALLDEF(cov_set_attr, 3),
   { NULL, NULL, 0 }
 };
 
+// For a copy of the DLL, used when measuring the coverage of uncovr itself
 void R_init_cov_xx(DllInfo *dll) {
   cov_init_altrep(dll);
   R_registerRoutines(dll, NULL, callMethods, NULL, NULL);
   R_useDynamicSymbols(dll, FALSE);
-  R_forceSymbols(dll, TRUE);
 }
 
 void R_init_uncovr(DllInfo *dll) {

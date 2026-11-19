@@ -113,17 +113,6 @@ test_that("order_df", {
   expect_equal(order_df(df, "y"), df[order(df$y), ])
 })
 
-cli::test_that_cli(configs = c("plain", "ansi"), "summary_line", {
-  expect_snapshot({
-    writeLines(summary_line(10, 2, 2, 3))
-    writeLines(summary_line(10, 0, 0, 0))
-    writeLines(summary_line(0, 1, 0, 0))
-    writeLines(summary_line(0, 0, 1, 0))
-    writeLines(summary_line(0, 0, 0, 1))
-    writeLines(summary_line(0, 0, 0, 0))
-  })
-})
-
 cli::test_that_cli(configs = c("plain", "ansi"), "style_orange", {
   expect_snapshot({
     style_orange("orange")
@@ -137,6 +126,7 @@ cli::test_that_cli(configs = c("plain", "ansi"), "style_bg_grey", {
 })
 
 test_that("empty_data_frame", {
+  skip_if_not_installed("pillar")
   library(pillar)
   expect_snapshot({
     empty_data_frame(10)

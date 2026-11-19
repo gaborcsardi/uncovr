@@ -1,0 +1,6 @@
+Package: demopkg
+Title: Example Package for 'uncovr'
+Version: 1.0.0
+Description: A small package to demonstrate test coverage with 'uncovr'.
+License: CC0
+Encoding: UTF-8

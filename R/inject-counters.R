@@ -1,173 +1,102 @@
-setup_cov_env <- function(cov_data) {
-  on.exit(.Call(c_cov_lock_base), add = TRUE)
-  env <- if (.Call(c_cov_unlock_base)) baseenv() else globalenv()
+counters_file_name <- "000-uncovr-counters.R"
+opt_counters <- "uncovr.counters"
+
+# The instrumented code looks up the counters with `get0()`, so they need
+# to be in the package namespace (or one of its parent environments).
+#
+# We create the counters before loading the package, and pass them to
+# `pkgload::load_all()` in an option, inside an environment. An extra R
+# file, which is loaded before the other R files of the package, then
+# assigns them in the package namespace. If the counters are not found, e.g. for a function
+# whose environment was changed, then `get0()` returns `NULL`, and the
+# expression is not counted.
+
+remove_counters_file <- function(pkg_dir) {
+  unlink(file.path(pkg_dir, "R", counters_file_name))
+}
+
+write_counters_file <- function(pkg_dir, cov_data) {
+  lines <- c(
+    "# Code coverage counters, created by uncovr",
+    "local({",
+    sprintf("  cnt <- base::getOption(\"%s\")", opt_counters),
+    "  if (!base::is.environment(cnt)) return()",
+    "  ns <- base::topenv()",
+    "  for (nm in base::ls(cnt, all.names = TRUE)) {",
+    "    base::assign(nm, base::get(nm, envir = cnt), envir = ns)",
+    "  }",
+    "})"
+  )
+  write_lines_safe(lines, file.path(pkg_dir, "R", counters_file_name))
+
+  # If there is a Collate field, the counters file must come first
+  desc_path <- file.path(pkg_dir, "DESCRIPTION")
+  dsc <- desc::desc(file = desc_path)
+  collate <- dsc$get_collate()
+  if (length(collate) > 0 && collate[1] != counters_file_name) {
+    dsc$set_collate(c(counters_file_name, setdiff(collate, counters_file_name)))
+    # The file might be a hard link to the original DESCRIPTION file, so
+    # we must not modify it in place.
+    tmp <- tempfile(tmpdir = pkg_dir)
+    on.exit(unlink(tmp), add = TRUE)
+    dsc$write(file = tmp)
+    file.rename(tmp, desc_path)
+  }
+}
+
+# Returns an environment, because `options()` would duplicate the
+# counters, and a duplicate is a regular integer vector, not a counter.
+
+make_counters <- function(cov_data, setup) {
+  counter_routines(setup)
+  env <- new.env(parent = emptyenv())
   for (i in seq_len(nrow(cov_data))) {
     assign(
       cov_data$symbol[i],
-      .Call(c_cov_make_counter, cov_data$num_markers[i]),
+      .Call(routines$make, as.integer(cov_data$num_markers[i])),
       envir = env
     )
   }
+  env
 }
 
-find_code <- function(path = ".", quiet = FALSE) {
-  path_r <- file.path(path, "R")
-  r_files <- withr::with_collate(
-    "C",
-    tools::list_files_with_type(path_r, "code", full.names = TRUE)
-  )
-  collate <- desc::desc_get_collate(file = path)
-  if (length(collate) > 0) {
-    collate <- file.path(path_r, collate)
-    missing <- setdiff(collate, r_files)
-    if (!quiet && length(missing) > 0) {
-      cli::cli_alert_info("Skipping missing files: {.file {missing}}")
-    }
-    collate <- setdiff(collate, missing)
-    extra <- setdiff(r_files, collate)
-    if (!quiet && length(extra) > 0) {
-      cli::cli_alert_info(
-        "Adding files missing in collate: {.file {extra}}"
-      )
-    }
-    r_files <- union(collate, r_files)
+# The ALTREP class of the counters lives in our DLL, so the DLL must stay
+# loaded while the counters are in use. When measuring the coverage of
+# uncovr itself, `pkgload::load_all()` unloads our DLL, so we use a copy
+# of it, under a different name, and call its native routines.
+# `routines` is filled in `.onLoad()` with our own native routines.
+
+routines <- new.env(parent = emptyenv())
+
+counter_routines <- function(setup) {
+  if (setup$pkgname != utils::packageName()) {
+    routines$make <- c_cov_make_counter
+    routines$get <- c_cov_get_counts
+    return(routines)
   }
-  r_files
-}
-
-setup_cov_inject_script <- function(target, cov_data) {
-  script <- file.path(target, "R", "inject.R")
-  ttlsoname <- paste0("uncovr", .Platform$dynlib.ext)
-  ttlpkg <- find.package("uncovr")
-  ttlso <- file.path(ttlpkg, "libs", ttlsoname)
-  if (!file.exists(ttlso)) {
-    ttlso <- file.path(ttlpkg, "src", ttlsoname)
-  }
-  stopifnot(file.exists(ttlso))
-  mkdirp(file.path(target, "libs"))
-  tgtsoname <- paste0("cov_xx", .Platform$dynlib.ext)
-  file.copy(ttlso, file.path(target, "libs", tgtsoname))
-
-  lns <- c(
-    "# coverage counter injection by uncovr",
-    "local({",
-    "  info <- loadingNamespaceInfo()",
-    "  pkg <- info$pkgname",
-    "  tgtsoname <- paste0('cov_xx', .Platform$dynlib.ext)",
-    "  dl <- dyn.load(file.path(info$libname, pkg, 'libs', tgtsoname))",
-    "  lb <- getNativeSymbolInfo('cov_lock_base', dl)",
-    "  ulb <- getNativeSymbolInfo('cov_unlock_base', dl)",
-    "  mc <- getNativeSymbolInfo('cov_make_counter', dl)",
-    "  mycall <- base::.Call",
-    "  env <- if (mycall(ulb)) baseenv() else globalenv()",
-    sprintf(
-      "  assign('%s', mycall(mc, %dL), envir = env)",
-      cov_data$symbol,
-      cov_data$num_markers
-    ),
-    "  mycall(lb)",
-    "  output <- file.path(",
-    "    dirname(info$libname), ",
-    "    '_cov',",
-    "    'sub',",
-    "    paste0(Sys.getpid(), '.rda')",
-    "  )",
-    "  dir.create(dirname(output), showWarnings = FALSE, recursive = TRUE)",
-    "  reg.finalizer(",
-    "    env,",
-    "    function(e) {",
-    "      save(",
-    "        list = ls(all.names = TRUE, pattern = '^[.]__cov_', envir = e),",
-    "        file = output,",
-    "        compression_level = 0,",
-    "        envir = e",
-    "     )",
-    "    },",
-    "    onexit = TRUE",
-    "  )",
-    "})"
-  )
-
-  mkdirp(dirname(script))
-  writeLines(lns, script)
-  script
-}
-
-# Copy uncovr.so into the build directory, so we can read it
-# from there
-inject_covxxso <- function(build_dir) {
-  soname <- paste0("uncovr", .Platform$dynlib.ext)
-  covxxso <- system.file(package = "uncovr", "libs", soname)
-  if (covxxso == "") {
-    covxxso <- system.file(package = "uncovr", "src", soname)
-  }
-  if (covxxso == "") {
-    stop("Could not find ", soname, " for test coverage counter injection")
-  }
-  soname2 <- paste0("cov_xx", .Platform$dynlib.ext)
-  target <- file.path(build_dir, soname2)
-  file.copy(covxxso, target)
-  target
-}
-
-# In the main process we create the counters manually before loading
-# the package. But we need to create the counters when loading the package
-# with `load_all()` in a subprocess, we do that here.
-#
-# These additional commands do not create any objects, so they do not run
-# when the (quick) installed package is loaded by `library()`. For that
-# case we patch the namespace loader file that loads the package to create
-# the counters.
-
-create_counters_lines <- function(setup, cov_data) {
-  outdir <- file.path(setup$dir, cov_sub_dir_name)
-  mkdirp(outdir)
-  subs <- list(
-    covxxso_ = normalizePath(setup$covxxso),
-    symbols_ = cov_data$symbol,
-    nmarkers_ = cov_data$num_markers,
-    outdir_ = normalizePath(outdir)
-  )
-  deparse(
-    substitute(
-      local({
-        dl <- base::dyn.load(covxxso_)
-        mc <- base::getNativeSymbolInfo("cov_make_counter", dl)
-        lb <- base::getNativeSymbolInfo("cov_lock_base", dl)
-        ulb <- base::getNativeSymbolInfo("cov_unlock_base", dl)
-        symbols <- symbols_
-        nmarkers <- nmarkers_
-        mycall <- base::.Call
-        env <- if (mycall(ulb)) baseenv() else globalenv()
-        for (i in base::seq_along(symbols)) {
-          if (base::is.null(env[[symbols[i]]])) {
-            base::assign(symbols[i], mycall(mc, nmarkers[i]), envir = env)
-          }
-        }
-        output <- base::file.path(outdir_, paste0(Sys.getpid(), '.rda'))
-        base::reg.finalizer(
-          .GlobalEnv,
-          function(e) {
-            base::dir.create(
-              dirname(output),
-              showWarnings = FALSE,
-              recursive = TRUE
-            )
-            base::save(
-              list = base::ls(
-                all.names = TRUE,
-                pattern = "^[.]__cov_",
-                envir = e
-              ),
-              file = output,
-              compression_level = 0,
-              envir = e
-            )
-          },
-          onexit = TRUE
-        )
-      }),
-      subs
+  dll <- getLoadedDLLs()[["cov_xx"]]
+  if (is.null(dll)) {
+    src <- getLoadedDLLs()[[utils::packageName()]][["path"]]
+    tgt <- file.path(
+      normalizePath(setup$dir),
+      paste0("cov_xx", .Platform$dynlib.ext)
     )
+    if (!file.exists(tgt)) {
+      file.copy(src, tgt)
+    }
+    dll <- dyn.load(tgt)
+  }
+  routines$make <- getNativeSymbolInfo("cov_make_counter", dll)
+  routines$get <- getNativeSymbolInfo("cov_get_counts", dll)
+  routines
+}
+
+cov_get_counts <- function(names, env, setup) {
+  counter_routines(setup)
+  structure(
+    lapply(names, function(name) {
+      .Call(routines$get, get(name, envir = env, inherits = FALSE))
+    }),
+    names = names
   )
 }

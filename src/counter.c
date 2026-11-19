@@ -29,6 +29,9 @@ int cov_counter_Elt(SEXP x, R_xlen_t i) {
 }
 
 SEXP cov_get_counts(SEXP counter) {
+  if (!ALTREP(counter) || R_altrep_inherits(counter, cov_counter_t) == FALSE) {
+    Rf_error("Not a coverage counter");
+  }
   SEXP data2 = R_altrep_data2(counter);
   return Rf_duplicate(data2);
 }

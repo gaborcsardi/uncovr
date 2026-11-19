@@ -141,11 +141,6 @@ format_coverage_table2_full <- function(x, ...) {
   # directory summaries at the right place
   lines[mid] <- lines[mid][c(1, path_order(fn0[-1]) + 1)]
 
-  test_results <- attr(x, "test_results")
-  if (!is.null(test_results)) {
-    lines <- c(lines, "", format(test_results))
-  }
-
   lines
 }
 
