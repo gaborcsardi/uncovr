@@ -144,3 +144,74 @@ test_that("a function survives when only its def line is excluded", {
   expect_false(startsWith(res$instrumented[1], "get0(\".__cov_t\")["))
   expect_true(has_counter(res$instrumented[2]))
 })
+
+test_that("col_to_char follows the parser's tab stops", {
+  lines <- c("\tx", "a+\tx", "abcdefg+\tx", "\t\tx", "y <- \"\t\"; z")
+  for (line in lines) {
+    psd <- utils::getParseData(parse(text = line, keep.source = TRUE))
+    psd <- psd[psd$terminal, ]
+    pos <- col_to_char(line, psd$col1)
+    expect_equal(substring(line, pos, pos), substr(psd$text, 1, 1))
+  }
+  # the column right after the end of the line
+  expect_equal(col_to_char("a+\t{", 10L), 5L)
+})
+
+test_that("expand_tabs expands to the next tab stop", {
+  expect_equal(
+    expand_tabs(c("\tx", "a+\tx", "abcdefg+\tx", "no tabs")),
+    c(
+      paste0(strrep(" ", 8), "x"),
+      paste0("a+", strrep(" ", 6), "x"),
+      paste0("abcdefg+", strrep(" ", 8), "x"),
+      "no tabs"
+    )
+  )
+})
+
+test_that("counters go to the right place after a TAB mid-line", {
+  # The TAB is at column 15, so it only takes up two columns, and the
+  # function counter goes right after the `{`, after the TAB.
+  res <- cov_instrument_in_tempdir(c(
+    "f<-function(a,\tb) {",
+    "\tif (a) { \ty <- b",
+    "\t\ty + 1 }",
+    "}"
+  ))
+  src <- paste(res$instrumented, collapse = "\n")
+  env <- new.env()
+  assign(
+    ".__cov_t",
+    .Call(c_cov_make_counter, nrow(res$funs) + nrow(res$lines)),
+    envir = env
+  )
+  eval(parse(text = src), envir = env)
+  expect_equal(env$f(TRUE, 1), 2)
+  expect_equal(nrow(res$funs), 1L)
+  expect_true(has_counter(res$instrumented[2]))
+  expect_equal(
+    res$lines$lines[1:2],
+    c(
+      paste0("f<-function(a,", strrep(" ", 2), "b) {"),
+      paste0(strrep(" ", 8), "if (a) { ", strrep(" ", 7), "y <- b")
+    )
+  )
+})
+
+test_that("TABs in string literals are kept", {
+  res <- cov_instrument_in_tempdir(c(
+    "f <- function() {",
+    "\tx <- \"a\tb\"",
+    "\tx",
+    "}"
+  ))
+  src <- paste(res$instrumented, collapse = "\n")
+  env <- new.env()
+  assign(
+    ".__cov_t",
+    .Call(c_cov_make_counter, nrow(res$funs) + nrow(res$lines)),
+    envir = env
+  )
+  eval(parse(text = src), envir = env)
+  expect_equal(env$f(), "a\tb")
+})
