@@ -9,6 +9,7 @@ coverage(
   path = ".",
   test_dir = "tests/testthat",
   reporter = NULL,
+  build_dir = tempdir(),
   clean = FALSE,
   show_coverage = TRUE,
   stop_on_failure = is_ci()
@@ -26,6 +27,14 @@ within the package tree.}
 
 \item{reporter}{The testthat reporter to use. Passed to
 \code{\link[testthat:test_dir]{testthat::test_dir()}}.}
+
+\item{build_dir}{Directory to put the build of the package into.
+uncovr creates an \code{uncovr} subdirectory in it, and a separate build
+directory in that, for every package tree. It is created if it does
+not exist. The default is the temporary directory of the R session,
+so builds are not kept between R sessions. Use a permanent
+directory to reuse the builds in later R sessions, this makes
+\code{coverage()} faster for packages with compiled code.}
 
 \item{clean}{Whether to delete the build directory before the build.}
 
@@ -73,9 +82,8 @@ Run package tests and show test coverage results
 \details{
 Performs the following steps:
 \itemize{
-\item Copies the package to a build directory, or updates the most recent
-build, if there is one. The build directory is \code{.cache/uncovr} within
-the package tree.
+\item Copies the package to a build directory within \code{build_dir}, or
+updates the most recent build there, if there is one.
 \item Instruments the R code of the package in the build directory.
 \item Loads the package from the build directory using \code{\link[pkgload:load_all]{pkgload::load_all()}}.
 \item Runs the package tests.
@@ -96,15 +104,10 @@ are excluded. The file may contain glob patterns, see \code{\link[=Sys.glob]{Sys
 }
 
 \examples{
-# Copy the example package that comes with uncovr to a temporary
-# directory, because `coverage()` writes its build into the package tree
-src <- system.file("example", "demopkg", package = "uncovr")
-invisible(file.copy(src, tempdir(), recursive = TRUE))
-pkg <- file.path(tempdir(), "demopkg")
-
+# Example package that comes with uncovr
+pkg <- system.file("example", "demopkg", package = "uncovr")
 coverage(path = pkg)
 
 # Clean up
 pkgload::unload("demopkg")
-unlink(pkg, recursive = TRUE)
 }

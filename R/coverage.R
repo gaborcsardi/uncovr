@@ -2,9 +2,8 @@
 #'
 #' @details
 #' Performs the following steps:
-#' - Copies the package to a build directory, or updates the most recent
-#'   build, if there is one. The build directory is `.cache/uncovr` within
-#'   the package tree.
+#' - Copies the package to a build directory within `build_dir`, or
+#'   updates the most recent build there, if there is one.
 #' - Instruments the R code of the package in the build directory.
 #' - Loads the package from the build directory using [pkgload::load_all()].
 #' - Runs the package tests.
@@ -29,6 +28,13 @@
 #'   within the package tree.
 #' @param reporter The testthat reporter to use. Passed to
 #'   [testthat::test_dir()].
+#' @param build_dir Directory to put the build of the package into.
+#'   uncovr creates an `uncovr` subdirectory in it, and a separate build
+#'   directory in that, for every package tree. It is created if it does
+#'   not exist. The default is the temporary directory of the R session,
+#'   so builds are not kept between R sessions. Use a permanent
+#'   directory to reuse the builds in later R sessions, this makes
+#'   `coverage()` faster for packages with compiled code.
 #' @param clean Whether to delete the build directory before the build.
 #' @param show_coverage Whether to show code coverage results.
 #' @param stop_on_failure Whether to throw an error if any tests fail.
@@ -62,34 +68,37 @@
 #'
 #' @export
 #' @examples
-#' # Copy the example package that comes with uncovr to a temporary
-#' # directory, because `coverage()` writes its build into the package tree
-#' src <- system.file("example", "demopkg", package = "uncovr")
-#' invisible(file.copy(src, tempdir(), recursive = TRUE))
-#' pkg <- file.path(tempdir(), "demopkg")
-#'
+#' # Example package that comes with uncovr
+#' pkg <- system.file("example", "demopkg", package = "uncovr")
 #' coverage(path = pkg)
 #'
 #' # Clean up
 #' pkgload::unload("demopkg")
-#' unlink(pkg, recursive = TRUE)
 
 coverage <- function(
   filter = NULL,
   path = ".",
   test_dir = "tests/testthat",
   reporter = NULL,
+  build_dir = tempdir(),
   clean = FALSE,
   show_coverage = TRUE,
   stop_on_failure = is_ci()
 ) {
+  # relative to the current working directory
+  mkdirp(build_dir)
+  build_dir <- normalizePath(build_dir)
   withr::local_dir(path)
 
   if (Sys.getenv("NOT_CRAN") == "") {
     withr::local_envvar(NOT_CRAN = "true")
   }
 
-  dev_data <- load_instrumented(path = ".", clean = clean)
+  dev_data <- load_instrumented(
+    path = ".",
+    build_dir = build_dir,
+    clean = clean
+  )
   setup <- dev_data$setup
 
   withr::with_envvar(c(TESTTHAT_COVERAGE = setup$pkgname), {

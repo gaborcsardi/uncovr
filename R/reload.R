@@ -1,4 +1,4 @@
-reload_setup <- function(path = ".", makeflags = NULL) {
+reload_setup <- function(path = ".", build_dir = tempdir(), makeflags = NULL) {
   withr::local_dir(path)
   makeflags <- makeflags %||% get_makeflags()
 
@@ -11,8 +11,8 @@ reload_setup <- function(path = ".", makeflags = NULL) {
   )
   setup[["hash"]] = cli::hash_obj_sha1(setup)
   setup[["compiler_flags"]] <- makeflags
-  setup[["dir"]] <- get_dev_dir(setup)
   setup[["pkgname"]] <- unname(desc::desc_get("Package", "."))
+  setup[["dir"]] <- get_dev_dir(build_dir, setup$pkgname, setup)
   setup[["pkgversion"]] <- unname(desc::desc_get("Version", "."))
 
   setup
@@ -21,9 +21,11 @@ reload_setup <- function(path = ".", makeflags = NULL) {
 # Update the build tree, instrument the R code, create the coverage
 # counters and load the instrumented package with `pkgload::load_all()`.
 
-load_instrumented <- function(path = ".", clean = FALSE) {
+load_instrumented <- function(path = ".", build_dir = tempdir(), clean = FALSE) {
+  mkdirp(build_dir)
+  build_dir <- normalizePath(build_dir)
   withr::local_dir(path)
-  setup <- reload_setup(".")
+  setup <- reload_setup(".", build_dir = build_dir)
   withr::local_options(structure(list(setup), names = opt_setup))
 
   if (clean) {

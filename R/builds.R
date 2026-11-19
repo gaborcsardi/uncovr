@@ -130,8 +130,13 @@ update_package_tree <- function(
   invisible(plan)
 }
 
-get_dev_dir <- function(setup = list(hash = "")) {
-  file.path(".cache", "uncovr", setup$hash)
+# Every package tree has its own build directory within `build_dir`,
+# that depends on the path of the package tree and the build setup.
+# `build_dir` must be an absolute path.
+
+get_dev_dir <- function(build_dir, pkgname, setup = list(hash = "")) {
+  id <- cli::hash_sha1(paste(normalizePath("."), setup$hash))
+  file.path(build_dir, "uncovr", paste0(pkgname, "-", substr(id, 1, 12)))
 }
 
 # specific for us, it should be in .Rbuildignore but have it here as well
