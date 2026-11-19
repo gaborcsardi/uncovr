@@ -6,7 +6,7 @@
 \alias{uncovr-package}
 \title{uncovr: Code Coverage for 'testthat' Tests}
 \description{
-Measure the code coverage of the R code of a package, while running its 'testthat' tests. Instrumentation is fast, and the coverage counters have very low overhead. Reports line and function coverage in the terminal.
+Measure the code coverage of the 'R' code of a package, while running its 'testthat' tests. Instrumentation is fast, and the coverage counters have very low overhead. Reports line and function coverage in the terminal.
 }
 \seealso{
 Useful links:
