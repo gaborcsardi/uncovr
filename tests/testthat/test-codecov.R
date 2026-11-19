@@ -172,10 +172,8 @@ test_that("codecov() token-less upload for fork PR", {
       list(cc_url = "https://codecov.io/x")
     }
   )
-  expect_message(
-    res <- codecov(coverage = list(), commit = "abc"),
-    "token-less"
-  )
+  msgs <- capture_messages(res <- codecov(coverage = list(), commit = "abc"))
+  expect_match(msgs, "token-less", all = FALSE)
   expect_null(args$token)
   expect_equal(args$params$branch, "someone:feature")
   expect_equal(res$url, "https://codecov.io/x")
@@ -193,15 +191,15 @@ test_that("codecov() failed token-less upload", {
     codecov_upload = function(...) stop("Token required")
   )
   # auto: skip
-  expect_message(
-    res <- codecov(coverage = list(), commit = "abc"),
-    "upload failed, skipping"
-  )
+  msgs <- capture_messages(res <- codecov(coverage = list(), commit = "abc"))
+  expect_match(msgs, "upload failed, skipping", all = FALSE)
   expect_null(res$url)
 
   # explicit tokenless: error
   expect_error(
-    codecov(coverage = list(), commit = "abc", no_token = "tokenless"),
+    suppressMessages(
+      codecov(coverage = list(), commit = "abc", no_token = "tokenless")
+    ),
     "Token required"
   )
 })
