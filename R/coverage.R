@@ -94,7 +94,11 @@ coverage <- function(
     )
   })
 
-  counts <- cov_get_counts(dev_data$coverage$symbol)
+  counts <- cov_get_counts(
+    dev_data$coverage$symbol,
+    asNamespace(setup$pkgname),
+    setup
+  )
   for (i in seq_along(counts)) {
     ids <- dev_data$coverage$lines[[i]]$id
     dev_data$coverage$lines[[i]]$coverage[] <- counts[[i]][ids]

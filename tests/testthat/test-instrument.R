@@ -9,7 +9,7 @@ cov_instrument_in_tempdir <- function(src_lines, symbol = ".__cov_t") {
 }
 
 has_counter <- function(line, symbol = ".__cov_t") {
-  grepl(paste0("`", symbol, "`\\["), line)
+  grepl(paste0("get0(\"", symbol, "\")["), line, fixed = TRUE)
 }
 
 test_that("excluded expressions get no counter injected", {
@@ -85,7 +85,8 @@ test_that("excluding a non-head line of a multi-line expression keeps it", {
 })
 
 count_counters <- function(line, symbol = ".__cov_t") {
-  m <- regmatches(line, gregexpr(paste0("`", symbol, "`\\["), line))
+  ptrn <- paste0("get0(\"", symbol, "\")[")
+  m <- regmatches(line, gregexpr(ptrn, line, fixed = TRUE))
   length(m[[1]])
 }
 
@@ -140,6 +141,6 @@ test_that("a function survives when only its def line is excluded", {
   # Line 1 carries exactly one counter — the function-brace counter — not the
   # top-level expression counter that would normally precede `h <-`.
   expect_equal(count_counters(res$instrumented[1]), 1L)
-  expect_false(grepl("^`\\.__cov_t`\\[", res$instrumented[1]))
+  expect_false(startsWith(res$instrumented[1], "get0(\".__cov_t\")["))
   expect_true(has_counter(res$instrumented[2]))
 })

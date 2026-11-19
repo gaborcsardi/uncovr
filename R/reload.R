@@ -4,7 +4,7 @@ reload_setup <- function(path = ".", makeflags = NULL) {
 
   # setup build options
   setup <- list(
-    version = 3L,
+    version = 4L,
     rver = as.character(getRversion()[, 1:2]),
     platform = R.Version()$platform,
     type = "coverage"
@@ -39,11 +39,16 @@ load_instrumented <- function(path = ".", clean = FALSE) {
   exc <- if (file.exists(".covrignore")) {
     normalizePath(".covrignore")
   }
+  # a counters file from a previous run must not be instrumented
+  remove_counters_file(pkg_dir)
   withr::with_dir(pkg_dir, {
     cov_data <- cov_instrument_dir("R", setup$pkgname, exclusion_file = exc)
     cov_data <- cov_data$files
-    setup_cov_env(cov_data)
   })
+  write_counters_file(pkg_dir, cov_data)
+  withr::local_options(
+    structure(list(make_counters(cov_data, setup)), names = opt_counters)
+  )
 
   withr::local_options(pkg.build_extra_flags = FALSE)
   withr::local_makevars(setup$compiler_flags, .assignment = "+=")
