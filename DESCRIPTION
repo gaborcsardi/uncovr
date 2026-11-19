@@ -1,5 +1,5 @@
 Package: uncovr
-Title: Code Coverage for Testthat
+Title: Code Coverage for 'testthat' Tests
 Version: 0.0.0.9000
 Authors@R: c(
     person("Gábor", "Csárdi", , "csardi.gabor@gmail.com", role = c("aut", "cre")),
@@ -13,7 +13,7 @@ Description: Measure the code coverage of the R code of a package,
 License: MIT + file LICENSE
 URL: https://github.com/gaborcsardi/uncovr
 BugReports: https://github.com/gaborcsardi/uncovr/issues
-Depends: 
+Depends:
     R (>= 3.5)
 Imports:
     cli,
