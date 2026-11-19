@@ -91,7 +91,11 @@ cov_instrument_file <- function(path, cov_symbol) {
   # TODO: improve this and count every expression individually
   inj <- injx[!duplicated(injx$line1), , drop = FALSE]
 
-  lns0 <- lns <- untabify(readLines(path))
+  # `lns` is the code we instrument, it keeps the TAB characters, so string
+  # literals with TABs are not changed. `lns0` is for the report, with TABs
+  # expanded, so lines are aligned when printed.
+  lns <- readLines(path)
+  lns0 <- expand_tabs(lns)
 
   # Compute line exclusions up front, so we can skip injecting counters
   # into excluded expressions instead of running them and ignoring the
@@ -177,7 +181,11 @@ cov_instrument_file <- function(path, cov_symbol) {
   ils <- as.integer(names(injs))
   for (i in seq_along(injs)) {
     il <- ils[i]
-    lns[il] <- str_insert_parallel(lns[il], injs[[i]]$col1, injs[[i]]$code)
+    lns[il] <- str_insert_parallel(
+      lns[il],
+      col_to_char(lns[il], injs[[i]]$col1),
+      injs[[i]]$code
+    )
   }
   write_lines_safe(lns, path)
 
@@ -233,26 +241,70 @@ cov_instrument_file <- function(path, cov_symbol) {
   res
 }
 
-# `getParseData()` gives te wrong coordinates for lines with TAB characters,
-# it counts each TAB as 8 spaces, so we need to circumvent that.
-# But prepare for this to be fixed at some point.
+# In the columns of `getParseData()` a TAB character moves to the next
+# tab stop, i.e. to the next column that is a multiple of 8, plus one.
+# E.g. in "a+\tx" `x` is at column 9, and in "abcdefg+\tx" it is at
+# column 17. All other characters, including multi-byte ones, take up one
+# column. We need to convert these columns to character positions before
+# we insert code into a line.
+#
+# Prepare for R changing this at some point: check what the parser does
+# on the first call, and cache the result for the rest of the session.
 
-untabify <- local({
-  opt <- options(
-    keep.parse.data = TRUE,
-    keep.parse.data.pkgs = TRUE,
-    keep.source = TRUE,
-    keep.source.pkgs = TRUE
-  )
-  on.exit(options(opt), add = TRUE)
-  badtab <- getParseData(parse(text = "\tx", keep.source = TRUE))$col1[1] == 9
-  function(x) {
-    if (badtab) {
-      x <- gsub("\t", strrep(" ", 8), fixed = TRUE, x)
+parser_expands_tabs <- local({
+  expands <- NULL
+  function() {
+    if (is.null(expands)) {
+      withr::local_options(keep.parse.data = TRUE)
+      psd <- getParseData(parse(text = "\tx", keep.source = TRUE))
+      expands <<- psd$col1[1] == 9
     }
-    x
+    expands
   }
 })
+
+# Parser column of each character in `line`, plus the column right after
+# the last character, so we can also insert at the end of the line.
+
+parser_cols <- function(line) {
+  chars <- strsplit(line, "", fixed = TRUE)[[1]]
+  cols <- integer(length(chars) + 1L)
+  col <- 1L
+  for (i in seq_along(chars)) {
+    cols[i] <- col
+    col <- if (chars[i] == "\t") (col - 1L) %/% 8L * 8L + 9L else col + 1L
+  }
+  cols[length(cols)] <- col
+  cols
+}
+
+# Convert parser columns `cols` in `line` to character positions.
+
+col_to_char <- function(line, cols) {
+  if (!grepl("\t", line, fixed = TRUE) || !parser_expands_tabs()) {
+    return(cols)
+  }
+  match(cols, parser_cols(line))
+}
+
+# Replace TABs with spaces, up to the next tab stop.
+
+expand_tabs <- function(lines) {
+  tab <- grepl("\t", lines, fixed = TRUE)
+  lines[tab] <- vapply(
+    lines[tab],
+    function(line) {
+      chars <- strsplit(line, "", fixed = TRUE)[[1]]
+      width <- base::diff(parser_cols(line))
+      tabs <- chars == "\t"
+      chars[tabs] <- strrep(" ", width[tabs])
+      paste(chars, collapse = "")
+    },
+    character(1),
+    USE.NAMES = FALSE
+  )
+  lines
+}
 
 get_inject_positions <- function(brc_pos, psd) {
   parent_id <- psd$parent[brc_pos]
